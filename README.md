@@ -2,6 +2,10 @@
 
 This preview release of the "ebo-script" extension adds support for schneider electric ecostruxure building operation scripting language.
 
+Extensions
++ .ebosf - script function
++ .ebosp - script program
+
 ## Capabilities
 + Syntax highlighting
 + Bracket matching
@@ -14,7 +18,7 @@ Fallthru programs with multiple lines should have a comment line with fallthru t
 
 ### Limited formatting
 
-Formatting is for the whole document. Trims trailing spaces. Does indentations, fixed at 2 spaces. Increases on lines and control statements loops, if - endif. Adds spacing on operator exporessions (-,+,*,/, ..etc). 
+Formatting is for the whole document. Trims trailing spaces. Does indentations, fixed at 2 spaces. Increases on lines and control statements loops, if - endif. Adds spacing on operator expressions (-,+,*,/, ..etc). 
 
 ### Limited hints, warnings, and errors
 
