@@ -82,7 +82,7 @@
             "patterns": [
                 {
                     "name": "keyword.statement.ebo-script",
-                    "match": "(?i:\\b(NUMERIC(\\s+(INPUT|OUTPUT|PUBLIC))?|STRING(\\s+(INPUT|OUTPUT|PUBLIC))?|DATETIME(\\s+(INPUT|OUTPUT|PUBLIC))?)\\b)"
+                    "match": "(?i:\\b(NUMERIC(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)INPUT|OUTPUT|PUBLIC))?|STRING(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)INPUT|OUTPUT|PUBLIC))?|DATETIME(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)INPUT|OUTPUT|PUBLIC))?)\\b)"
                 },
                 {
                     "match": "(?i:\\b(BASEDON)\\b\\s+\\b([a-zA-Z_\\d]+)\\b\\s+\\b(GO(?:\\s)?TO)\\b\\s+\\b([a-zA-Z_\\d]+)\\b(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?)",
