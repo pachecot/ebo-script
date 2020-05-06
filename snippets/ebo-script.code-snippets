@@ -1,0 +1,62 @@
+{
+	"For-To Loop": {
+		"prefix": "for",
+		"body": [
+			"For ${1:key} = 1 To ${2:size}",
+			"  $0",
+			"Next ${1:key}"
+		],
+		"description": "For-To Loop"
+	},
+	"If Statement": {
+		"prefix": "if",
+		"body": [
+			"If ${1:condition} Then",
+			"  $0",
+			"Endif"
+		],
+		"description": "If Statement"
+	},
+	"If-Else Statement": {
+		"prefix": "ifelse",
+		"body": [
+			"If ${1:condition} Then",
+			"  $0",
+			"Else",
+			"  ",
+			"Endif"
+		],
+		"description": "If-Else Statement"
+	},
+	"Select Statement": {
+		"prefix": "select",
+		"body": [
+			"Select Case ${1:key}",
+			"case ${2:value}:",
+			"  $0",
+			"",
+			"Case Else",
+			"",
+			"EndSelect"
+		],
+		"description": "Select Statement"
+	},
+	"While Statement": {
+		"prefix": "while",
+		"body": [
+			"While ${1:condition}",
+			"  $0",
+			"EndWhile"
+		],
+		"description": "While Statement"
+	},
+	"Do-While Statement": {
+		"prefix": "dowhile",
+		"body": [
+			"Do",
+			"  $0",
+			"While ${1:condition}"
+		],
+		"description": "Do-While Statement"
+	}
+}

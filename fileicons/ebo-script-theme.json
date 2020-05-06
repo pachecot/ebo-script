@@ -1,0 +1,26 @@
+{
+    "fonts": [
+        {
+            "id": "script-font",
+            "weight": "normal",
+            "style": "normal",
+            "size": "150%"
+        }
+    ],
+    "iconDefinitions": {
+        "_ebo_script_program_file": {
+            "fontCharacter": "P",
+            "fontColor": "#5f8bAb",
+            "fontId": "script-font"
+        },
+        "_ebo_script_function_file": {
+            "fontCharacter": "F",
+            "fontColor": "#FF8b3b",
+            "fontId": "script-font"
+        }
+    },
+    "languageIds": {
+        "ebosp": "_ebo_script_program_file",
+        "ebosf": "_ebo_script_function_file"
+    }
+}

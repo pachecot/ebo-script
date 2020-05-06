@@ -1,0 +1,202 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "ebo-script",
+    "patterns": [
+        {
+            "include": "#script"
+        },
+        {
+            "include": "#commentline"
+        }
+    ],
+    "repository": {
+        "script": {
+            "name": "meta.structure.script.ebo-script",
+            "patterns": [
+                {
+                    "include": "#namedline"
+                },
+                {
+                    "include": "#keywords"
+                },
+                {
+                    "include": "#strings"
+                },
+                {
+                    "include": "#constants"
+                },
+                {
+                    "include": "#taggedline"
+                },
+                {
+                    "comment": "Variables",
+                    "match": "\\b([a-zA-Z\\d_]+(\\$|%|&)?)\\b",
+                    "name": "variable.other.ebo-script"
+                }
+            ]
+        },
+        "commentline": {
+            "begin": "(?i:')",
+            "end": "(?=(\\n|\\r))",
+            "name": "comment.line.apostrophe.ebo-script"
+        },
+        "namedline": {
+            "match": "(?i:^([a-zA-Z_\\d]+):)",
+            "captures": {
+                "1": {
+                    "name": "meta.control.lineid.ebo-script"
+                }
+            }
+        },
+        "taggedline": {
+            "begin": "(?i:^(LINE)\\s+([a-zA-Z_\\d]+)\\b)",
+            "end": "(?=(\\n|\\r))",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.other.taggedline.ebo-script"
+                },
+                "2": {
+                    "name": "meta.control.lineid.ebo-script"
+                }
+            }
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "comment": "Time  10:00am",
+                    "name": "constant.numeric.ebo-script",
+                    "match": "\\b(\\d{1,2}:\\d{2}(?:\\s*(?i:am|pm))?)\\b"
+                },
+                {
+                    "comment": "Digits",
+                    "name": "constant.numeric.ebo-script",
+                    "match": "\\b(\\d+(\\.\\d+)?([Ee][-+]?\\d+)?)\\b"
+                },
+                {
+                    "name": "constant.language.ebo-script",
+                    "match": "(?i:\\b(ACTIVE|APR|APRIL|AUG|AUGUST|BINARY|BIT|BITSTRING|CHAR|CHARACTERSETNOTSUPPORTED|CHARTYPE|CLOSED|CONSTANT|CURRENTVALUE|DAYS|DEC|DECEMBER|DELETE|DIGITAL|DISABLED|ENABLED|ENABLEDISABLE|ENDRESTORE|FAILED|FAILURE|FALSE|FAULT|FEB|FEBRUARY|FRI|FRIDAY|FUNCTION|JAN|JANUARY|JUL|JULY|JUN|JUNE|MAR|MARCH|MINUTES|MISSINGREQUIREDPARAMETER|MON|MONDAY|MONTHS|MONTHTODATE|MONTHTONOW|NOV|NOVEMBER|NOVTSESSIONS-AVAILABLE|OBJECT|OBJECTCLASS|OBJECTDELETIONNOTPERMITTED|OBJECTID|OBJECTIDENTIFIERALREADYEXISTS|OBJECTREFERENCE|OCT|OCTOBER|ODD|OFF|OFFLINE|ON|\\-ON|ONEWEEKTODATE|ONEWEEKTONOW|ONEYEARTODATE|ONEYEARTONOW|ONLINE|OPENED|OTHER|OVERRANGE|OVERRIDDEN|PRINT|RUNNING|SAT|SATURDAY|SEP|SEPTEMBER|SINGULAR|SITE_CONFIG|SITE_CONFIGB|SUCCESS|SUN|SUNDAY|THU|THURSDAY|TODAY|TRUE|TUE|TUESDAY|WED|WEDNESDAY)\\b)"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.statement.ebo-script",
+                    "match": "(?i:\\b(NUMERIC(\\s+(INPUT|OUTPUT|PUBLIC))?|STRING(\\s+(INPUT|OUTPUT|PUBLIC))?|DATETIME(\\s+(INPUT|OUTPUT|PUBLIC))?)\\b)"
+                },
+                {
+                    "match": "(?i:\\b(BASEDON)\\b\\s+\\b([a-zA-Z_\\d]+)\\b\\s+\\b(GO(?:\\s)?TO)\\b\\s+\\b([a-zA-Z_\\d]+)\\b(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.control.ebo-script"
+                        },
+                        "2": {
+                            "name": "variable.other.ebo-script"
+                        },
+                        "3": {
+                            "name": "keyword.control.ebo-script"
+                        },
+                        "4": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "5": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "6": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "7": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "8": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "9": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "10": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "11": {
+                            "name": "meta.control.lineid.ebo-script"
+                        },
+                        "12": {
+                            "name": "meta.control.lineid.ebo-script"
+                        }
+                    }
+                },
+                {
+                    "match": "(?i:\\b(GO(?:(?:\\s+)?TO)?)\\b\\s+\\b([a-zA-Z_\\d]+)\\b)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.control.ebo-script"
+                        },
+                        "2": {
+                            "name": "meta.control.lineid.ebo-script"
+                        }
+                    }
+                },
+                {
+                    "comment": "Operators",
+                    "name": "keyword.operator.ebo-script",
+                    "match": "(\\*|/|\\+|-|=|<>|><|<|>|<=|>=|=<|=>|:|,|;|\\(|\\)|\\[|\\])"
+                },
+                {
+                    "comment": "Operators",
+                    "name": "keyword.operator.logical.ebo-script",
+                    "match": "\\b(?i:NOT|AND|OR|LESS|GREATER|IN|IS|BETWEEN|EQUAL|EQUALS|THROUGH|THRU)\\b"
+                },
+                {
+                    "comment": "Operators",
+                    "name": "keyword.operator.bit.ebo-script",
+                    "match": "(?i:BITAND|BITNOT|BITOR|BITXOR)"
+                },
+                {
+                    "comment": "Operators",
+                    "name": "keyword.operator.math.ebo-script",
+                    "match": "(?i:MOD|DIV|DIVIDED|MULT|TIMES|MULTIPLIED|MINUS|PLUS)"
+                },
+                {
+                    "name": "keyword.control.ebo-script",
+                    "match": "(?i:\\b(BASEDON|BREAK|CONTINUE|FOR|TO|NEXT|IF|THEN|ELSE|REPEAT|UNTIL|RETURN|RUN|STOP|SELECT\\s+CASE|CASE|WHILE|ENDIF|ENDSELECT|ENDWHILE)\\b)"
+                },
+                {
+                    "name": "support.function.ebo-script",
+                    "match": "(?i:\\b(ABS|ACOS|ASC|ASIN|ATAN|ARCSINE|ARCTANGENT|ARCTANGENT2|ATAN2|AVERAGE|AVERAGED|AVG|CEILING|CHR|COSINE|COS|DIFFTIME|EXPONENTIAL|FACTORIAL|FLOOR|GETBUFFEREDVALUE|GETBUFFERSIZE|LEFT|LENGTH|LN|LOG|MAXIMUM|MAXITEM|MAX|MID|MINIMUM|MINITEM|NUMTOSTR|RANDOM|READPROPERTY|RELINQUISH|RIGHT|ROUND|SEARCH|SIN|SINE|SQRT|STANDARDDEVIATION|STRINGFILL|STRTODATE|STRTONUM|SUM|TAB|TAN|TIMEPIECE|TRUNCATE|WRITEPROPERTY)(?!\\$)\\b)"
+                },
+                {
+                    "name": "keyword.reserved.ebo-script",
+                    "match": "(?i:\\b(ABOVE|ACCESSLOG|ACCESSSERVER|ACKALARM|ADJUST|ALL|AM|APPEND|ARG|ASK|BELOW|BREAKPOINT|BY|C|CD|CHANGE|CURVEFIT|DEL|DIS|DISABLE|DOES|E|EITHER|EN|ENABLE|ENCRYPT|ENCRYPTED|END|ERASE|ERRORS|EXECUTE|EXISTS|EXP|FACT|FIRST|FROM|LAST|LEN|LET|LOOKUP|MESSAGEWINDOW|MODIFY|MOVE|NEITHER|NUMBER|NUMERIC|OBJECT|OPEN|OUTPUT|P|PARAM|PASSED|PID|PM|PR|PRINT|RND|SC|SD|SET|SHUT|SITE|STANDARD-DEVIATION|START|STATUS|STATUSLINE|STEP|STRING|STRTOTIME|TANGENT|THAN|THE|TIMEOFDAY|TMTO|TOUCHEDCELL|TRACE|TRUNC|TURN|UNADVISE|UNIQUEPIN|UPDATE|UPDATEALARMS|UPDATEEVENTS|UPDATEEXITLOG|VAL|VERSION|WHEN|WHERE|WITH)\\b)"
+                },
+                {
+                    "name": "variable.language.ebo-script",
+                    "match": "(?i:\\b(DATE|DOM|DOY|DAYOFMONTH|DAYOFYEAR|DT|HOD|HOUR|HOUROFDAY|HR|MONTH|MTH|MIN|MINUTE|SCAN|SEC|SECOND|TD|TH|TIME|TIMEOFDAY|TOD|TS|WEEKDAY)\\b)"
+                },
+                {
+                    "match": "(?:\\b([a-zA-Z_][a-zA-Z_\\d]+)\\b\\s*\\()",
+                    "captures": {
+                        "1": {
+                            "name": "meta.function-call.ebo-script"
+                        }
+                    }
+                },
+                {
+                    "name": "invalid.deprecated.ebo-script",
+                    "match": "(?i:\\b(CLOSELIST|GETNAME|GETOBJECT|OPENLIST|ROTATE)\\b)"
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.ebo-script",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.ebo-script",
+                    "match": "\\\\."
+                }
+            ]
+        }
+    },
+    "scopeName": "source.ebo-script"
+}
