@@ -17,7 +17,7 @@ export enum Symbols {
     , ANGLE_LEFT          //   '<'
     , ANGLE_RIGHT         //   '>'
     , APOSTROPHE          //   '''
-    , ASTRISK             //   '*'
+    , ASTERISK            //   '*'
     , BACKSLASH           //   '\'
     , BRACKET_CL          //   ']'
     , BRACKET_OP          //   '['
@@ -52,7 +52,7 @@ export enum EboKeyWords {
     , AM
     , PM
 
-    , JANUARY
+    , JANUARY = 1010
     , FEBRUARY
     , MARCH
     , APRIL
@@ -78,7 +78,7 @@ export enum EboKeyWords {
     , NOV = NOVEMBER
     , DEC = DECEMBER
 
-    , SUNDAY
+    , SUNDAY = 1030
     , MONDAY
     , TUESDAY
     , WEDNESDAY
@@ -94,11 +94,11 @@ export enum EboKeyWords {
     , FRI = FRIDAY
     , SAT = SATURDAY
 
-    , TRUE
-    , FALSE
+    , FALSE  // numeric = 0
+    , TRUE   // numeric = 1
 
-    , ONLINE
     , OFFLINE
+    , ONLINE
 
     , SUCCESS
     , FAILURE
@@ -111,6 +111,8 @@ export enum EboKeyWords {
 
     , ACTIVE
     // , AVERAGE
+
+    /// 
 
     , AVERAGED
     , BINARY
@@ -127,10 +129,7 @@ export enum EboKeyWords {
     , ENDRESTORE
     , FAILED
     , FAULT
-    , FUNCTION
     , MISSINGREQUIREDPARAMETER
-    , MONTHTODATE
-    , MONTHTONOW
     , 'NOVTSESSIONS-AVAILABLE'
     , OBJECT
     , OBJECTCLASS
@@ -139,10 +138,6 @@ export enum EboKeyWords {
     , OBJECTIDENTIFIERALREADYEXISTS
     , OBJECTREFERENCE
     , ODD
-    , ONEWEEKTODATE
-    , ONEWEEKTONOW
-    , ONEYEARTODATE
-    , ONEYEARTONOW
     , OTHER
     , OVERRANGE
     , OVERRIDDEN
@@ -152,7 +147,16 @@ export enum EboKeyWords {
     , SINGULAR
     , SITE_CONFIG
     , SITE_CONFIGB
+    
+    , MONTHTODATE
+    , MONTHTONOW
+    , ONEWEEKTODATE
+    , ONEWEEKTONOW
+    , ONEYEARTODATE
+    , ONEYEARTONOW
     , TODAY
+
+    //
 
     , MINUTES
     , DAYS
@@ -317,20 +321,18 @@ export enum EboKeyWords {
 
 
     /// Declarations
-
-    , DATETIME
+    , FUNCTION
+    , ARG, PARAM = ARG // funtion argument declataion
+    , WEBSERVICE // web
     , NUMERIC, NUMBER = NUMERIC
+    , DATETIME
     , STRING
-
+    // Declaration modifiers
     , INPUT
     , OUTPUT
     , PUBLIC
-
     , BUFFERED
     , TRIGGERED
-
-    // funtion argument declataion
-    , ARG, PARAM = ARG
 
     // Control    
 
@@ -349,11 +351,9 @@ export enum EboKeyWords {
     , WHILE, ENDWHILE
     , WAIT, DELAY
 
-    // web
-    , WEBSERVICE
 
     // Action Statements 
-    , P, PR
+    , P, PR   /// print
 
     , SET, ADJUST, CHANGE, LET, MODIFY
 
@@ -368,9 +368,10 @@ export enum EboKeyWords {
     , SHUT
     , START
 
-    // reserved
-    , ERRORS
+    , E  /// error line
 
+    // reserved words - no known usage
+    , ERRORS
     , ACCESSLOG
     , ACCESSSERVER
     , ACKALARM
@@ -378,13 +379,11 @@ export enum EboKeyWords {
     , APPEND
     , ASK
     , BREAKPOINT
-
     , C
     , CD
     , CURVEFIT
     , DEL
     , DT
-    , E
     , ENCRYPT
     , ENCRYPTED
     , ERASE
@@ -410,8 +409,7 @@ export enum EboKeyWords {
     , WHERE
     , WITH
 
-
-    // Obsolete - Continuum
+    // Obsolete - Continuum?
     , ROTATE
     , OPENLIST
     , GETOBJECT

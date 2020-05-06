@@ -1,11 +1,11 @@
 import { Symbols, EboKeyWords, LxToken } from './ebo-types';
-import { TextPosition, LexToken, Token, ebo_scan_text } from './ebo-scanner';
+import { TextRange, LexToken, Token, ebo_scan_text } from './ebo-scanner';
 
 
 /**
  * 
  */
-enum EboErrors {
+export enum EboErrors {
     None,
     ParseError,
     DuplicateLine,
@@ -25,6 +25,7 @@ enum EboErrors {
  * Represents the severity of diagnostics.
  */
 export enum Severity {
+    // from vscode.
 
     /**
      * Something not allowed by the rules of a language or other means.
@@ -52,7 +53,7 @@ interface ErrorInfo {
     id: EboErrors
     severity: Severity
     message: string
-    pos: TextPosition
+    range: TextRange
 }
 
 interface Cursor {
@@ -64,21 +65,38 @@ interface Cursor {
     advance: (count?: number) => void
 }
 
-enum SymbolType { StringType, Numeric, DateTime, Function, Parameter }
+enum SymbolType {
+    StringType = 1
+    , Numeric
+    , DateTime
+    , Function
+    , Parameter
+}
 
 interface SymbolDecl {
     name: string
     type: SymbolType
-    pos: TextPosition
+    pos: TextRange
 }
 
-enum VarModifier { Local, Input, Output, Public }
-enum VarTag { None, Triggered, Buffered }
+enum VarModifier {
+    Local = 1
+    , Input
+    , Output
+    , Public
+}
+
+enum VarTag {
+    None = 1
+    , Triggered
+    , Buffered
+}
+
 type VariableType = SymbolType.StringType | SymbolType.Numeric | SymbolType.DateTime;
 
 interface VariableDecl extends SymbolDecl {
     type: VariableType
-    modifer: VarModifier
+    modifier: VarModifier
     tag: VarTag
     size?: number
 }
@@ -204,46 +222,47 @@ let typeMapper = tmMap({
 let tagMapper = tmMap({
     [EboKeyWords.TRIGGERED]: VarTag.Triggered,
     [EboKeyWords.BUFFERED]: VarTag.Buffered,
-}, VarTag.None);
+});
 
 let modMapper = tmMap({
     [EboKeyWords.INPUT]: VarModifier.Input,
     [EboKeyWords.OUTPUT]: VarModifier.Output,
     [EboKeyWords.PUBLIC]: VarModifier.Public,
-}, VarModifier.Local);
+});
 
 
 
 function parse_declaration(cur: Cursor): VariableDecl[] {
 
-    let kind = [];
     let tk = cur.current();
     let ty = typeMapper(tk.type) as VariableType | undefined;
     if (ty) {
-
-        kind.push(tk);
         ++cur.pos;
-
         tk = cur.current();
+        
         let tg = tagMapper(tk.type);
         if (tg) {
-            kind.push(tk);
             ++cur.pos;
+            tk = cur.current();
+        } else {
+            tg = VarTag.None;
         }
 
-        tk = cur.current();
         let md = modMapper(tk.type);
         if (md) {
-            kind.push(tk);
             ++cur.pos;
+            tk = cur.current();
+        } else {
+            md = VarModifier.Local;
         }
+
         return parse_list(cur)
             .map(tk => ({
                 name: tk.value,
                 type: ty,
-                modifer: md,
+                modifier: md,
                 tag: tg,
-                pos: tk.pos
+                pos: tk.range
             } as VariableDecl));
     }
 
@@ -275,7 +294,7 @@ function parse_parameter(cur: Cursor): ParameterDecl | undefined {
         return {
             type: SymbolType.Parameter,
             name: tk.value,
-            pos: tk.pos,
+            pos: tk.range,
             id: Number(id.value)
         };
     }
@@ -354,8 +373,11 @@ export function ebo_parse_file(fileText: string) {
     };
 
     const tkn_lists = ebo_scan_text(fileText);
-    const tkData = tkn_lists.map(l => l.filter(t => t.type !== LxToken.TK_WHITESPACE && t.type !== LxToken.TK_COMMENT));
+    const tkData = tkn_lists.map(l =>
+        l.filter(t => t.type !== LxToken.TK_WHITESPACE && t.type !== LxToken.TK_COMMENT)
+    );
 
+    // check for fallthru to disable warnings
     tkn_lists.forEach(tks => {
         tks.forEach(tk => {
             if (tk.type === LxToken.TK_COMMENT && /fallthru/i.test(tk.value)) {
@@ -380,7 +402,6 @@ export function ebo_parse_file(fileText: string) {
         ++n;
         let cur = new LineCursor(line);
 
-
         let lineTk = getLineId(cur);
         if (lineTk) {
             let name = lineTk.value as string;
@@ -394,6 +415,7 @@ export function ebo_parse_file(fileText: string) {
         while (++cur.pos < cur.items.length) {
             let tk = cur.current();
             switch (tk.type) {
+
                 case EboKeyWords.BASEDON:
                     let bo = parse_basedon(cur);
                     if (bo) {
@@ -402,6 +424,7 @@ export function ebo_parse_file(fileText: string) {
                         bo.lines.forEach(line => { lines.gotos.push(line); });
                     }
                     break;
+
                 case EboKeyWords.GO:
                 case EboKeyWords.GOTO: {
                     let gt = parse_goto(cur);
@@ -410,6 +433,7 @@ export function ebo_parse_file(fileText: string) {
                     }
                     break;
                 }
+
                 case EboKeyWords.FUNCTION: {
                     if (cur.pos + 1 >= cur.items.length) { break; }
                     ++cur.pos;
@@ -417,11 +441,12 @@ export function ebo_parse_file(fileText: string) {
                         fn_list.push({
                             type: SymbolType.Function,
                             name: tk.value,
-                            pos: tk.pos,
+                            pos: tk.range,
                         });
                     });
                     break;
                 }
+
                 case EboKeyWords.LINE: {
                     if (cur.pos + 1 >= cur.items.length) { break; }
                     ++cur.pos;
@@ -431,6 +456,7 @@ export function ebo_parse_file(fileText: string) {
                     }
                     break;
                 }
+
                 case EboKeyWords.NUMERIC:
                 case EboKeyWords.NUMBER:
                 case EboKeyWords.STRING:
@@ -439,10 +465,12 @@ export function ebo_parse_file(fileText: string) {
                     var_list = var_list.concat(decls);
                     break;
                 }
+
                 case LxToken.TK_ERROR: {
                     errors.push(tk);
                     break;
                 }
+
                 case EboKeyWords.ARG: {
                     const decl = parse_parameter(cur);
                     if (decl) {
@@ -450,10 +478,11 @@ export function ebo_parse_file(fileText: string) {
                     }
                     break;
                 }
+
                 case LxToken.TK_IDENT:
                     if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.PARENTHESES_OP])) {
                         function_calls[tk.value] = [tk];
-                    } else if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON]) && tk.pos.index === 0) {
+                    } else if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON]) && tk.range.begin === 0) {
                         // skip line reference
                     } else {
                         let a = variables[tk.value] || (variables[tk.value] = []);
@@ -474,7 +503,7 @@ export function ebo_parse_file(fileText: string) {
             id: EboErrors.ParseError,
             severity: Severity.Error,
             message: 'Parsing Error.',
-            pos: tk.pos
+            range: tk.range
         });
     }
 
@@ -489,7 +518,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.DuplicateLine,
                 severity: Severity.Error,
                 message: 'Line defined multiple times.',
-                pos: tk.pos
+                range: tk.range
             }));
             issues = issues.concat(x);
         }
@@ -502,7 +531,7 @@ export function ebo_parse_file(fileText: string) {
                         id: EboErrors.UnreferencedLine,
                         severity: Severity.Warning,
                         message: 'Line not referenced.',
-                        pos: tk.pos
+                        range: tk.range
                     }
                 );
             }
@@ -517,7 +546,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.UndefinedLine,
                 severity: Severity.Error,
                 message: 'Line not defined.',
-                pos: tk.pos
+                range: tk.range
             });
         }
     }
@@ -536,7 +565,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.UnreferencedDeclaration,
                 severity: Severity.Information,
                 message: 'Parameter is not used.',
-                pos: parm.pos
+                range: parm.pos
             });
         }
     }
@@ -549,7 +578,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.DuplicateDeclaration,
                 severity: Severity.Error,
                 message: 'Variable is already declared.',
-                pos: tk.pos
+                range: tk.pos
             });
         } else {
             decNames.push(tk.name);
@@ -558,7 +587,7 @@ export function ebo_parse_file(fileText: string) {
                     id: EboErrors.UnreferencedDeclaration,
                     severity: Severity.Information,
                     message: 'Variable is not used.',
-                    pos: tk.pos
+                    range: tk.pos
                 });
             }
         }
@@ -570,7 +599,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.UndeclaredVariable,
                 severity: Severity.Error,
                 message: 'Variable is not declared.',
-                pos: tk.pos
+                range: tk.range
             }));
             issues = issues.concat(lst);
         }
@@ -586,7 +615,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.RedeclaredFunction,
                 severity: Severity.Error,
                 message: 'Function is redeclared.',
-                pos: fn.pos
+                range: fn.pos
             });
         } else {
             fnMap[fn.name] = fn;
@@ -595,7 +624,7 @@ export function ebo_parse_file(fileText: string) {
                     id: EboErrors.UnreferencedFunction,
                     severity: Severity.Information,
                     message: 'Function is not used.',
-                    pos: fn.pos
+                    range: fn.pos
                 });
             }
             if (fn.name in variables) {
@@ -604,7 +633,7 @@ export function ebo_parse_file(fileText: string) {
                         id: EboErrors.FunctionUsedAsVariable,
                         severity: Severity.Error,
                         message: 'Function is used as a variable.',
-                        pos: tk.pos
+                        range: tk.range
                     });
                 });
             }
@@ -618,7 +647,7 @@ export function ebo_parse_file(fileText: string) {
                     id: EboErrors.UndeclaredFunction,
                     severity: Severity.Error,
                     message: 'Function is not declared.',
-                    pos: fn.pos
+                    range: fn.range
                 });
             });
         }

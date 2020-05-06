@@ -10,7 +10,7 @@ const SymbolMap = {
     ')': Symbols.PARENTHESES_CL,
     '[': Symbols.BRACKET_OP,
     ']': Symbols.BRACKET_CL,
-    '*': Symbols.ASTRISK,
+    '*': Symbols.ASTERISK,
     '/': Symbols.SLASH,
     '\'': Symbols.APOSTROPHE,
     '\\': Symbols.BACKSLASH,
@@ -41,16 +41,16 @@ const reErr = /^./;
 
 export type Token = LxToken | EboKeyWords | Symbols;
 
-export interface TextPosition {
+export interface TextRange {
     line: number
-    index: number
-    size: number
+    begin: number
+    end: number
 }
 
 export interface LexToken {
     type: Token
     value: string
-    pos: TextPosition
+    range: TextRange
 }
 
 const scannerMap: [RegExp, ((m: string) => Token)][] = [
@@ -77,10 +77,10 @@ export function ebo_scan_line(line: string, line_id: number): LexToken[] {
             if (m) {
                 let sz = m[0].length;
                 toks.push({
-                    pos: {
+                    range: {
                         line: line_id,
-                        index: pos,
-                        size: sz,
+                        begin: pos,
+                        end: pos + sz,
                     },
                     type: fn(m[0]),
                     value: m[0]
@@ -93,10 +93,10 @@ export function ebo_scan_line(line: string, line_id: number): LexToken[] {
     }
 
     toks.push({
-        pos: {
+        range: {
             line: line_id,
-            index: line.length,
-            size: 1,
+            begin: line.length,
+            end: line.length + 1,
         },
         type: LxToken.TK_EOL,
         value: "\n"

@@ -50,7 +50,10 @@ function updateDiagnostics(document: vscode.TextDocument, collection: vscode.Dia
             {
                 code: issue.id,
                 message: issue.message,
-                range: new vscode.Range(new vscode.Position(issue.pos.line, issue.pos.index), new vscode.Position(issue.pos.line, issue.pos.index + issue.pos.size)),
+                range: new vscode.Range(
+                    new vscode.Position(issue.range.line, issue.range.begin),
+                    new vscode.Position(issue.range.line, issue.range.end)
+                ),
                 severity: issue.severity as unknown as vscode.DiagnosticSeverity,
                 source: ''
             }
@@ -84,6 +87,7 @@ function toSignatureHelp(info: sig.Signature) {
 const reFunctionName = /.*\b(\w[\w\d]*)\s*\(/;
 function getFunctionName(text: string) {
     let m = reFunctionName.exec(text);
+    return m ? m[1] : '';
 }
 
 
@@ -98,9 +102,9 @@ class EboSignatureHelpProvider implements vscode.SignatureHelpProvider {
         token: vscode.CancellationToken
     ): Promise<vscode.SignatureHelp> {
         return new Promise((resolve, reject) => {
-            let m = reFunctionName.exec(lineSoFar(document, position));
-            if (m) {
-                const info = sig.get(m[1]);
+            let name = getFunctionName(lineSoFar(document, position));
+            if (name) {
+                const info = sig.get(name);
                 if (info) {
                     resolve(toSignatureHelp(info));
                 } else {
