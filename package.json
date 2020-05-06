@@ -2,6 +2,7 @@
 	"name": "ebo-script",
 	"displayName": "ebo-script",
 	"publisher": "pachecot",
+	"repository": {"url": "https://github.com/pachecot/ebo-script.git"},
 	"description": "SE EBO Script Programming Support",
 	"version": "0.5.1",
 	"engines": {
