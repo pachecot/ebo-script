@@ -138,7 +138,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         } else if (lastTk.type === LxToken.TK_COMMENT) {
             let we = reTrailingSpaces.exec(lastTk.value);
             if (we) {
-                edits.push(vscode.TextEdit.delete(range_back(we.index, lastTk.range)));
+                edits.push(vscode.TextEdit.delete(range_back(lastTk.range.begin + we.index, lastTk.range)));
             }
         }
 
