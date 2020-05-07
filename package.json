@@ -4,7 +4,7 @@
 	"publisher": "pachecot",
 	"repository": {"url": "https://github.com/pachecot/ebo-script.git"},
 	"description": "SE EBO Script Programming Support",
-	"version": "0.5.1",
+	"version": "0.5.3",
 	"engines": {
 		"vscode": "^1.44.0"
 	},
