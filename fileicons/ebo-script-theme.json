@@ -1,25 +1,22 @@
 {
-    "fonts": [
-        {
-            "id": "script-font",
-            "weight": "normal",
-            "style": "normal",
-            "size": "150%"
-        }
-    ],
     "iconDefinitions": {
-        "_ebo_script_program_file": {
-            "fontCharacter": "P",
-            "fontColor": "#5f8bAb",
+        "_ebo_script_file": {
+            "fontCharacter": "\\2009\\054f",
+            "fontSize": "115%",
+            "fontColor": "#9e5",
             "fontId": "script-font"
         },
+        "_ebo_script_program_file": {
+            "iconPath":"./ebo-script-program.png"
+        },
         "_ebo_script_function_file": {
-            "fontCharacter": "F",
-            "fontColor": "#FF8b3b",
-            "fontId": "script-font"
+            "iconPath":"./ebo-script-function.png"
         }
     },
     "languageIds": {
+        "ebo-script": "_ebo_script_file"
+    },
+    "fileExtensions": {
         "ebosp": "_ebo_script_program_file",
         "ebosf": "_ebo_script_function_file"
     }
