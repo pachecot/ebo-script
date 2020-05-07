@@ -129,14 +129,14 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
     for (let line_tks of tokens) {
         if (line_tks.length === 1) { /* EOL */ continue; }
 
-        let lastTk = line_tks[line_tks.length - 2];
+        const lastTk = line_tks[line_tks.length - 2];
 
         // trim trailing spaces
 
         if (lastTk.type === LxToken.TK_WHITESPACE) {
             edits.push(vscode.TextEdit.delete(toRange(lastTk.range)));
         } else if (lastTk.type === LxToken.TK_COMMENT) {
-            let we = reTrailingSpaces.exec(lastTk.value);
+            const we = reTrailingSpaces.exec(lastTk.value);
             if (we) {
                 edits.push(vscode.TextEdit.delete(range_back(lastTk.range.begin + we.index, lastTk.range)));
             }
@@ -144,8 +144,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         // do indentations
 
-        let ws = line_tks[0].type === LxToken.TK_WHITESPACE ? line_tks[0] : undefined;
-        let first = ws ? line_tks[1] : line_tks[0];
+        const ws = line_tks[0].type === LxToken.TK_WHITESPACE ? line_tks[0] : undefined;
+        const first = ws ? line_tks[1] : line_tks[0];
 
         if (close_tags.includes(first.type)) {
             depth -= size;
@@ -161,12 +161,12 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             if (line_tks.length > 2 && depth && ws && /\t/.test(ws.value)) { // remove tabs 
                 edits.push(vscode.TextEdit.replace(toRange(ws.range), ' '.repeat(Math.abs(depth))));
             } else {
-            if (cnt > 0) {
-                edits.push(vscode.TextEdit.insert(pos_start(first.range), ' '.repeat(cnt)));
+                if (cnt > 0) {
+                    edits.push(vscode.TextEdit.insert(pos_start(first.range), ' '.repeat(cnt)));
                 } else if (line_tks.length > 2 && cnt < 0 && ws) {
-                edits.push(vscode.TextEdit.delete(range_back(ws.range.begin + depth, ws.range)));
+                    edits.push(vscode.TextEdit.delete(range_back(ws.range.begin + depth, ws.range)));
+                }
             }
-        }
         }
 
         if (open_tags.includes(first.type) || test_if_then_open(line_tks)) {
@@ -177,7 +177,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         // for (let i = ltks.length - 1; 0 < i; --i) {
         for (let i = 0; i < line_tks.length - 1; ++i) {
-            let tk = line_tks[i];
+            const tk = line_tks[i];
             switch (tk.type) {
 
                 case Symbols.MINUS_SIGN: {
@@ -185,8 +185,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     // in which case there is no trailing space.
 
                     let p = line_tks[i - 1];
-                    let n = line_tks[i + 1];
-                    let nn = n.type === LxToken.TK_WHITESPACE ? line_tks[i + 2] : n;
+                    const n = line_tks[i + 1];
+                    const nn = n.type === LxToken.TK_WHITESPACE ? line_tks[i + 2] : n;
 
                     if (p.type !== LxToken.TK_WHITESPACE) {
                         if (!Symbols[p.type]) {
@@ -201,10 +201,10 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         p = line_tks[i - 2];
                     }
 
-                    let is_not_unary1 = EboKeyWords[p.type];  // for system variables and functions. 
-                    let is_not_unary2 = LxToken.TK_NUMBER === p.type || LxToken.TK_IDENT === p.type;
-                    let is_not_unary3 = Symbols.PARENTHESES_CL === p.type || Symbols.BRACKET_CL === p.type;
-                    let is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && Symbols[p.type];
+                    const is_not_unary1 = EboKeyWords[p.type];  // for system variables and functions. 
+                    const is_not_unary2 = LxToken.TK_NUMBER === p.type || LxToken.TK_IDENT === p.type;
+                    const is_not_unary3 = Symbols.PARENTHESES_CL === p.type || Symbols.BRACKET_CL === p.type;
+                    const is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && Symbols[p.type];
 
                     if (is_unary && (nn.type !== Symbols.PARENTHESES_OP)) {
                         if (n.type === LxToken.TK_WHITESPACE) {
@@ -232,8 +232,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case Symbols.SLASH:               //   '/'
                     {
                         // single space padding surrounding operator symbols
-                        let p = line_tks[i - 1];
-                        let n = line_tks[i + 1];
+                        const p = line_tks[i - 1];
+                        const n = line_tks[i + 1];
                         if (p.type !== LxToken.TK_WHITESPACE) {
                             edits.push(insertSpace(tk.range));
                         } else if (range_size(p.range) > 1) {
@@ -248,11 +248,11 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     }
                 case Symbols.COMMA: {
                     //   ','
-                    let p = line_tks[i - 1];
+                    const p = line_tks[i - 1];
                     if (p.type === LxToken.TK_WHITESPACE && range_size(p.range) > 0) {
                         edits.push(vscode.TextEdit.delete(toRange(p.range)));
                     }
-                    let n = line_tks[i + 1];
+                    const n = line_tks[i + 1];
                     if (n.type !== LxToken.TK_WHITESPACE) {
                         edits.push(insertSpace(n.range));
                     } else if (range_size(n.range) > 1) {
@@ -262,7 +262,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 }
                 case Symbols.PARENTHESES_OP: {
                     // remove spaces after opening parens
-                    let n = line_tks[i + 1];
+                    const n = line_tks[i + 1];
                     if (n.type === LxToken.TK_WHITESPACE) {
                         edits.push(vscode.TextEdit.delete(toRange(n.range)));
                     }
@@ -270,7 +270,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 }
                 case Symbols.PARENTHESES_CL: {
                     //  remove spaces before closing parens
-                    let p = line_tks[i - 1];
+                    const p = line_tks[i - 1];
                     if (p.type === LxToken.TK_WHITESPACE) {
                         edits.push(vscode.TextEdit.delete(toRange(p.range)));
                     }
