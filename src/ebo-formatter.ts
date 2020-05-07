@@ -157,13 +157,18 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         if (test_line(line_tks)) {
             depth = size;
         } else {
-            let cnt = depth - first.range.begin;
+            const cnt = depth - first.range.begin;
+            if (line_tks.length > 2 && depth && ws && /\t/.test(ws.value)) { // remove tabs 
+                edits.push(vscode.TextEdit.replace(toRange(ws.range), ' '.repeat(Math.abs(depth))));
+            } else {
             if (cnt > 0) {
                 edits.push(vscode.TextEdit.insert(pos_start(first.range), ' '.repeat(cnt)));
-            } else if (cnt < 0 && ws && line_tks.length > 2) {
+                } else if (line_tks.length > 2 && cnt < 0 && ws) {
                 edits.push(vscode.TextEdit.delete(range_back(ws.range.begin + depth, ws.range)));
             }
         }
+        }
+
         if (open_tags.includes(first.type) || test_if_then_open(line_tks)) {
             depth += size;
         }
