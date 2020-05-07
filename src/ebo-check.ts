@@ -239,7 +239,7 @@ function parse_declaration(cur: Cursor): VariableDecl[] {
     if (ty) {
         ++cur.pos;
         tk = cur.current();
-        
+
         let tg = tagMapper(tk.type);
         if (tg) {
             ++cur.pos;
@@ -365,7 +365,7 @@ function getLineId(cur: Cursor) {
 
 export function ebo_parse_file(fileText: string) {
 
-    let lines = {
+    const lines = {
         fallthru: false,
         names: [] as string[],
         ids: {} as { [name: string]: LexToken[] },
@@ -387,25 +387,24 @@ export function ebo_parse_file(fileText: string) {
     });
 
     let var_list: VariableDecl[] = [];
-    let param_list: ParameterDecl[] = [];
-    let fn_list: FunctionDecl[] = [];
+    const param_list: ParameterDecl[] = [];
+    const fn_list: FunctionDecl[] = [];
 
-    let variables: { [name: string]: LexToken[] } = {};
-    let function_calls: { [name: string]: LexToken[] } = {};
+    const variables: { [name: string]: LexToken[] } = {};
+    const function_calls: { [name: string]: LexToken[] } = {};
 
-    let errors: LexToken[] = [];
+    const errors: LexToken[] = [];
     let issues: ErrorInfo[] = [];
 
-    let n = -1;
 
     for (let line of tkData) {
-        ++n;
-        let cur = new LineCursor(line);
 
-        let lineTk = getLineId(cur);
+        const cur = new LineCursor(line);
+
+        const lineTk = getLineId(cur);
         if (lineTk) {
-            let name = lineTk.value as string;
-            let a = lines.ids[name] || (lines.ids[name] = []);
+            const name = lineTk.value as string;
+            const a = lines.ids[name] || (lines.ids[name] = []);
             lines.names.push(name);
             a.push(lineTk);
         }
@@ -413,13 +412,13 @@ export function ebo_parse_file(fileText: string) {
         cur.pos = -1;
 
         while (++cur.pos < cur.items.length) {
-            let tk = cur.current();
+            const tk = cur.current();
             switch (tk.type) {
 
                 case EboKeyWords.BASEDON:
-                    let bo = parse_basedon(cur);
+                    const bo = parse_basedon(cur);
                     if (bo) {
-                        let a = variables[bo.variable.value] || (variables[bo.variable.value] = []);
+                        const a = variables[bo.variable.value] || (variables[bo.variable.value] = []);
                         a.push(bo.variable);
                         bo.lines.forEach(line => { lines.gotos.push(line); });
                     }
@@ -427,7 +426,7 @@ export function ebo_parse_file(fileText: string) {
 
                 case EboKeyWords.GO:
                 case EboKeyWords.GOTO: {
-                    let gt = parse_goto(cur);
+                    const gt = parse_goto(cur);
                     if (gt) {
                         lines.gotos.push(gt);
                     }
@@ -450,7 +449,7 @@ export function ebo_parse_file(fileText: string) {
                 case EboKeyWords.LINE: {
                     if (cur.pos + 1 >= cur.items.length) { break; }
                     ++cur.pos;
-                    let tk1 = cur.current();
+                    const tk1 = cur.current();
                     if (tk1.type === LxToken.TK_IDENT || tk1.type === LxToken.TK_NUMBER) {
                         ++cur.pos;
                     }
@@ -461,7 +460,7 @@ export function ebo_parse_file(fileText: string) {
                 case EboKeyWords.NUMBER:
                 case EboKeyWords.STRING:
                 case EboKeyWords.DATETIME: {
-                    let decls = parse_declaration(cur);
+                    const decls = parse_declaration(cur);
                     var_list = var_list.concat(decls);
                     break;
                 }
@@ -485,7 +484,7 @@ export function ebo_parse_file(fileText: string) {
                     } else if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON]) && tk.range.begin === 0) {
                         // skip line reference
                     } else {
-                        let a = variables[tk.value] || (variables[tk.value] = []);
+                        const a = variables[tk.value] || (variables[tk.value] = []);
                         a.push(tk);
                     }
                     break;
@@ -509,12 +508,12 @@ export function ebo_parse_file(fileText: string) {
 
     // ---- line checks
 
-    let gtnames = lines.gotos.map(tk => tk.value);
+    const gtnames = lines.gotos.map(tk => tk.value);
 
     for (let id in lines.ids) {
 
         if (lines.ids[id].length > 1) {
-            let x = lines.ids[id].map(tk => ({
+            const x = lines.ids[id].map(tk => ({
                 id: EboErrors.DuplicateLine,
                 severity: Severity.Error,
                 message: 'Line defined multiple times.',
@@ -524,7 +523,7 @@ export function ebo_parse_file(fileText: string) {
         }
 
         if (!gtnames.includes(id) && !lines.fallthru) {
-            let tk = lines.ids[id][0];
+            const tk = lines.ids[id][0];
             if (tk.value !== lines.names[0]) {
                 issues.push(
                     {
@@ -553,8 +552,8 @@ export function ebo_parse_file(fileText: string) {
 
     // --- symbol info
 
-    let varNames = Object.keys(variables);
-    let decNames: string[] = [];
+    const varNames = Object.keys(variables);
+    const decNames: string[] = [];
 
     // --- parameter checks
 
@@ -595,7 +594,7 @@ export function ebo_parse_file(fileText: string) {
 
     for (let name of varNames) {
         if (!decNames.includes(name)) {
-            let lst = variables[name].map(tk => ({
+            const lst = variables[name].map(tk => ({
                 id: EboErrors.UndeclaredVariable,
                 severity: Severity.Error,
                 message: 'Variable is not declared.',
@@ -607,7 +606,7 @@ export function ebo_parse_file(fileText: string) {
 
     // --- function checks
 
-    let fnMap: { [name: string]: FunctionDecl } = {};
+    const fnMap: { [name: string]: FunctionDecl } = {};
 
     for (let fn of fn_list) {
         if (fn.name in fnMap) {
@@ -660,10 +659,6 @@ export function ebo_parse_file(fileText: string) {
         lines
     };
 }
-
-
-
-
 
 
 
