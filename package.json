@@ -2,7 +2,9 @@
 	"name": "ebo-script",
 	"displayName": "ebo-script",
 	"publisher": "pachecot",
-	"repository": {"url": "https://github.com/pachecot/ebo-script.git"},
+	"repository": {
+		"url": "https://github.com/pachecot/ebo-script.git"
+	},
 	"description": "SE EBO Script Programming Support",
 	"version": "0.5.5",
 	"engines": {
@@ -16,13 +18,6 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
-		"iconThemes": [
-			{
-				"id": "ebo-script",
-				"label": "EboScript",
-				"path": "./fileicons/ebo-script-theme.json"
-			}
-		],
 		"capabilities": {
 			"documentFormattingProvider": "true"
 		},
