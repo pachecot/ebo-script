@@ -32,7 +32,7 @@ const SymbolMap = {
 const reWhiteSpace = /^\s+/;
 const reComment = /^(?:'.*)/;
 const reQuotedString = /^"(?:\|"|[^"|]*)*"/;
-const reNumber = /^(?:[-+]?\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?)/;
+const reNumber = /^(?:\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?)/;
 const reTime = /^(?:\d{1,2}:\d{2}(?:\s*(i?:am|pm))?)/;
 const reKWords = new RegExp("^(?:" + Object.keys(EboKeyWords).filter(x => isNaN(Number(x))).join('|') + ")\\b", 'i');
 const reSymbol = /^(?:-|,|;|!|\(|\)|\[|\]|\*|\/|\\|&|%|\^|\+|>=|<=|<>|<|=|>|:|~)/;
