@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as ebo from './ebo-check';
-import * as sig from './signatures';
+import * as sig from './ebo-signatures';
 import { getReformatEdits } from './ebo-formatter';
 
 const EBO_SCRIPT = 'ebo-script';
