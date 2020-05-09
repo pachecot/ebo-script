@@ -76,7 +76,7 @@ enum SymbolType {
 interface SymbolDecl {
     name: string
     type: SymbolType
-    pos: TextRange
+    range: TextRange
 }
 
 enum VarModifier {
@@ -262,7 +262,7 @@ function parse_declaration(cur: Cursor): VariableDecl[] {
                 type: ty,
                 modifier: md,
                 tag: tg,
-                pos: tk.range
+                range: tk.range
             } as VariableDecl));
     }
 
@@ -294,7 +294,7 @@ function parse_parameter(cur: Cursor): ParameterDecl | undefined {
         return {
             type: SymbolType.Parameter,
             name: tk.value,
-            pos: tk.range,
+            range: tk.range,
             id: Number(id.value)
         };
     }
@@ -366,7 +366,7 @@ function functionDecl(tk: LexToken): FunctionDecl {
     return {
         type: SymbolType.Function,
         name: tk.value,
-        pos: tk.range,
+        range: tk.range,
     };
 }
 
@@ -453,7 +453,7 @@ class Ast {
                 id: EboErrors.DuplicateDeclaration,
                 severity: Severity.Error,
                 message: `Variable '${name}' is redeclared`,
-                range: variable.pos
+                range: variable.range
             });
         } else {
             this.symbols[name] = variable;
@@ -468,7 +468,7 @@ class Ast {
                 id: EboErrors.DuplicateDeclaration,
                 severity: Severity.Error,
                 message: `Function '${name}' is redeclared!`,
-                range: functionDecl.pos
+                range: functionDecl.range
             });
         } else {
             this.symbols[name] = functionDecl;
@@ -483,7 +483,7 @@ class Ast {
                 id: EboErrors.DuplicateDeclaration,
                 severity: Severity.Error,
                 message: `Parameter '${name}' is redeclared!`,
-                range: parameter.pos
+                range: parameter.range
             });
         } else {
             if (this.parameterids[parameter.id]) {
@@ -491,7 +491,7 @@ class Ast {
                     id: EboErrors.DuplicateDeclaration,
                     severity: Severity.Error,
                     message: `Parameter '${name}' is redeclared with existing id: ${parameter.id}!`,
-                    range: parameter.pos
+                    range: parameter.range
                 });
             }
             this.symbols[name] = parameter;
@@ -663,7 +663,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.UnreferencedDeclaration,
                 severity: Severity.Information,
                 message: `Parameter '${name}' is not used.`,
-                range: ast.parameters[name].pos
+                range: ast.parameters[name].range
             });
         });
 
@@ -674,7 +674,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.UnreferencedDeclaration,
                 severity: Severity.Information,
                 message: `Variable '${name}' is not used.`,
-                range: ast.variables[name].pos
+                range: ast.variables[name].range
             });
         });
 
@@ -685,7 +685,7 @@ export function ebo_parse_file(fileText: string) {
                 id: EboErrors.UnreferencedFunction,
                 severity: Severity.Information,
                 message: `Function '${name}' is not used.`,
-                range: ast.functions[name].pos
+                range: ast.functions[name].range
             });
         });
 
