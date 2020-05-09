@@ -3,12 +3,13 @@ export enum LxToken {
     TK_WHITESPACE = 10
     , TK_EOL
     , TK_COMMENT
-    , TK_IDENT
-    , TK_OPERATOR
-    , TK_STRING
     , TK_NUMBER
+    , TK_STRING
     , TK_TIME
+    , TK_OPERATOR
     , TK_KEYWORD
+    , TK_FNCALL
+    , TK_IDENT
     , TK_ERROR
 }
 
