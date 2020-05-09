@@ -3,7 +3,7 @@ import { TextRange, LexToken, Token, ebo_scan_text } from './ebo-scanner';
 
 
 /**
- * 
+ *
  */
 export enum EboErrors {
     None,
@@ -123,7 +123,7 @@ interface Ast {
 
 /**
  * try to parse the various goto statements.
- * return true if success and advance to the 
+ * return true if success and advance to the
  * next position
  */
 function parse_goto_statement(cur: Cursor): boolean {
@@ -362,15 +362,153 @@ function getLineId(cur: Cursor) {
     return undefined;
 }
 
+function functionDecl(tk: LexToken): FunctionDecl {
+    return {
+        type: SymbolType.Function,
+        name: tk.value,
+        pos: tk.range,
+    };
+}
+
+class Ast {
+
+    errors: ErrorInfo[] = [];
+
+    fallthru = false;
+    lines: { [name: string]: LexToken } = {};
+    linenames: string[] = [];
+    line_refs: { [name: string]: LexToken[] } = {};
+
+    symbols: { [name: string]: SymbolDecl } = {};
+    functions: { [name: string]: FunctionDecl } = {};
+    variables: { [name: string]: VariableDecl } = {};
+    parameters: { [name: string]: ParameterDecl } = {};
+    parameterids: string[] = [];
+
+    variable_refs: { [name: string]: LexToken[] } = {};
+    function_refs: { [name: string]: LexToken[] } = {};
+
+    lookup_variable(tk: LexToken) {
+        const name = tk.value;
+        const arr = this.variable_refs[name] || (this.variable_refs[name] = []);
+        arr.push(tk);
+        if (name in this.symbols) {
+            if (name in this.functions) {
+                this.add_error({
+                    id: EboErrors.FunctionUsedAsVariable,
+                    severity: Severity.Error,
+                    message: `Function '${name}' used as a variable.`,
+                    range: tk.range
+                });
+            }
+        } else {
+            this.add_error({
+                id: EboErrors.UndeclaredVariable,
+                severity: Severity.Error,
+                message: `Variable '${name}' is not declared`,
+                range: tk.range
+            });
+        }
+    }
+
+    lookup_function(tk: LexToken) {
+        const name = tk.value;
+        const arr = this.function_refs[name] || (this.function_refs[name] = []);
+        arr.push(tk);
+        if (!(name in this.functions)) {
+            this.add_error({
+                id: EboErrors.UndeclaredVariable,
+                severity: Severity.Error,
+                message: `Function '${name}' is not declared`,
+                range: tk.range
+            });
+        }
+    }
+
+    lookup_line(tk: LexToken) {
+        const name = tk.value;
+        const arr = this.line_refs[name] || (this.line_refs[name] = []);
+        arr.push(tk);
+    }
+
+    declare_line(lineTk: LexToken) {
+        const name = lineTk.value;
+        if (name in this.lines) {
+            this.add_error({
+                id: EboErrors.DuplicateLine,
+                severity: Severity.Error,
+                message: `Line '${name}' already exists.`,
+                range: lineTk.range
+            });
+        } else {
+            this.lines[name] = lineTk;
+            this.linenames.push(name);
+        }
+    }
+
+    declare_variable(variable: VariableDecl) {
+        const name = variable.name;
+        if (name in this.symbols) {
+            this.add_error({
+                id: EboErrors.DuplicateDeclaration,
+                severity: Severity.Error,
+                message: `Variable '${name}' is redeclared`,
+                range: variable.pos
+            });
+        } else {
+            this.symbols[name] = variable;
+            this.variables[name] = variable;
+        }
+    }
+
+    declare_function(functionDecl: FunctionDecl) {
+        const name = functionDecl.name;
+        if (name in this.symbols) {
+            this.add_error({
+                id: EboErrors.DuplicateDeclaration,
+                severity: Severity.Error,
+                message: `Function '${name}' is redeclared!`,
+                range: functionDecl.pos
+            });
+        } else {
+            this.symbols[name] = functionDecl;
+            this.functions[name] = functionDecl;
+        }
+    }
+
+    declare_parameter(parameter: ParameterDecl) {
+        const name = parameter.name;
+        if (name in this.symbols) {
+            this.add_error({
+                id: EboErrors.DuplicateDeclaration,
+                severity: Severity.Error,
+                message: `Parameter '${name}' is redeclared!`,
+                range: parameter.pos
+            });
+        } else {
+            if (this.parameterids[parameter.id]) {
+                this.add_error({
+                    id: EboErrors.DuplicateDeclaration,
+                    severity: Severity.Error,
+                    message: `Parameter '${name}' is redeclared with existing id: ${parameter.id}!`,
+                    range: parameter.pos
+                });
+            }
+            this.symbols[name] = parameter;
+            this.parameters[name] = parameter;
+            this.parameterids[parameter.id] = name;
+        }
+    }
+
+    add_error(info: ErrorInfo) {
+        this.errors.push(info);
+    }
+}
+
 
 export function ebo_parse_file(fileText: string) {
 
-    const lines = {
-        fallthru: false,
-        names: [] as string[],
-        ids: {} as { [name: string]: LexToken[] },
-        gotos: [] as LexToken[]
-    };
+    let ast = new Ast();
 
     const tkn_lists = ebo_scan_text(fileText);
     const tkData = tkn_lists.map(l =>
@@ -381,20 +519,10 @@ export function ebo_parse_file(fileText: string) {
     tkn_lists.forEach(tks => {
         tks.forEach(tk => {
             if (tk.type === LxToken.TK_COMMENT && /fallthru/i.test(tk.value)) {
-                lines.fallthru = true;
+                ast.fallthru = true;
             }
         });
     });
-
-    let var_list: VariableDecl[] = [];
-    const param_list: ParameterDecl[] = [];
-    const fn_list: FunctionDecl[] = [];
-
-    const variables: { [name: string]: LexToken[] } = {};
-    const function_calls: { [name: string]: LexToken[] } = {};
-
-    const errors: LexToken[] = [];
-    let issues: ErrorInfo[] = [];
 
 
     for (let line of tkData) {
@@ -403,12 +531,8 @@ export function ebo_parse_file(fileText: string) {
 
         const lineTk = getLineId(cur);
         if (lineTk) {
-            const name = lineTk.value as string;
-            const a = lines.ids[name] || (lines.ids[name] = []);
-            lines.names.push(name);
-            a.push(lineTk);
+            ast.declare_line(lineTk);
         }
-
         cur.pos = -1;
 
         while (++cur.pos < cur.items.length) {
@@ -418,9 +542,8 @@ export function ebo_parse_file(fileText: string) {
                 case EboKeyWords.BASEDON:
                     const bo = parse_basedon(cur);
                     if (bo) {
-                        const a = variables[bo.variable.value] || (variables[bo.variable.value] = []);
-                        a.push(bo.variable);
-                        bo.lines.forEach(line => { lines.gotos.push(line); });
+                        ast.lookup_variable(bo.variable);
+                        bo.lines.forEach(line => { ast.lookup_line(line); });
                     }
                     break;
 
@@ -428,7 +551,7 @@ export function ebo_parse_file(fileText: string) {
                 case EboKeyWords.GOTO: {
                     const gt = parse_goto(cur);
                     if (gt) {
-                        lines.gotos.push(gt);
+                        ast.lookup_line(gt);
                     }
                     break;
                 }
@@ -437,11 +560,7 @@ export function ebo_parse_file(fileText: string) {
                     if (cur.pos + 1 >= cur.items.length) { break; }
                     ++cur.pos;
                     parse_list(cur).forEach(tk => {
-                        fn_list.push({
-                            type: SymbolType.Function,
-                            name: tk.value,
-                            pos: tk.range,
-                        });
+                        ast.declare_function(functionDecl(tk));
                     });
                     break;
                 }
@@ -460,32 +579,40 @@ export function ebo_parse_file(fileText: string) {
                 case EboKeyWords.NUMBER:
                 case EboKeyWords.STRING:
                 case EboKeyWords.DATETIME: {
-                    const decls = parse_declaration(cur);
-                    var_list = var_list.concat(decls);
+                    parse_declaration(cur)
+                        .forEach(decl => {
+                            ast.declare_variable(decl);
+                        });
                     break;
                 }
 
                 case LxToken.TK_ERROR: {
-                    errors.push(tk);
+                    ast.add_error({
+                        id: EboErrors.ParseError,
+                        severity: Severity.Error,
+                        message: `Parse error '${tk.value}'`,
+                        range: tk.range
+                    });
                     break;
                 }
 
                 case EboKeyWords.ARG: {
                     const decl = parse_parameter(cur);
                     if (decl) {
-                        param_list.push(decl);
+                        ast.declare_parameter(decl);
                     }
                     break;
                 }
 
+                case LxToken.TK_FNCALL:
+                    ast.lookup_function(tk);
+                    break;
+
                 case LxToken.TK_IDENT:
-                    if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.PARENTHESES_OP])) {
-                        function_calls[tk.value] = [tk];
-                    } else if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON]) && tk.range.begin === 0) {
+                    if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON]) && tk.range.begin === 0) {
                         // skip line reference
                     } else {
-                        const a = variables[tk.value] || (variables[tk.value] = []);
-                        a.push(tk);
+                        ast.lookup_variable(tk);
                     }
                     break;
 
@@ -495,168 +622,76 @@ export function ebo_parse_file(fileText: string) {
         }
     }
 
+    let issues: ErrorInfo[] = ast.errors;
     // ---- do checks
-
-    for (let tk of errors) {
-        issues.push({
-            id: EboErrors.ParseError,
-            severity: Severity.Error,
-            message: 'Parsing Error.',
-            range: tk.range
-        });
-    }
 
     // ---- line checks
 
-    const gtnames = lines.gotos.map(tk => tk.value);
-
-    for (let id in lines.ids) {
-
-        if (lines.ids[id].length > 1) {
-            const x = lines.ids[id].map(tk => ({
-                id: EboErrors.DuplicateLine,
-                severity: Severity.Error,
-                message: 'Line defined multiple times.',
-                range: tk.range
-            }));
-            issues = issues.concat(x);
-        }
-
-        if (!gtnames.includes(id) && !lines.fallthru) {
-            const tk = lines.ids[id][0];
-            if (tk.value !== lines.names[0]) {
-                issues.push(
-                    {
-                        id: EboErrors.UnreferencedLine,
-                        severity: Severity.Warning,
-                        message: 'Line not referenced.',
-                        range: tk.range
-                    }
-                );
-            }
-        }
+    if (!ast.fallthru) {
+        Object.keys(ast.lines)
+            .forEach(name => {
+                if (name in ast.line_refs || ast.linenames[0] === name) {
+                    return;
+                }
+                issues.push({
+                    id: EboErrors.UnreferencedLine,
+                    severity: Severity.Warning,
+                    message: `Line '${name}' not referenced.`,
+                    range: ast.lines[name].range
+                });
+            });
     }
 
-    for (let tk of lines.gotos) {
-        if (lines.ids[tk.value]) {
-            lines.ids[tk.value].push(tk);
-        } else {
+    Object.keys(ast.line_refs).forEach(name => {
+        if (name in ast.lines) { return; }
+        ast.line_refs[name].forEach(tk => {
             issues.push({
                 id: EboErrors.UndefinedLine,
                 severity: Severity.Error,
-                message: 'Line not defined.',
+                message: `Line '${name}' not defined.`,
                 range: tk.range
             });
-        }
-    }
+        });
+    });
 
-    // --- symbol info
+    // --- ussage checks
 
-    const varNames = Object.keys(variables);
-    const decNames: string[] = [];
-
-    // --- parameter checks
-
-    for (let parm of param_list) {
-        decNames.push(parm.name);
-        if (!varNames.includes(parm.name)) {
+    Object.keys(ast.parameters)
+        .forEach(name => {
+            if (name in ast.variable_refs) { return; }
             issues.push({
                 id: EboErrors.UnreferencedDeclaration,
                 severity: Severity.Information,
-                message: 'Parameter is not used.',
-                range: parm.pos
+                message: `Parameter '${name}' is not used.`,
+                range: ast.parameters[name].pos
             });
-        }
-    }
+        });
 
-    // --- variable checks
-
-    for (let tk of var_list) {
-        if (decNames.includes(tk.name)) {
+    Object.keys(ast.variables)
+        .forEach(name => {
+            if (name in ast.variable_refs) { return; }
             issues.push({
-                id: EboErrors.DuplicateDeclaration,
-                severity: Severity.Error,
-                message: 'Variable is already declared.',
-                range: tk.pos
+                id: EboErrors.UnreferencedDeclaration,
+                severity: Severity.Information,
+                message: `Variable '${name}' is not used.`,
+                range: ast.variables[name].pos
             });
-        } else {
-            decNames.push(tk.name);
-            if (!varNames.includes(tk.name)) {
-                issues.push({
-                    id: EboErrors.UnreferencedDeclaration,
-                    severity: Severity.Information,
-                    message: 'Variable is not used.',
-                    range: tk.pos
-                });
-            }
-        }
-    }
+        });
 
-    for (let name of varNames) {
-        if (!decNames.includes(name)) {
-            const lst = variables[name].map(tk => ({
-                id: EboErrors.UndeclaredVariable,
-                severity: Severity.Error,
-                message: 'Variable is not declared.',
-                range: tk.range
-            }));
-            issues = issues.concat(lst);
-        }
-    }
-
-    // --- function checks
-
-    const fnMap: { [name: string]: FunctionDecl } = {};
-
-    for (let fn of fn_list) {
-        if (fn.name in fnMap) {
+    Object.keys(ast.functions)
+        .forEach(name => {
+            if (name in ast.function_refs) { return; }
             issues.push({
-                id: EboErrors.RedeclaredFunction,
-                severity: Severity.Error,
-                message: 'Function is redeclared.',
-                range: fn.pos
+                id: EboErrors.UnreferencedFunction,
+                severity: Severity.Information,
+                message: `Function '${name}' is not used.`,
+                range: ast.functions[name].pos
             });
-        } else {
-            fnMap[fn.name] = fn;
-            if (!(fn.name in function_calls)) {
-                issues.push({
-                    id: EboErrors.UnreferencedFunction,
-                    severity: Severity.Information,
-                    message: 'Function is not used.',
-                    range: fn.pos
-                });
-            }
-            if (fn.name in variables) {
-                variables[fn.name].forEach(tk => {
-                    issues.push({
-                        id: EboErrors.FunctionUsedAsVariable,
-                        severity: Severity.Error,
-                        message: 'Function is used as a variable.',
-                        range: tk.range
-                    });
-                });
-            }
-        }
-    }
-
-    for (let name in function_calls) {
-        if (!(name in fnMap)) {
-            function_calls[name].forEach(fn => {
-                issues.push({
-                    id: EboErrors.UndeclaredFunction,
-                    severity: Severity.Error,
-                    message: 'Function is not declared.',
-                    range: fn.range
-                });
-            });
-        }
-    }
+        });
 
     return {
         issues,
-        variables,
-        declarations: var_list,
-        lines
+        ast
     };
 }
 
