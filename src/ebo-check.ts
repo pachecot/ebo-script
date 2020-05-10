@@ -451,10 +451,20 @@ class Ast {
 
 
 const states = {
-
-    [EboKeyWords.NUMERIC]: 'DECLARE_MOD',
-    [EboKeyWords.STRING]: 'DECLARE_MOD',
-    [EboKeyWords.DATETIME]: 'DECLARE_MOD',
+    INIT: {
+        [EboKeyWords.NUMERIC]: 'DECLARE_MOD',
+        [EboKeyWords.STRING]: 'DECLARE_MOD',
+        [EboKeyWords.DATETIME]: 'DECLARE_MOD',
+        [EboKeyWords.BASEDON]: 'BASEDON',
+        [EboKeyWords.GO]: 'GO',
+        [EboKeyWords.GOTO]: 'GOTO',
+        [EboKeyWords.ARG]: 'ARG',
+        [LxToken.TK_IDENT]: 'IDENT',
+        [LxToken.TK_ERROR]: 'ERROR',
+        [LxToken.TK_FNCALL]: 'FNCALL',
+        [EboKeyWords.LINE]: 'LINE_TAG',
+        [EboKeyWords.FUNCTION]: 'FUNCTION',
+    },
     DECLARE_MOD: {
         [EboKeyWords.BUFFERED]: 'DECLARE_IN',
         [EboKeyWords.TRIGGERED]: 'DECLARE_IN',
@@ -495,8 +505,6 @@ const states = {
                 });
         }
     },
-
-    [EboKeyWords.BASEDON]: 'BASEDON',
     BASEDON: {
         [LxToken.TK_IDENT]: 'BASEDON_I'
     },
@@ -524,7 +532,6 @@ const states = {
         [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST',
         [LxToken.TK_EOL]: 'BASEDON_EX'
     },
-
     BASEDON_EX: {
         on(ast: Ast, cur: Cursor) {
             const bo = parse_basedon(cur);
@@ -534,15 +541,12 @@ const states = {
             }
         }
     },
-
-    [EboKeyWords.GO]: 'GO',
     GO: {
         [EboKeyWords.TO]: 'GOTO',
         [EboKeyWords.LINE]: 'GOTO_LINE',
         [LxToken.TK_IDENT]: 'GOTO_DONE',
         [LxToken.TK_NUMBER]: 'GOTO_DONE'
     },
-    [EboKeyWords.GOTO]: 'GOTO',
     GOTO: {
         [EboKeyWords.LINE]: 'GOTO_LINE',
         [LxToken.TK_IDENT]: 'GOTO_DONE',
@@ -561,8 +565,6 @@ const states = {
             }
         }
     },
-
-    [EboKeyWords.ARG]: 'ARG',
     ARG: {
         [LxToken.TK_NUMBER]: 'ARG_ID',
     },
@@ -577,20 +579,10 @@ const states = {
             }
         }
     },
-
-    [LxToken.TK_FNCALL]: {
-        on(ast: Ast, cur: Cursor) {
-            ast.lookup_function(cur.current());
-        }
-    },
-
-    [LxToken.TK_IDENT]: 'IDENT',
-
     IDENT: {
         [Symbols.COLON]: 'LINE_ID',
-        '*': 'IDENT_ID'
+        _: 'IDENT_ID'
     },
-
     IDENT_ID: {
         on(ast: Ast, cur: Cursor) {
             ast.lookup_variable(cur.current());
@@ -601,15 +593,11 @@ const states = {
             ast.declare_line(cur.current());
         }
     },
-
-    [LxToken.TK_FNCALL]: 'FNCALL',
     FNCALL: {
         on(ast: Ast, cur: Cursor) {
             ast.lookup_function(cur.current());
         }
     },
-
-    [EboKeyWords.LINE]: 'LINE_TAG',
     LINE_TAG: {
         [LxToken.TK_IDENT]: 'LINE_TAG_END',
         [LxToken.TK_NUMBER]: 'LINE_TAG_END'
@@ -620,8 +608,6 @@ const states = {
             ast.declare_line(cur.item(1));
         }
     },
-
-    [EboKeyWords.FUNCTION]: 'FUNCTION',
     FUNCTION: {
         [LxToken.TK_IDENT]: 'FUNCTIONS',
     },
@@ -637,8 +623,6 @@ const states = {
             });
         }
     },
-
-    [LxToken.TK_ERROR]: 'ERROR',
     ERROR: {
         on(ast: Ast, cur: Cursor) {
             let tk = cur.current();
@@ -650,7 +634,6 @@ const states = {
             });
         }
     },
-
 };
 
 
@@ -681,25 +664,28 @@ export function ebo_parse_file(fileText: string) {
         const cur = new LineCursor(line);
 
         cur.pos = -1;
-        let state: any = states;
+        let state: any = states.INIT;
         let stack: LexToken[] = [];
 
         while (++cur.pos < cur.items.length) {
             const tk = cur.current();
 
-            let id = state[tk.type] || state['*'];
-            let next = (states as any)[id];
-            if (next) {
+            let next = state[tk.type];
+            if (next || state._) {
                 stack.push(tk);
-                state = next;
-                if (state && state.on) {
-                    const cur1 = new LineCursor(stack);
-                    state.on(ast, cur1);
-                    state = states;
-                    stack = [];
+                state = (states as any)[next || state._];
+                if (state) {
+                    if (state.on) {
+                        const cur1 = new LineCursor(stack);
+                        state.on(ast, cur1);
+                        state = states.INIT;
+                        stack = [];
+                    }
+                } else {
+                    ///error
                 }
             } else {
-                state = states;
+                state = states.INIT;
                 stack = [];
             }
         }
