@@ -37,8 +37,8 @@ const reNumber = /\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?/;
 const reTime = /\d{1,2}:\d{2}(?:\s*(?:am|pm))?/;
 const reSymbol = /(?:>=|<=|<>|[-,;!*&%^+<>=:~/\\()[\]])/;
 const reKWords = new RegExp("(?:" + Object.keys(EboKeyWords).filter(x => isNaN(Number(x))).join('|') + ")\\b");
-const reFnCall = /[\w_][\w\d_]+(?=\s*\()/;
-const reToken = /[\w_][\w\d_]+\b/;
+const reFnCall = /[\w_][\w\d_]*(?=\s*\()/;
+const reToken = /[\w_][\w\d_]*\b/;
 const reErr = /./;
 
 export type Token = LxToken | EboKeyWords | Symbols;
