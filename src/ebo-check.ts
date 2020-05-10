@@ -127,47 +127,15 @@ interface Ast {
  * next position
  */
 function parse_goto_statement(cur: Cursor): boolean {
-
-    const remain = cur.remain();
-    if (remain < 1) {
-        return false;
-    }
-    let pos = cur.pos;
-
-    switch (cur.items[pos].type) {
-
-        case EboKeyWords.GO:
-            ++pos;
-            if (pos === remain) { return false; }
-            if (cur.items[pos].type === EboKeyWords.TO) { ++pos; }
-            if (pos === remain) { return false; }
-            if (cur.items[pos].type === EboKeyWords.LINE) { ++pos; }
-            if (pos === remain) { return false; }
-            cur.pos = pos;
-            return true;
-
-        case EboKeyWords.GOTO:
-            ++pos;
-            if (pos === remain) { return false; }
-            if (cur.items[pos].type === EboKeyWords.LINE) { ++pos; }
-            if (pos === remain) { return false; }
-            cur.pos = pos;
-            return true;
-
-        default:
-            return false;
-
-    }
+    const gotostags: Token[] = [EboKeyWords.GO, EboKeyWords.TO, EboKeyWords.GOTO, EboKeyWords.LINE];
+    while (gotostags.includes(cur.current().type)) { ++cur.pos; }
+    return true;
 }
 
-
-function parse_goto(cur: Cursor): LexToken | undefined {
-    if (parse_goto_statement(cur) && cur.remain() > 0 && cur.items[cur.pos].type === LxToken.TK_IDENT) {
-        return cur.current();
-    }
-    return undefined;
+function parse_goto(cur: Cursor): LexToken {
+    parse_goto_statement(cur);
+    return cur.current();
 }
-
 
 function parse_list_item(cur: Cursor): LexToken | undefined {
     if (test_token_seq(cur, [LxToken.TK_IDENT])) {
@@ -309,22 +277,15 @@ interface BasedonExpr {
 
 function parse_basedon(cur: Cursor): BasedonExpr | undefined {
 
-    if (test_token_seq(cur, [EboKeyWords.BASEDON, LxToken.TK_IDENT]) && cur.remain() > 3) {
-
-        const variable = cur.item(1);
-        let lines: LexToken[] = [];
-        cur.advance(2);
-
-        if (parse_goto_statement(cur)) {
-            while (cur.remain() > 0 && cur.current().type === LxToken.TK_IDENT) {
-                lines.push(cur.current());
-                cur.advance();
-            }
-        }
-        return { variable, lines };
+    const variable = cur.item(1);
+    let lines: LexToken[] = [];
+    cur.advance(2);
+    parse_goto_statement(cur);
+    while (cur.remain() > 0 && cur.current().type !== LxToken.TK_EOL) {
+        lines.push(cur.current());
+        cur.advance();
     }
-
-    return undefined;
+    return { variable, lines };
 }
 
 
@@ -343,23 +304,6 @@ export class LineCursor implements Cursor {
     advance(amt = 1) {
         this.pos += amt;
     }
-}
-
-
-function getLineId(cur: Cursor) {
-
-    if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON])) {
-        let tk = cur.current();
-        return tk;
-    }
-
-    if (test_token_seq(cur, [EboKeyWords.LINE])) {
-        let tk = cur.item(1);
-        if (tk.type === LxToken.TK_IDENT || tk.type === LxToken.TK_NUMBER) {
-            return tk;
-        }
-    }
-    return undefined;
 }
 
 function functionDecl(tk: LexToken): FunctionDecl {
@@ -506,6 +450,213 @@ class Ast {
 }
 
 
+const states = {
+
+    [EboKeyWords.NUMERIC]: 'DECLARE_MOD',
+    [EboKeyWords.STRING]: 'DECLARE_MOD',
+    [EboKeyWords.DATETIME]: 'DECLARE_MOD',
+    DECLARE_MOD: {
+        [EboKeyWords.BUFFERED]: 'DECLARE_IN',
+        [EboKeyWords.TRIGGERED]: 'DECLARE_IN',
+        [EboKeyWords.PUBLIC]: 'DECLARE_IDENT',
+        [EboKeyWords.INPUT]: 'DECLARE_IDENT',
+        [EboKeyWords.OUTPUT]: 'DECLARE_IDENT',
+        [LxToken.TK_IDENT]: 'DECLARES_LOC'
+    },
+    DECLARE_IN: {
+        [EboKeyWords.INPUT]: 'DECLARE_IDENT'
+    },
+    DECLARE_IDENT: {
+        [LxToken.TK_IDENT]: 'DECLARES'
+    },
+    DECLARE_IDENT_LOC: {
+        [LxToken.TK_IDENT]: 'DECLARES_LOC'
+    },
+    DECLARE_LOC_AR_SZ: {
+        [LxToken.TK_NUMBER]: 'DECLARE_LOC_AR_CL',
+    },
+    DECLARE_LOC_AR_CL: {
+        [Symbols.BRACKET_CL]: 'DECLARES_LOC',
+    },
+    DECLARES_LOC: {
+        [Symbols.BRACKET_OP]: 'DECLARE_LOC_AR_SZ',
+        [Symbols.COMMA]: 'DECLARE_IDENT_LOC',
+        [LxToken.TK_EOL]: 'DECLARES_END'
+    },
+    DECLARES: {
+        [Symbols.COMMA]: 'DECLARE_IDENT',
+        [LxToken.TK_EOL]: 'DECLARES_END'
+    },
+    DECLARES_END: {
+        on(ast: Ast, cur: Cursor) {
+            parse_declaration(cur)
+                .forEach(decl => {
+                    ast.declare_variable(decl);
+                });
+        }
+    },
+
+    [EboKeyWords.BASEDON]: 'BASEDON',
+    BASEDON: {
+        [LxToken.TK_IDENT]: 'BASEDON_I'
+    },
+    BASEDON_I: {
+        [EboKeyWords.GO]: 'BASEDON_GO',
+        [EboKeyWords.GOTO]: 'BASEDON_GOTO',
+    },
+    BASEDON_GO: {
+        [EboKeyWords.TO]: 'BASEDON_GOTO',
+        [EboKeyWords.LINE]: 'BASEDON_GOTO_LINE',
+        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
+        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
+    },
+    BASEDON_GOTO: {
+        [EboKeyWords.LINE]: 'BASEDON_GOTO_LINE',
+        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
+        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
+    },
+    BASEDON_GOTO_LINE: {
+        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
+        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
+    },
+    BASEDON_GOTO_LIST: {
+        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
+        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST',
+        [LxToken.TK_EOL]: 'BASEDON_EX'
+    },
+
+    BASEDON_EX: {
+        on(ast: Ast, cur: Cursor) {
+            const bo = parse_basedon(cur);
+            if (bo) {
+                ast.lookup_variable(bo.variable);
+                bo.lines.forEach(line => { ast.lookup_line(line); });
+            }
+        }
+    },
+
+    [EboKeyWords.GO]: 'GO',
+    GO: {
+        [EboKeyWords.TO]: 'GOTO',
+        [EboKeyWords.LINE]: 'GOTO_LINE',
+        [LxToken.TK_IDENT]: 'GOTO_DONE',
+        [LxToken.TK_NUMBER]: 'GOTO_DONE'
+    },
+    [EboKeyWords.GOTO]: 'GOTO',
+    GOTO: {
+        [EboKeyWords.LINE]: 'GOTO_LINE',
+        [LxToken.TK_IDENT]: 'GOTO_DONE',
+        [LxToken.TK_NUMBER]: 'GOTO_DONE'
+    },
+    GOTO_LINE: {
+        [EboKeyWords.LINE]: 'BASEDON_GOTO',
+        [LxToken.TK_IDENT]: 'GOTO_DONE',
+        [LxToken.TK_NUMBER]: 'GOTO_DONE'
+    },
+    GOTO_DONE: {
+        on(ast: Ast, cur: Cursor) {
+            const gt = parse_goto(cur);
+            if (gt) {
+                ast.lookup_line(gt);
+            }
+        }
+    },
+
+    [EboKeyWords.ARG]: 'ARG',
+    ARG: {
+        [LxToken.TK_NUMBER]: 'ARG_ID',
+    },
+    ARG_ID: {
+        [LxToken.TK_IDENT]: 'ARG_END'
+    },
+    ARG_END: {
+        on(ast: Ast, cur: Cursor) {
+            const decl = parse_parameter(cur);
+            if (decl) {
+                ast.declare_parameter(decl);
+            }
+        }
+    },
+
+    [LxToken.TK_FNCALL]: {
+        on(ast: Ast, cur: Cursor) {
+            ast.lookup_function(cur.current());
+        }
+    },
+
+    [LxToken.TK_IDENT]: 'IDENT',
+
+    IDENT: {
+        [Symbols.COLON]: 'LINE_ID',
+        '*': 'IDENT_ID'
+    },
+
+    IDENT_ID: {
+        on(ast: Ast, cur: Cursor) {
+            ast.lookup_variable(cur.current());
+        }
+    },
+    LINE_ID: {
+        on(ast: Ast, cur: Cursor) {
+            ast.declare_line(cur.current());
+        }
+    },
+
+    [LxToken.TK_FNCALL]: 'FNCALL',
+    FNCALL: {
+        on(ast: Ast, cur: Cursor) {
+            ast.lookup_function(cur.current());
+        }
+    },
+
+    [EboKeyWords.LINE]: 'LINE_TAG',
+    LINE_TAG: {
+        [LxToken.TK_IDENT]: 'LINE_TAG_END',
+        [LxToken.TK_NUMBER]: 'LINE_TAG_END'
+    },
+
+    LINE_TAG_END: {
+        on(ast: Ast, cur: Cursor) {
+            ast.declare_line(cur.item(1));
+        }
+    },
+
+    [EboKeyWords.FUNCTION]: 'FUNCTION',
+    FUNCTION: {
+        [LxToken.TK_IDENT]: 'FUNCTIONS',
+    },
+    FUNCTIONS: {
+        [Symbols.COMMA]: 'FUNCTION',
+        [LxToken.TK_EOL]: 'FUNCTION_EX',
+    },
+    FUNCTION_EX: {
+        on(ast: Ast, cur: Cursor) {
+            ++cur.pos;
+            parse_list(cur).forEach(tk => {
+                ast.declare_function(functionDecl(tk));
+            });
+        }
+    },
+
+    [LxToken.TK_ERROR]: 'ERROR',
+    ERROR: {
+        on(ast: Ast, cur: Cursor) {
+            let tk = cur.current();
+            ast.add_error({
+                id: EboErrors.ParseError,
+                severity: Severity.Error,
+                message: `Parse error '${tk.value}'`,
+                range: tk.range
+            });
+        }
+    },
+
+};
+
+
+
+
+
 export function ebo_parse_file(fileText: string) {
 
     let ast = new Ast();
@@ -529,95 +680,27 @@ export function ebo_parse_file(fileText: string) {
 
         const cur = new LineCursor(line);
 
-        const lineTk = getLineId(cur);
-        if (lineTk) {
-            ast.declare_line(lineTk);
-        }
         cur.pos = -1;
+        let state: any = states;
+        let stack: LexToken[] = [];
 
         while (++cur.pos < cur.items.length) {
             const tk = cur.current();
-            switch (tk.type) {
 
-                case EboKeyWords.BASEDON:
-                    const bo = parse_basedon(cur);
-                    if (bo) {
-                        ast.lookup_variable(bo.variable);
-                        bo.lines.forEach(line => { ast.lookup_line(line); });
-                    }
-                    break;
-
-                case EboKeyWords.GO:
-                case EboKeyWords.GOTO: {
-                    const gt = parse_goto(cur);
-                    if (gt) {
-                        ast.lookup_line(gt);
-                    }
-                    break;
+            let id = state[tk.type] || state['*'];
+            let next = (states as any)[id];
+            if (next) {
+                stack.push(tk);
+                state = next;
+                if (state && state.on) {
+                    const cur1 = new LineCursor(stack);
+                    state.on(ast, cur1);
+                    state = states;
+                    stack = [];
                 }
-
-                case EboKeyWords.FUNCTION: {
-                    if (cur.pos + 1 >= cur.items.length) { break; }
-                    ++cur.pos;
-                    parse_list(cur).forEach(tk => {
-                        ast.declare_function(functionDecl(tk));
-                    });
-                    break;
-                }
-
-                case EboKeyWords.LINE: {
-                    if (cur.pos + 1 >= cur.items.length) { break; }
-                    ++cur.pos;
-                    const tk1 = cur.current();
-                    if (tk1.type === LxToken.TK_IDENT || tk1.type === LxToken.TK_NUMBER) {
-                        ++cur.pos;
-                    }
-                    break;
-                }
-
-                case EboKeyWords.NUMERIC:
-                case EboKeyWords.NUMBER:
-                case EboKeyWords.STRING:
-                case EboKeyWords.DATETIME: {
-                    parse_declaration(cur)
-                        .forEach(decl => {
-                            ast.declare_variable(decl);
-                        });
-                    break;
-                }
-
-                case LxToken.TK_ERROR: {
-                    ast.add_error({
-                        id: EboErrors.ParseError,
-                        severity: Severity.Error,
-                        message: `Parse error '${tk.value}'`,
-                        range: tk.range
-                    });
-                    break;
-                }
-
-                case EboKeyWords.ARG: {
-                    const decl = parse_parameter(cur);
-                    if (decl) {
-                        ast.declare_parameter(decl);
-                    }
-                    break;
-                }
-
-                case LxToken.TK_FNCALL:
-                    ast.lookup_function(tk);
-                    break;
-
-                case LxToken.TK_IDENT:
-                    if (test_token_seq(cur, [LxToken.TK_IDENT, Symbols.COLON]) && tk.range.begin === 0) {
-                        // skip line reference
-                    } else {
-                        ast.lookup_variable(tk);
-                    }
-                    break;
-
-                default:
-                    break;
+            } else {
+                state = states;
+                stack = [];
             }
         }
     }
