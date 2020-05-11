@@ -137,118 +137,119 @@ function parse_goto(cur: Cursor): LexToken {
     return cur.current();
 }
 
-function parse_list_item(cur: Cursor): LexToken | undefined {
-    if (test_token_seq(cur, [LxToken.TK_IDENT])) {
-        let lt = cur.items[cur.pos];
-        ++cur.pos;
-        if (test_token_seq(cur, [Symbols.BRACKET_OP, LxToken.TK_NUMBER, Symbols.BRACKET_CL])) {
+
+
+function parse_variable_list_item(cur: Cursor): VariableInst {
+    let tk = cur.current();
+    cur.advance();
+    if (cur.item(0).type === Symbols.BRACKET_OP) {
             let id = cur.item(1);
             cur.advance(3);
+        return {
+            name: tk.value,
+            token: tk,
+            index: Number(id.value)
+        };
         }
-        return lt;
+    return {
+        name: tk.value,
+        token: tk
+    };
     }
-    return undefined;
+
+function parse_variable_list_rest(cur: Cursor): VariableInst[] {
+    let tks: VariableInst[] = [];
+    while (cur.current().type === Symbols.COMMA) {
+        cur.advance();
+        let tk = parse_variable_list_item(cur);
+        if (tk) { tks.push(tk); }
+}
+    return tks;
 }
 
-
-function parse_list_rest(cur: Cursor): LexToken[] {
-    let lt: LexToken[] = [];
-    while (test_token_seq(cur, [Symbols.COMMA, LxToken.TK_IDENT])) {
-        ++cur.pos;
-        let itm = parse_list_item(cur);
-        if (itm) { lt.push(itm); }
-    }
-    return lt;
-}
-
-function parse_list(cur: Cursor): LexToken[] {
-    let itm = parse_list_item(cur);
+function parse_variable_list(cur: Cursor): VariableInst[] {
+    let itm = parse_variable_list_item(cur);
     if (itm) {
-        let lt = [itm];
-        lt = lt.concat(parse_list_rest(cur));
-        --cur.pos;
-        return lt;
+        const tks = [itm].concat(parse_variable_list_rest(cur));
+        cur.advance(-1);
+        return tks;
+    }
+    return [];
+}
+
+/**
+ * comma separated list of tokens
+ */
+function parse_list(cur: Cursor): LexToken[] {
+    let tk = cur.current();
+    if (tk) {
+        cur.advance();
+        let tks: LexToken[] = [tk];
+        while (cur.current().type === Symbols.COMMA) {
+            cur.advance();
+            tks.push(cur.current());
+            cur.advance();
+    }
+        cur.advance(-1);
+        return tks;
     }
     return [];
 }
 
 
-function tmMap<U>(typeMap: { [id: string]: U }): (tk: Token) => U | undefined;
-function tmMap<U>(typeMap: { [id: string]: U }, def?: U): (tk: Token) => U;
-function tmMap<U>(typeMap: { [id: string]: U }, def?: U) {
-    return function (tk: Token) {
-        return typeMap[tk] || def;
-    };
+const declaration_states: { [id: string]: { [t: number]: [string, { [name: string]: number }] } } = {
+    _: {
+        [EboDeclarations.STRING]: ["T", { type: SymbolType.StringType }],
+        [EboDeclarations.NUMERIC]: ["T", { type: SymbolType.Numeric }],
+        [EboDeclarations.DATETIME]: ["T", { type: SymbolType.DateTime }],
+    },
+    "T": {
+        [EboDeclarations.INPUT]: ['$', { modifier: VarModifier.Input }],
+        [EboDeclarations.OUTPUT]: ['$', { modifier: VarModifier.Output }],
+        [EboDeclarations.PUBLIC]: ['$', { modifier: VarModifier.Public }],
+        [EboDeclarations.BUFFERED]: ["M", { tag: VarTag.Buffered }],
+        [EboDeclarations.TRIGGERED]: ["M", { tag: VarTag.Triggered }],
+    },
+    "M": {
+        [EboDeclarations.INPUT]: ['$', { modifier: VarModifier.Input }],
+        [EboDeclarations.OUTPUT]: ['$', { modifier: VarModifier.Output }],
+        [EboDeclarations.PUBLIC]: ['$', { modifier: VarModifier.Public }],
 }
-
-let typeMapper = tmMap({
-    [EboKeyWords.NUMERIC]: SymbolType.Numeric,
-    [EboKeyWords.STRING]: SymbolType.StringType,
-    [EboKeyWords.DATETIME]: SymbolType.DateTime,
-});
-
-let tagMapper = tmMap({
-    [EboKeyWords.TRIGGERED]: VarTag.Triggered,
-    [EboKeyWords.BUFFERED]: VarTag.Buffered,
-});
-
-let modMapper = tmMap({
-    [EboKeyWords.INPUT]: VarModifier.Input,
-    [EboKeyWords.OUTPUT]: VarModifier.Output,
-    [EboKeyWords.PUBLIC]: VarModifier.Public,
-});
-
-
+};
 
 function parse_declaration(cur: Cursor): VariableDecl[] {
 
-    let tk = cur.current();
-    let ty = typeMapper(tk.type) as VariableType | undefined;
-    if (ty) {
-        ++cur.pos;
-        tk = cur.current();
+    let variable_dec = {
+        type: SymbolType.Numeric,
+        tag: VarTag.None,
+        modifier: VarModifier.Local
+    };
 
-        let tg = tagMapper(tk.type);
-        if (tg) {
-            ++cur.pos;
-            tk = cur.current();
+    let state_name = '_';
+    while (state_name !== '$') {
+        let tk = cur.current();
+        let next = declaration_states[state_name][tk.type];
+        if (next) {
+            cur.advance();
+            Object.assign(variable_dec, next[1]);
+            state_name = next[0];
         } else {
-            tg = VarTag.None;
+            // local variables
+            if (state_name !== '_') { break; }
+            state_name = '$';
         }
-
-        let md = modMapper(tk.type);
-        if (md) {
-            ++cur.pos;
-            tk = cur.current();
-        } else {
-            md = VarModifier.Local;
         }
-
-        return parse_list(cur)
-            .map(tk => ({
-                name: tk.value,
-                type: ty,
-                modifier: md,
-                tag: tg,
-                range: tk.range
-            } as VariableDecl));
-    }
-
+    if (state_name !== '$') {
+        //// error!!!
     return [];
 }
 
-function test_token_seq(cur: Cursor, test: Token[]): boolean {
-    if (test.length <= cur.remain()) {
-        return test.every((tk, i) =>
-            tk === cur.items[cur.pos + i].type
-        );
-    }
-    return false;
-}
-
-
-function test_token_any(cur: Cursor, test: Token[]): boolean {
-    return (cur.remain() > 0 && test.some(tk => tk === cur.items[cur.pos].type));
+    return parse_variable_list(cur)
+        .map(vi => Object.assign({
+            name: vi.name,
+            size: vi.index,
+            range: vi.token.range
+        }, variable_dec) as VariableDecl);
 }
 
 
