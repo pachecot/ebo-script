@@ -46,7 +46,7 @@ function updateDiagnostics(document: vscode.TextDocument, collection: vscode.Dia
     if (document && document.languageId === 'ebo-script') {
 
         const ast = ebo.ebo_parse_file(document.getText());
-        const issues = ast.issues.map(issue => (
+        const issues = ast.errors.map(issue => (
             {
                 code: issue.id,
                 message: issue.message,

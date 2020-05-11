@@ -43,8 +43,7 @@ export enum Symbols {
     , TILDE               //   '~'
 }
 
-
-export enum EboKeyWords {
+export enum EboValues {
 
     '-ON' = 1000
     , OFF
@@ -113,52 +112,9 @@ export enum EboKeyWords {
     , ACTIVE
     // , AVERAGE
 
-    /// 
-
-    , AVERAGED
-    , BINARY
-    , BIT
-    , BITSTRING
-    , CHAR
-    , CHARACTERSETNOTSUPPORTED
-    , CHARTYPE
-    , CONSTANT
-    , CURRENTVALUE
-    , DELETE
-    , DIGITAL
-    , ENABLEDISABLE
-    , ENDRESTORE
-    , FAILED
-    , FAULT
-    , MISSINGREQUIREDPARAMETER
-    , 'NOVTSESSIONS-AVAILABLE'
-    , OBJECT
-    , OBJECTCLASS
-    , OBJECTDELETIONNOTPERMITTED
-    , OBJECTID
-    , OBJECTIDENTIFIERALREADYEXISTS
-    , OBJECTREFERENCE
-    , ODD
-    , OTHER
-    , OVERRANGE
-    , OVERRIDDEN
-    , PRINT
-    , RUN
-    , RUNNING
-    , SINGULAR
-    , SITE_CONFIG
-    , SITE_CONFIGB
-    
-    , MONTHTODATE
-    , MONTHTONOW
-    , ONEWEEKTODATE
-    , ONEWEEKTONOW
-    , ONEYEARTODATE
-    , ONEYEARTONOW
-    , TODAY
+    // 
 
     //
-
     , MINUTES
     , DAYS
     , MONTHS
@@ -185,6 +141,10 @@ export enum EboKeyWords {
     , TOD, TIMEOFDAY
     , WEEKDAY, WKD
 
+};
+
+export enum EboOperators {
+
     //// Operators
     // , '-'
     // , ','
@@ -210,7 +170,7 @@ export enum EboKeyWords {
     // , '<='
     // , '<>'
     // , '>='
-    , ABOVE
+    ABOVE = 1100
     , AND // &
     , BELOW
     , BETWEEN
@@ -241,10 +201,15 @@ export enum EboKeyWords {
     , PLUS
     , TIMES, MULTIPLIED, MULT
 
+
+};
+
+export enum EboFunctions {
+
     //// System Functions
 
     // Buffer Functions
-    , GETBUFFEREDVALUE
+    GETBUFFEREDVALUE = 1200
     , GETBUFFERSIZE
 
     // Conversion Functions
@@ -320,10 +285,21 @@ export enum EboKeyWords {
     , GETTRIGGEREDVARIABLENAME
     , GETTRIGGEREDVARIABLEID
 
+    // Obsolete - Continuum?
+    , ROTATE
+    , OPENLIST
+    , GETOBJECT
+    , GETNAME
+
+
+};
+
+export enum EboDeclarations {
+
 
     /// Declarations
-    , FUNCTION
-    , ARG, PARAM = ARG // funtion argument declataion
+    FUNCTION = 1300
+    , ARG, PARAM = ARG // function argument declaration
     , WEBSERVICE // web
     , NUMERIC, NUMBER = NUMERIC
     , DATETIME
@@ -335,15 +311,18 @@ export enum EboKeyWords {
     , BUFFERED
     , TRIGGERED
 
-    // Control    
+};
 
-    , END
+export enum EboControl {
+    // Control
+    TO = EboOperators.TO,
+    END = 2000
     , STOP
     , BREAK
     , CONTINUE
     , RETURN
     , BASEDON
-    , GO /* TO*/, GOTO, LINE
+    , GO, GOTO, LINE
     , IF, THEN, ELSE, ENDIF
     , FOR, STEP, NEXT
     , SELECT, CASE, ENDSELECT
@@ -351,7 +330,6 @@ export enum EboKeyWords {
     , WHEN, ENDWHEN
     , WHILE, ENDWHILE
     , WAIT, DELAY
-
 
     // Action Statements 
     , P, PR   /// print
@@ -370,8 +348,53 @@ export enum EboKeyWords {
     , START
 
     , E  /// error line
+};
 
-    // reserved words - no known usage
+export enum EboReserved {
+    // reserved words - usage?
+
+    AVERAGED = 9000
+    , BINARY
+    , BIT
+    , BITSTRING
+    , CHAR
+    , CHARACTERSETNOTSUPPORTED
+    , CHARTYPE
+    , CONSTANT
+    , CURRENTVALUE
+    , DELETE
+    , DIGITAL
+    , ENABLEDISABLE
+    , ENDRESTORE
+    , FAILED
+    , FAULT
+    , MISSINGREQUIREDPARAMETER
+    , 'NOVTSESSIONS-AVAILABLE'
+    , OBJECT
+    , OBJECTCLASS
+    , OBJECTDELETIONNOTPERMITTED
+    , OBJECTID
+    , OBJECTIDENTIFIERALREADYEXISTS
+    , OBJECTREFERENCE
+    , ODD
+    , OTHER
+    , OVERRANGE
+    , OVERRIDDEN
+    , PRINT
+    , RUN
+    , RUNNING
+    , SINGULAR
+    , SITE_CONFIG
+    , SITE_CONFIGB
+
+    , MONTHTODATE
+    , MONTHTONOW
+    , ONEWEEKTODATE
+    , ONEWEEKTONOW
+    , ONEYEARTODATE
+    , ONEYEARTONOW
+    , TODAY
+
     , ERRORS
     , ACCESSLOG
     , ACCESSSERVER
@@ -410,11 +433,27 @@ export enum EboKeyWords {
     , WHERE
     , WITH
 
-    // Obsolete - Continuum?
-    , ROTATE
-    , OPENLIST
-    , GETOBJECT
-    , GETNAME
-
 };
 
+export type EboKeyWords = EboValues | EboOperators | EboFunctions | EboDeclarations | EboControl | EboReserved;
+
+const numberFilter = (x: string) => isNaN(Number(x));
+
+export const EboKeyWordNames = Object.keys(EboValues).filter(numberFilter).concat(
+    Object.keys(EboOperators).filter(numberFilter)
+    , Object.keys(EboFunctions).filter(numberFilter)
+    , Object.keys(EboDeclarations).filter(numberFilter)
+    , Object.keys(EboControl).filter(numberFilter)
+    , Object.keys(EboReserved).filter(numberFilter)
+);
+
+export function GetEboKeyWord(x: string): EboKeyWords {
+    x = x.toUpperCase();
+    return ((EboValues as any)[x]
+        || (EboOperators as any)[x]
+        || (EboFunctions as any)[x]
+        || (EboDeclarations as any)[x]
+        || (EboControl as any)[x]
+        || (EboReserved as any)[x]
+    );
+}

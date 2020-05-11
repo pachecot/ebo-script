@@ -1,4 +1,4 @@
-import { Symbols, EboKeyWords, LxToken } from './ebo-types';
+import { Symbols, EboKeyWords, LxToken, EboKeyWordNames, GetEboKeyWord } from './ebo-types';
 
 const SymbolMap = {
     '-': Symbols.MINUS_SIGN,
@@ -36,7 +36,7 @@ const reQuotedString = /"(?:\|"|[^"|]*)*"/;
 const reNumber = /\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?/;
 const reTime = /\d{1,2}:\d{2}(?:\s*(?:am|pm))?/;
 const reSymbol = /(?:>=|<=|<>|[-,;!*&%^+<>=:~/\\()[\]])/;
-const reKWords = new RegExp("(?:" + Object.keys(EboKeyWords).filter(x => isNaN(Number(x))).join('|') + ")\\b");
+const reKWords = new RegExp("(?:" + EboKeyWordNames.join('|') + ")\\b");
 const reFnCall = /[\w_][\w\d_]*(?=\s*\()/;
 const reToken = /[\w_][\w\d_]*\b/;
 const reErr = /./;
@@ -78,7 +78,7 @@ const scannerFns: ((m: string) => Token)[] = [
 /* 4 */    () => LxToken.TK_NUMBER,
 /* 5 */    () => LxToken.TK_TIME,
 /* 6 */    (m: string) => SymbolMap[m] || LxToken.TK_OPERATOR,
-/* 7 */    (m: string): Token => (EboKeyWords as any)[m.toUpperCase()] || LxToken.TK_KEYWORD,
+/* 7 */    (m: string): Token => GetEboKeyWord(m) || LxToken.TK_KEYWORD,
 /* 8 */    () => LxToken.TK_FNCALL,
 /* 9 */    () => LxToken.TK_IDENT,
 /* 10*/    () => LxToken.TK_ERROR,
@@ -86,12 +86,12 @@ const scannerFns: ((m: string) => Token)[] = [
 
 function ebo_scan_line(line: string, line_id: number): LexToken[] {
 
-    const toks: LexToken[] = [];
+    const tks: LexToken[] = [];
     let m: RegExpExecArray | null;
     while ((m = scannerRe.exec(line))) {
         let i = 1;
         while (!m[i] && i < m.length) { ++i; }
-        toks.push({
+        tks.push({
             range: {
                 line: line_id,
                 begin: m.index,
@@ -101,7 +101,7 @@ function ebo_scan_line(line: string, line_id: number): LexToken[] {
             value: m[i]
         });
     }
-    toks.push({
+    tks.push({
         range: {
             line: line_id,
             begin: line.length,
@@ -110,7 +110,7 @@ function ebo_scan_line(line: string, line_id: number): LexToken[] {
         type: LxToken.TK_EOL,
         value: "\n"
     });
-    return toks;
+    return tks;
 }
 
 function ebo_scan_lines(lines: string[]) {

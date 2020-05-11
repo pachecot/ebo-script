@@ -1,4 +1,4 @@
-import { Symbols, EboKeyWords, LxToken } from './ebo-types';
+import { Symbols, LxToken, EboControl, EboDeclarations } from './ebo-types';
 import { TextRange, LexToken, Token, ebo_scan_text } from './ebo-scanner';
 
 
@@ -116,7 +116,7 @@ interface VariableInst {
     token: LexToken
 }
 
-interface Ast {
+interface SymbolTable {
     parameters: { [name: string]: ParameterDecl }
     variables: { [name: string]: VariableDecl }
 }
@@ -127,8 +127,8 @@ interface Ast {
  * next position
  */
 function parse_goto_statement(cur: Cursor): boolean {
-    const gotostags: Token[] = [EboKeyWords.GO, EboKeyWords.TO, EboKeyWords.GOTO, EboKeyWords.LINE];
-    while (gotostags.includes(cur.current().type)) { ++cur.pos; }
+    const goto_tags: Token[] = [EboControl.GO, EboControl.TO, EboControl.GOTO, EboControl.LINE];
+    while (goto_tags.includes(cur.current().type)) { cur.advance(); }
     return true;
 }
 
@@ -314,7 +314,7 @@ function functionDecl(tk: LexToken): FunctionDecl {
     };
 }
 
-class Ast {
+class SymbolTable {
 
     errors: ErrorInfo[] = [];
 
@@ -450,31 +450,32 @@ class Ast {
 }
 
 
-const states = {
+const states: { [name: string]: { [id: number]: string, _?: string } } = {
     INIT: {
-        [EboKeyWords.NUMERIC]: 'DECLARE_MOD',
-        [EboKeyWords.STRING]: 'DECLARE_MOD',
-        [EboKeyWords.DATETIME]: 'DECLARE_MOD',
-        [EboKeyWords.BASEDON]: 'BASEDON',
-        [EboKeyWords.GO]: 'GO',
-        [EboKeyWords.GOTO]: 'GOTO',
-        [EboKeyWords.ARG]: 'ARG',
-        [LxToken.TK_IDENT]: 'IDENT',
+        [EboControl.BASEDON]: 'BASEDON',
+        [EboControl.GO]: 'GO',
+        [EboControl.GOTO]: 'GOTO',
+        // [EboControl.IF]: 'IF',
+        [EboControl.LINE]: 'LINE_TAG',
+        [EboDeclarations.ARG]: 'ARG',
+        [EboDeclarations.DATETIME]: 'DECLARE_MOD',
+        [EboDeclarations.FUNCTION]: 'FUNCTION',
+        [EboDeclarations.NUMERIC]: 'DECLARE_MOD',
+        [EboDeclarations.STRING]: 'DECLARE_MOD',
         [LxToken.TK_ERROR]: 'ERROR',
-        [LxToken.TK_FNCALL]: 'FNCALL',
-        [EboKeyWords.LINE]: 'LINE_TAG',
-        [EboKeyWords.FUNCTION]: 'FUNCTION',
+        [LxToken.TK_FNCALL]: 'FUNCTION_CALL_END',
+        [LxToken.TK_IDENT]: 'IDENT',
     },
     DECLARE_MOD: {
-        [EboKeyWords.BUFFERED]: 'DECLARE_IN',
-        [EboKeyWords.TRIGGERED]: 'DECLARE_IN',
-        [EboKeyWords.PUBLIC]: 'DECLARE_IDENT',
-        [EboKeyWords.INPUT]: 'DECLARE_IDENT',
-        [EboKeyWords.OUTPUT]: 'DECLARE_IDENT',
+        [EboDeclarations.BUFFERED]: 'DECLARE_IN',
+        [EboDeclarations.TRIGGERED]: 'DECLARE_IN',
+        [EboDeclarations.PUBLIC]: 'DECLARE_IDENT',
+        [EboDeclarations.INPUT]: 'DECLARE_IDENT',
+        [EboDeclarations.OUTPUT]: 'DECLARE_IDENT',
         [LxToken.TK_IDENT]: 'DECLARES_LOC'
     },
     DECLARE_IN: {
-        [EboKeyWords.INPUT]: 'DECLARE_IDENT'
+        [EboDeclarations.INPUT]: 'DECLARE_IDENT'
     },
     DECLARE_IDENT: {
         [LxToken.TK_IDENT]: 'DECLARES'
@@ -497,29 +498,21 @@ const states = {
         [Symbols.COMMA]: 'DECLARE_IDENT',
         [LxToken.TK_EOL]: 'DECLARES_END'
     },
-    DECLARES_END: {
-        on(ast: Ast, cur: Cursor) {
-            parse_declaration(cur)
-                .forEach(decl => {
-                    ast.declare_variable(decl);
-                });
-        }
-    },
     BASEDON: {
         [LxToken.TK_IDENT]: 'BASEDON_I'
     },
     BASEDON_I: {
-        [EboKeyWords.GO]: 'BASEDON_GO',
-        [EboKeyWords.GOTO]: 'BASEDON_GOTO',
+        [EboControl.GO]: 'BASEDON_GO',
+        [EboControl.GOTO]: 'BASEDON_GOTO',
     },
     BASEDON_GO: {
-        [EboKeyWords.TO]: 'BASEDON_GOTO',
-        [EboKeyWords.LINE]: 'BASEDON_GOTO_LINE',
+        [EboControl.TO]: 'BASEDON_GOTO',
+        [EboControl.LINE]: 'BASEDON_GOTO_LINE',
         [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
         [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
     },
     BASEDON_GOTO: {
-        [EboKeyWords.LINE]: 'BASEDON_GOTO_LINE',
+        [EboControl.LINE]: 'BASEDON_GOTO_LINE',
         [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
         [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
     },
@@ -530,40 +523,23 @@ const states = {
     BASEDON_GOTO_LIST: {
         [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
         [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST',
-        [LxToken.TK_EOL]: 'BASEDON_EX'
-    },
-    BASEDON_EX: {
-        on(ast: Ast, cur: Cursor) {
-            const bo = parse_basedon(cur);
-            if (bo) {
-                ast.lookup_variable(bo.variable);
-                bo.lines.forEach(line => { ast.lookup_line(line); });
-            }
-        }
+        [LxToken.TK_EOL]: 'BASEDON_END'
     },
     GO: {
-        [EboKeyWords.TO]: 'GOTO',
-        [EboKeyWords.LINE]: 'GOTO_LINE',
-        [LxToken.TK_IDENT]: 'GOTO_DONE',
-        [LxToken.TK_NUMBER]: 'GOTO_DONE'
+        [EboControl.TO]: 'GOTO',
+        [EboControl.LINE]: 'GOTO_LINE',
+        [LxToken.TK_IDENT]: 'GOTO_END',
+        [LxToken.TK_NUMBER]: 'GOTO_END'
     },
     GOTO: {
-        [EboKeyWords.LINE]: 'GOTO_LINE',
-        [LxToken.TK_IDENT]: 'GOTO_DONE',
-        [LxToken.TK_NUMBER]: 'GOTO_DONE'
+        [EboControl.LINE]: 'GOTO_LINE',
+        [LxToken.TK_IDENT]: 'GOTO_END',
+        [LxToken.TK_NUMBER]: 'GOTO_END'
     },
     GOTO_LINE: {
-        [EboKeyWords.LINE]: 'BASEDON_GOTO',
-        [LxToken.TK_IDENT]: 'GOTO_DONE',
-        [LxToken.TK_NUMBER]: 'GOTO_DONE'
-    },
-    GOTO_DONE: {
-        on(ast: Ast, cur: Cursor) {
-            const gt = parse_goto(cur);
-            if (gt) {
-                ast.lookup_line(gt);
-            }
-        }
+        [EboControl.LINE]: 'BASEDON_GOTO',
+        [LxToken.TK_IDENT]: 'GOTO_END',
+        [LxToken.TK_NUMBER]: 'GOTO_END'
     },
     ARG: {
         [LxToken.TK_NUMBER]: 'ARG_ID',
@@ -571,60 +547,75 @@ const states = {
     ARG_ID: {
         [LxToken.TK_IDENT]: 'ARG_END'
     },
-    ARG_END: {
-        on(ast: Ast, cur: Cursor) {
-            const decl = parse_parameter(cur);
-            if (decl) {
-                ast.declare_parameter(decl);
-            }
-        }
-    },
     IDENT: {
-        [Symbols.COLON]: 'LINE_ID',
-        _: 'IDENT_ID'
-    },
-    IDENT_ID: {
-        on(ast: Ast, cur: Cursor) {
-            ast.lookup_variable(cur.current());
-        }
-    },
-    LINE_ID: {
-        on(ast: Ast, cur: Cursor) {
-            ast.declare_line(cur.current());
-        }
-    },
-    FNCALL: {
-        on(ast: Ast, cur: Cursor) {
-            ast.lookup_function(cur.current());
-        }
+        [Symbols.COLON]: 'LINE_ID_END',
+        _: 'IDENT_ID_END'
     },
     LINE_TAG: {
         [LxToken.TK_IDENT]: 'LINE_TAG_END',
         [LxToken.TK_NUMBER]: 'LINE_TAG_END'
-    },
-
-    LINE_TAG_END: {
-        on(ast: Ast, cur: Cursor) {
-            ast.declare_line(cur.item(1));
-        }
     },
     FUNCTION: {
         [LxToken.TK_IDENT]: 'FUNCTIONS',
     },
     FUNCTIONS: {
         [Symbols.COMMA]: 'FUNCTION',
-        [LxToken.TK_EOL]: 'FUNCTION_EX',
+        [LxToken.TK_EOL]: 'FUNCTION_END',
     },
-    FUNCTION_EX: {
-        on(ast: Ast, cur: Cursor) {
-            ++cur.pos;
+
+
+
+};
+
+const state_actions: { [id: string]: (ast: SymbolTable, cur: Cursor) => void } = {
+    DECLARES_END(ast: SymbolTable, cur: Cursor) {
+        parse_declaration(cur)
+            .forEach(decl => {
+                ast.declare_variable(decl);
+            });
+    },
+    BASEDON_END(ast: SymbolTable, cur: Cursor) {
+        const bo = parse_basedon(cur);
+        if (bo) {
+            ast.lookup_variable(bo.variable);
+            bo.lines.forEach(line => { ast.lookup_line(line); });
+        }
+    },
+    GOTO_END(ast: SymbolTable, cur: Cursor) {
+        const gt = parse_goto(cur);
+        if (gt) {
+            ast.lookup_line(gt);
+        }
+    },
+    ARG_END(ast: SymbolTable, cur: Cursor) {
+        const decl = parse_parameter(cur);
+        ast.declare_parameter(decl);
+    },
+    IDENT_ID_END(ast: SymbolTable, cur: Cursor) {
+        const tk = cur.current();
+        ast.lookup_variable(tk);
+    },
+    LINE_ID_END(ast: SymbolTable, cur: Cursor) {
+        const tk = cur.current();
+        if (tk.range.begin === 0) {
+            ast.declare_line(cur.current());
+        } else {
+            ast.lookup_variable(tk);
+        }
+    },
+    FUNCTION_CALL_END(ast: SymbolTable, cur: Cursor) {
+        ast.lookup_function(cur.current());
+    },
+    LINE_TAG_END(ast: SymbolTable, cur: Cursor) {
+        ast.declare_line(cur.item(1));
+    },
+    FUNCTION_END(ast: SymbolTable, cur: Cursor) {
+        cur.advance();
             parse_list(cur).forEach(tk => {
                 ast.declare_function(functionDecl(tk));
             });
-        }
     },
-    ERROR: {
-        on(ast: Ast, cur: Cursor) {
+    ERROR(ast: SymbolTable, cur: Cursor) {
             let tk = cur.current();
             ast.add_error({
                 id: EboErrors.ParseError,
@@ -632,88 +623,36 @@ const states = {
                 message: `Parse error '${tk.value}'`,
                 range: tk.range
             });
-        }
     },
 };
 
+/**
+ * check for lines that are not used and calls to lines that do not exist. 
+ * 
+ * @param symbol_table
+ */
+function check_lines(st: SymbolTable) {
 
+    let issues: ErrorInfo[] = st.errors;
 
-
-
-export function ebo_parse_file(fileText: string) {
-
-    let ast = new Ast();
-
-    const tkn_lists = ebo_scan_text(fileText);
-    const tkData = tkn_lists.map(l =>
-        l.filter(t => t.type !== LxToken.TK_WHITESPACE && t.type !== LxToken.TK_COMMENT)
-    );
-
-    // check for fallthru to disable warnings
-    tkn_lists.forEach(tks => {
-        tks.forEach(tk => {
-            if (tk.type === LxToken.TK_COMMENT && /fallthru/i.test(tk.value)) {
-                ast.fallthru = true;
-            }
-        });
-    });
-
-
-    for (let line of tkData) {
-
-        const cur = new LineCursor(line);
-
-        cur.pos = -1;
-        let state: any = states.INIT;
-        let stack: LexToken[] = [];
-
-        while (++cur.pos < cur.items.length) {
-            const tk = cur.current();
-
-            let next = state[tk.type];
-            if (next || state._) {
-                stack.push(tk);
-                state = (states as any)[next || state._];
-                if (state) {
-                    if (state.on) {
-                        const cur1 = new LineCursor(stack);
-                        state.on(ast, cur1);
-                        state = states.INIT;
-                        stack = [];
-                    }
-                } else {
-                    ///error
-                }
-            } else {
-                state = states.INIT;
-                stack = [];
-            }
-        }
-    }
-
-    let issues: ErrorInfo[] = ast.errors;
-    // ---- do checks
-
-    // ---- line checks
-
-    if (!ast.fallthru) {
-        Object.keys(ast.lines)
+    if (!st.fallthru) {
+        Object.keys(st.lines)
             .forEach(name => {
-                if (name in ast.line_refs || ast.linenames[0] === name) {
+                if (name in st.line_refs || st.line_names[0] === name) {
                     return;
                 }
                 issues.push({
                     id: EboErrors.UnreferencedLine,
                     severity: Severity.Warning,
                     message: `Line '${name}' not referenced.`,
-                    range: ast.lines[name].range
+                    range: st.lines[name].range
                 });
             });
     }
 
-    Object.keys(ast.line_refs).forEach(name => {
-        if (name in ast.lines) { return; }
-        ast.line_refs[name].forEach(tk => {
+    Object.keys(st.line_refs).forEach(name => {
+        if (name in st.lines) { return; }
+        st.line_refs[name].forEach(tk => {
             issues.push({
                 id: EboErrors.UndefinedLine,
                 severity: Severity.Error,
@@ -722,46 +661,104 @@ export function ebo_parse_file(fileText: string) {
             });
         });
     });
+}
 
-    // --- ussage checks
+/**
+ * check for unused declarations 
+ * 
+ * @param symbol_table 
+ */
+function check_usage(st: SymbolTable) {
 
-    Object.keys(ast.parameters)
+    let issues: ErrorInfo[] = st.errors;
+
+    Object.keys(st.parameters)
         .forEach(name => {
-            if (name in ast.variable_refs) { return; }
+            if (name in st.variable_refs) { return; }
             issues.push({
                 id: EboErrors.UnreferencedDeclaration,
                 severity: Severity.Information,
                 message: `Parameter '${name}' is not used.`,
-                range: ast.parameters[name].range
+                range: st.parameters[name].range
             });
         });
 
-    Object.keys(ast.variables)
+    Object.keys(st.variables)
         .forEach(name => {
-            if (name in ast.variable_refs) { return; }
+            if (name in st.variable_refs) { return; }
             issues.push({
                 id: EboErrors.UnreferencedDeclaration,
                 severity: Severity.Information,
                 message: `Variable '${name}' is not used.`,
-                range: ast.variables[name].range
+                range: st.variables[name].range
             });
         });
 
-    Object.keys(ast.functions)
+    Object.keys(st.functions)
         .forEach(name => {
-            if (name in ast.function_refs) { return; }
+            if (name in st.function_refs) { return; }
             issues.push({
                 id: EboErrors.UnreferencedFunction,
                 severity: Severity.Information,
                 message: `Function '${name}' is not used.`,
-                range: ast.functions[name].range
+                range: st.functions[name].range
             });
         });
 
-    return {
-        issues,
-        ast
-    };
+}
+
+const reFallthru = /\bfallthru\b/i;
+
+export function ebo_parse_file(fileText: string) {
+
+    const symTable = new SymbolTable();
+
+    const tkn_lists = ebo_scan_text(fileText);
+
+    const tkData = tkn_lists.map(l =>
+        l.filter(t => t.type !== LxToken.TK_WHITESPACE && t.type !== LxToken.TK_COMMENT)
+    );
+
+    // check for fallthru to disable warnings
+    tkn_lists.forEach(tks => {
+        tks.forEach(tk => {
+            if (tk.type === LxToken.TK_COMMENT && reFallthru.test(tk.value)) {
+                symTable.fallthru = true;
+            }
+            });
+        });
+
+    for (const line of tkData) {
+
+        let state = states.INIT;
+        let stack: LexToken[] = [];
+
+        for (const tk of line) {
+            let next = state[tk.type] || state._;
+            if (next) {
+                stack.push(tk);
+                state = states[next];
+                let fn = state_actions[next];
+                if (fn) {
+                    fn(symTable, new LineCursor(stack));
+                }
+                if (!state) {
+                    state = states.INIT;
+                    stack = [];
+                }
+            } else {
+                if (state !== states.INIT) {
+                    state = states.INIT;
+                    stack = [];
+                }
+            }
+        }
+    }
+
+    check_lines(symTable);
+    check_usage(symTable);
+
+    return symTable;
 }
 
 

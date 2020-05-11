@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ebo_scan_text, LexToken, TextRange, Token } from './ebo-scanner';
-import { LxToken, EboKeyWords, Symbols } from './ebo-types';
+import { LxToken, EboControl, EboFunctions, EboValues, Symbols, EboOperators } from './ebo-types';
 
 const size = 2;
 
@@ -8,13 +8,13 @@ function test_if_then_open(line: LexToken[]) {
 
     let s = 0;
     if (line[0].type === LxToken.TK_WHITESPACE) { ++s; }
-    if (line[s].type !== EboKeyWords.IF) {
+    if (line[s].type !== EboControl.IF) {
         return false;
     }
     let i = line.length - 1;
     while (i > 0) {
         let ty = line[--i].type;
-        if (ty === EboKeyWords.THEN) {
+        if (ty === EboControl.THEN) {
             return true;
         }
         if (!(ty === LxToken.TK_WHITESPACE || ty === LxToken.TK_COMMENT)) {
@@ -34,7 +34,7 @@ function test_line(line: LexToken[]) {
                     return tk;
                 }
                 break;
-            case EboKeyWords.LINE:
+            case EboControl.LINE:
                 tk = line[1];
                 if (tk.type === LxToken.TK_IDENT || tk.type === LxToken.TK_NUMBER) {
                     return tk;
@@ -46,29 +46,29 @@ function test_line(line: LexToken[]) {
 }
 
 const close_tags: Token[] = [
-    EboKeyWords.ELSE
-    , EboKeyWords.CASE
-    , EboKeyWords.ENDIF
-    , EboKeyWords.ENDSELECT
-    , EboKeyWords.ENDWHEN
-    , EboKeyWords.ENDWHILE
-    , EboKeyWords.UNTIL
-    , EboKeyWords.NEXT
+    EboControl.ELSE
+    , EboControl.CASE
+    , EboControl.ENDIF
+    , EboControl.ENDSELECT
+    , EboControl.ENDWHEN
+    , EboControl.ENDWHILE
+    , EboControl.UNTIL
+    , EboControl.NEXT
 ];
 
 const open_tags: Token[] = [
-    EboKeyWords.ELSE
-    , EboKeyWords.CASE
-    , EboKeyWords.FOR
-    , EboKeyWords.REPEAT
-    , EboKeyWords.SELECT
-    , EboKeyWords.WHEN
-    , EboKeyWords.WHILE
+    EboControl.ELSE
+    , EboControl.CASE
+    , EboControl.FOR
+    , EboControl.REPEAT
+    , EboControl.SELECT
+    , EboControl.WHEN
+    , EboControl.WHILE
 ];
 
 
 /**
- * get the start postion
+ * get the start position
  */
 function pos_start(rng: TextRange) {
     return new vscode.Position(rng.line, rng.begin);
@@ -175,7 +175,6 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         // formatting for operators
 
-        // for (let i = ltks.length - 1; 0 < i; --i) {
         for (let i = 0; i < line_tks.length - 1; ++i) {
             const tk = line_tks[i];
             switch (tk.type) {
@@ -201,7 +200,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         p = line_tks[i - 2];
                     }
 
-                    const is_not_unary1 = EboKeyWords[p.type];  // for system variables and functions. 
+                    const is_not_unary1 = EboFunctions[p.type] || EboValues[p.type] || EboOperators[p.type];  // for system variables and functions. 
                     const is_not_unary2 = LxToken.TK_NUMBER === p.type || LxToken.TK_IDENT === p.type;
                     const is_not_unary3 = Symbols.PARENTHESES_CL === p.type || Symbols.BRACKET_CL === p.type;
                     const is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && Symbols[p.type];
