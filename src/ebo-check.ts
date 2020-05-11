@@ -253,11 +253,13 @@ function parse_declaration(cur: Cursor): VariableDecl[] {
 }
 
 
-function parse_parameter(cur: Cursor): ParameterDecl | undefined {
+function parse_parameter(cur: Cursor): ParameterDecl {
+    // EboKeyWords.ARG
+    // LxToken.TK_NUMBER
+    // LxToken.TK_IDENT
 
-    if (test_token_seq(cur, [EboKeyWords.ARG, LxToken.TK_NUMBER, LxToken.TK_IDENT])) {
-        let id = cur.items[cur.pos + 1];
-        let tk = cur.items[cur.pos + 2];
+    let id = cur.item(1);
+    let tk = cur.item(2);
         cur.advance(2);
 
         return {
@@ -267,9 +269,6 @@ function parse_parameter(cur: Cursor): ParameterDecl | undefined {
             id: Number(id.value)
         };
     }
-
-    return undefined;
-}
 
 interface BasedonExpr {
     variable: LexToken
