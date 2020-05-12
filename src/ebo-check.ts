@@ -320,14 +320,14 @@ class SymbolTable {
 
     fallthru = false;
     lines: { [name: string]: LexToken } = {};
-    linenames: string[] = [];
+    line_names: string[] = [];
     line_refs: { [name: string]: LexToken[] } = {};
 
     symbols: { [name: string]: SymbolDecl } = {};
     functions: { [name: string]: FunctionDecl } = {};
     variables: { [name: string]: VariableDecl } = {};
     parameters: { [name: string]: ParameterDecl } = {};
-    parameterids: string[] = [];
+    parameter_ids: string[] = [];
 
     variable_refs: { [name: string]: LexToken[] } = {};
     function_refs: { [name: string]: LexToken[] } = {};
@@ -386,7 +386,7 @@ class SymbolTable {
             });
         } else {
             this.lines[name] = lineTk;
-            this.linenames.push(name);
+            this.line_names.push(name);
         }
     }
 
@@ -430,7 +430,7 @@ class SymbolTable {
                 range: parameter.range
             });
         } else {
-            if (this.parameterids[parameter.id]) {
+            if (this.parameter_ids[parameter.id]) {
                 this.add_error({
                     id: EboErrors.DuplicateDeclaration,
                     severity: Severity.Error,
@@ -440,7 +440,7 @@ class SymbolTable {
             }
             this.symbols[name] = parameter;
             this.parameters[name] = parameter;
-            this.parameterids[parameter.id] = name;
+            this.parameter_ids[parameter.id] = name;
         }
     }
 
