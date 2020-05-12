@@ -58,8 +58,6 @@ interface ErrorInfo {
 }
 
 interface Cursor {
-    pos: number
-    items: LexToken[]
     current: () => LexToken
     item: (index: number) => LexToken
     remain: () => number
@@ -292,19 +290,19 @@ function parse_basedon(cur: Cursor): BasedonExpr | undefined {
 
 
 export class LineCursor implements Cursor {
-    pos = 0;
-    constructor(public items: LexToken[]) { }
+    #pos = 0;
+    constructor(private items: LexToken[]) { }
     remain() {
-        return this.items.length - this.pos;
+        return this.items.length - this.#pos;
     }
     current() {
-        return this.items[this.pos];
+        return this.items[this.#pos];
     }
     item(index: number) {
         return this.items[index];
     }
     advance(amt = 1) {
-        this.pos += amt;
+        this.#pos += amt;
     }
 }
 
