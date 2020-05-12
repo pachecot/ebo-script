@@ -14,6 +14,7 @@ export enum EboErrors {
     UnreferencedDeclaration,
     DuplicateDeclaration,
     UndeclaredVariable,
+    LineUsedAsVariable,
     FunctionUsedAsVariable,
     UndeclaredFunction,
     RedeclaredFunction,
@@ -71,6 +72,7 @@ enum SymbolType {
     , DateTime
     , Function
     , Parameter
+    , Line
 }
 
 interface SymbolDecl {
@@ -345,6 +347,14 @@ class SymbolTable {
                     range: tk.range
                 });
             }
+            if (name in this.lines) {
+                this.add_error({
+                    id: EboErrors.LineUsedAsVariable,
+                    severity: Severity.Error,
+                    message: `Line '${name}' used as a variable.`,
+                    range: tk.range
+                });
+            }
         } else {
             this.add_error({
                 id: EboErrors.UndeclaredVariable,
@@ -377,7 +387,7 @@ class SymbolTable {
 
     declare_line(lineTk: LexToken) {
         const name = lineTk.value;
-        if (name in this.lines) {
+        if (name in this.symbols) {
             this.add_error({
                 id: EboErrors.DuplicateLine,
                 severity: Severity.Error,
@@ -385,8 +395,25 @@ class SymbolTable {
                 range: lineTk.range
             });
         } else {
+            if (name in this.variable_refs) {
+                /// check again here for newly defined lines. 
+                this.variable_refs[name]
+                    .forEach(vr => {
+                        this.add_error({
+                            id: EboErrors.LineUsedAsVariable,
+                            severity: Severity.Error,
+                            message: `Line '${name}' used as variable.`,
+                            range: vr.range
+                        });
+                    });
+            }
             this.lines[name] = lineTk;
             this.line_names.push(name);
+            this.symbols[name] = {
+                type: SymbolType.Line,
+                name: name,
+                range: lineTk.range
+            };
         }
     }
 
