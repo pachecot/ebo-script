@@ -275,10 +275,10 @@ interface BasedonExpr {
     lines: LexToken[]
 }
 
-function parse_basedon(cur: Cursor): BasedonExpr | undefined {
+function parse_basedon(cur: Cursor): BasedonExpr {
 
     const variable = cur.item(1);
-    let lines: LexToken[] = [];
+    const lines: LexToken[] = [];
     cur.advance(2);
     parse_goto_statement(cur);
     while (cur.remain() > 0 && cur.current().type !== LxToken.TK_EOL) {
