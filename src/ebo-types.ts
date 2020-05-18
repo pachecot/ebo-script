@@ -1,343 +1,356 @@
 
-export enum LxToken {
-    TK_WHITESPACE = 10
-    , TK_EOL
-    , TK_COMMENT
-    , TK_NUMBER
-    , TK_STRING
-    , TK_TIME
-    , TK_OPERATOR
-    , TK_KEYWORD
-    , TK_FNCALL
-    , TK_IDENT
-    , TK_ERROR
-}
+export const enum TokenKind {
 
-export enum Symbols {
-    AMPERSAND = 101       //   '&'
-    , ANGLE_LEFT          //   '<'
-    , ANGLE_RIGHT         //   '>'
-    , APOSTROPHE          //   '''
-    , ASTERISK            //   '*'
-    , BACKSLASH           //   '\'
-    , BRACKET_CL          //   ']'
-    , BRACKET_OP          //   '['
-    , CARET               //   '^'
-    , COLON               //   ':'
-    , COMMA               //   ','
-    , DOUBLE_QUOTE        //   '"'
-    , EQUALS_SIGN         //   '='
-    , EXCLAMATION         //   '!'
-    , GREATER_THAN        //   '>'
-    , GREATER_THAN_EQUALS //   '>='
-    , LESS_THAN           //   '<'
-    , LESS_THAN_EQUALS    //   '<='
-    , MINUS_SIGN          //   '-'
-    , NOT_EQUAL           //   '!='
-    , PARENTHESES_CL      //   ')'
-    , PARENTHESES_OP      //   '('
-    , PERCENT             //   '%'
-    , PLUS_SIGN           //   '+'
-    , SEMICOLON           //   ';'
-    , SLASH               //   '/'
-    , TILDE               //   '~'
-}
+    Unknown
+    , EndOfFileToken
+    , EndOfLineToken
+    , WhitespaceToken
+    , CommentToken
+    , NumberToken
+    , StringToken
+    , TimeToken
+    , OperatorToken
+    , KeywordToken
+    , FunctionCallToken
+    , IdentifierToken
+    , ErrorToken
 
-export enum EboValues {
+    //#region Symbols
+    // --------------
 
-    '-ON' = 1000
-    , OFF
-    , ON
+    , AmpersandSymbol         //   '&'
+    , AngleLeftSymbol         //   '<'
+    , AngleRightSymbol        //   '>'
+    , ApostropheSymbol        //   '''
+    , AsteriskSymbol          //   '*'
+    , BackslashSymbol         //   '\'
+    , BracketRightSymbol      //   ']'
+    , BracketLeftSymbol       //   '['
+    , CaretSymbol             //   '^'
+    , ColonSymbol             //   ':'
+    , CommaSymbol             //   ','
+    , DoubleQuoteSymbol       //   '"'
+    , EqualsSymbol            //   '='
+    , ExclamationSymbol       //   '!'
+    , GreaterThanSymbol       //   '>'
+    , GreaterThanEqualSymbol  //   '>='
+    , LessThanSymbol          //   '<'
+    , LessThanEqualSymbol     //   '<='
+    , MinusSymbol             //   '-'
+    , NotEqualSymbol          //   '<>'
+    , ParenthesesRightSymbol  //   ')'
+    , ParenthesesLeftSymbol   //   '('
+    , PercentSymbol           //   '%'
+    , PlusSymbol              //   '+'
+    , SemicolonSymbol         //   ';'
+    , SlashSymbol             //   '/'
+    , TildeSymbol             //   '~'
 
-    , AM
-    , PM
+    // Symbol Range Markers
+    // ------------
+    , FirstSymbol = AmpersandSymbol
+    , LastSymbol = TildeSymbol
 
-    , JANUARY = 1010
-    , FEBRUARY
-    , MARCH
-    , APRIL
-    , MAY
-    , JUNE
-    , JULY
-    , AUGUST
-    , SEPTEMBER
-    , OCTOBER
-    , NOVEMBER
-    , DECEMBER
+    //#endregion
 
-    , JAN = JANUARY
-    , FEB = FEBRUARY
-    , MAR = MARCH
-    , APR = APRIL
-    //MAY = MAY
-    , JUN = JUNE
-    , JUL = JULY
-    , AUG = AUGUST
-    , SEP = SEPTEMBER
-    , OCT = OCTOBER
-    , NOV = NOVEMBER
-    , DEC = DECEMBER
+    //#region system values
+    //  -------------------
 
-    , SUNDAY = 1030
-    , MONDAY
-    , TUESDAY
-    , WEDNESDAY
-    , THURSDAY
-    , FRIDAY
-    , SATURDAY
+    , minusOnValue
+    , offValue
+    , onValue
 
-    , SUN = SUNDAY
-    , MON = MONDAY
-    , TUE = TUESDAY
-    , WED = WEDNESDAY
-    , THU = THURSDAY
-    , FRI = FRIDAY
-    , SAT = SATURDAY
+    , amValue
+    , pmValue
 
-    , FALSE  // numeric = 0
-    , TRUE   // numeric = 1
+    , JanuaryValue
+    , FebruaryValue
+    , MarchValue
+    , AprilValue
+    , MayValue
+    , JuneValue
+    , JulyValue
+    , AugustValue
+    , SeptemberValue
+    , OctoberValue
+    , NovemberValue
+    , DecemberValue
 
-    , OFFLINE
-    , ONLINE
+    , SundayValue
+    , MondayValue
+    , TuesdayValue
+    , WednesdayValue
+    , ThursdayValue
+    , FridayValue
+    , SaturdayValue
 
-    , SUCCESS
-    , FAILURE
+    , FalseValue  // numeric = 0
+    , TrueValue   // numeric = 1
 
-    , DISABLED
-    , ENABLED
+    , OfflineValue
+    , OnlineValue
 
-    , CLOSED
-    , OPENED
+    , SuccessValue // 0
+    , FailureValue // 1
 
-    , ACTIVE
+    , DisabledValue
+    , EnabledValue
+
+    , ClosedValue
+    , OpenedValue
+
+    , InactiveValue
+    , ActiveValue
     // , AVERAGE
 
-    // 
-
     //
-    , MINUTES
-    , DAYS
-    , MONTHS
+    , MinutesValue
+    , DaysValue
+    , MonthsValue
 
-    // System Variables
+    // Value Range Markers
+    // -------------------
+    , FirstValue = minusOnValue
+    , LastValue = MonthsValue
 
-    , TS
-    , TM
-    , TH
-    , TD
+    //#endregion
 
-    , SCAN, SC = SCAN
-    , DATE, TIME = DATE
-    , UTCOFFSET
+    //#region System Variables
+    // -----------------------
+
+    , TsVariable
+    , TmVariable
+    , ThVariable
+    , TdVariable
+
+    , ScanVariable
+    , DateVariable
+    , UtcOffsetVariable
 
     // Timepiece
-    , DAYOFMONTH, DOM
-    , DAYOFYEAR, DOY
-    , HOUR, HR
-    , HOUROFDAY, HOD
-    , MINUTE, MIN
-    , MONTH, MTH
-    , SECOND, SEC
-    , TOD, TIMEOFDAY
-    , WEEKDAY, WKD
+    , DayOfMonthVariable
+    , DayOfYearVariable
+    , HourVariable
+    , hourOfDayVariable
+    , MinuteVariable
+    , MonthVariable
+    , SecondVariable
+    , TimeOfDayVariable
+    , WeekdayVariable
+    , YearVariable
 
-};
+    , ErrorsVariable
+    , FreememVariable
+    , IsBoundVariable
 
-export enum EboOperators {
+    // Variable Range Markers
+    // ----------------------
+    , FirstVariable = TsVariable
+    , LastVariable = IsBoundVariable
 
-    //// Operators
-    // , '-'
-    // , ','
-    // , ';'
-    // , '!'
-    // , '"'
-    // , '('
-    // , ')'
-    // , '['
-    // , ']'
-    // , '*'
-    // , '/'
-    // , '\''
-    // , '\\'
-    // , '&'
-    // , '%'
-    // , '^'
-    // , '+'
-    // , '<'
-    // , '='
-    // , '>'
-    // , '~'
-    // , '<='
-    // , '<>'
-    // , '>='
-    ABOVE = 1100
-    , AND // &
-    , BELOW
-    , BETWEEN
-    , BITAND
-    , BITNOT
-    , BITOR
-    , BITXOR
-    , DOES
-    , EITHER
-    , EQUAL
-    , EQUALS
-    , GREATER
-    , IN
-    , IS
-    , LESS
-    , NEITHER
-    , NOT
-    , OR
-    , THAN
-    , THE
-    , THROUGH
-    , THRU
-    , TO
+    //#endregion
 
-    , DIVIDED, BY, DIV
-    , MINUS
-    , MOD, REMAINDER
-    , PLUS
-    , TIMES, MULTIPLIED, MULT
+    //#region Operators
+    // ----------------
 
+    , AboveOperator
+    , AndOperator
+    , BelowOperator
+    , BetweenOperator
+    , BitandOperator
+    , BitnotOperator
+    , BitorOperator
+    , BitxorOperator
+    , DoesOperator
+    , EitherOperator
+    , EqualOperator
+    , EqualsOperator
+    , GreaterOperator
+    , InOperator
+    , IsOperator
+    , LessOperator
+    , NeitherOperator
+    , NotOperator
+    , OrOperator
+    , ThanOperator
+    , TheOperator
+    , ThruOperator
+    , ToKeyWord
 
-};
+    , DivideOperator
+    , MinusOperator
+    , ModulusOperator
+    , PlusOperator
+    , TimesOperator
 
-export enum EboFunctions {
+    // Operator Range Markers
+    // ----------------------
+    , FirstOperator = AboveOperator
+    , LastOperator = TimesOperator
 
-    //// System Functions
+    //#endregion
+
+    //#region System Functions
+    // -----------------------
 
     // Buffer Functions
-    GETBUFFEREDVALUE = 1200
-    , GETBUFFERSIZE
+    , GetBufferedValueFunction
+    , GetBufferSizeFunction
 
     // Conversion Functions
-    , NUMTOSTR
-    , STRTODATE, STRTOTIME = STRTODATE
-    , STRTONUM, VAL = STRTONUM
+    , NumToStrFunction
+    , StrToDateFunction
+    , StrToNumFunction
 
     // Math Functions
-    , ABS
-    , EXPONENTIAL, EXP
-    , FACTORIAL, FACT
-    , LN
-    , LOG
-    , RANDOM, RND
-    , SQRT
-    , SUM
+    , AbsFunction
+    , ExponentialFunction
+    , FactorialFunction
+    , LnFunction
+    , LogFunction
+    , RandomFunction
+    , SqrtFunction
+    , SumFunction
 
     // Object Functions
-    , READPROPERTY
-    , RELINQUISH
-    , WRITEPROPERTY
+    , ReadPropertyFunction
+    , RelinquishFunction
+    , WritePropertyFunction
 
     // Function Functions
-    , PASSED
+    , PassedFunction
 
     // Rounding Functions
-    , CEILING
-    , FLOOR
-    , ROUND
-    , TRUNCATE, TRUNC = TRUNCATE
+    , CeilingFunction
+    , FloorFunction
+    , RoundFunction
+    , TruncateFunction
 
     // Statistical Functions
-    , AVERAGE, AVG = AVERAGE
-    , MAXIMUM, MAX = MAXIMUM
-    , MAXITEM
-    , MINIMUM
-    , MINITEM
-    , STANDARDDEVIATION, SD
+    , AverageFunction
+    , MaximumFunction
+    , MaxItemFunction
+    , MinimumFunction
+    , MinItemFunction
+    , StandardDeviationFunction
+
 
     // String Functions
-    , ASC
-    , CHR
-    , LEFT, FIRST = LEFT
-    , LENGTH, LEN
-    , MID
-    , RIGHT, LAST = RIGHT
-    , SEARCH
-    , STRINGFILL
-    , TAB
+    , AscFunction
+    , ChrFunction
+    , LeftFunction
+    , LengthFunction
+    , MidFunction
+    , RightFunction
+    , SearchFunction
+    , StringFillFunction
+    , TabFunction
 
     // Time Functions
-    , DIFFTIME
-    , TIMEPIECE
+    , DiffTimeFunction
+    , TimePieceFunction
 
     // Trig Functions
-    , ACOS, ARCCOSINE = ACOS
-    , ASIN, ARCSINE = ASIN
-    , ATAN, ARCTANGENT = ATAN
-    , ATAN2, ARCTANGENT2 = ATAN2
-    , COS, COSINE = COS
-    , SIN, SINE = SIN
-    , TAN, TANGENT = TAN
+    , AcosFunction
+    , AsinFunction
+    , AtanFunction
+    , Atan2Function
+    , CosFunction
+    , SinFunction
+    , TanFunction
 
     // Dynamic Array Functions
-    , GETARRAYSIZE
-    , SETARRAYSIZE
+    , GetArraySizeFunction
+    , SetArraySizeFunction
 
     // Triggered Programs Functions
-    , GETTICKCOUNT
-    , GETELASPEDTIME
-    , STARTTIMER
-    , STOPTIMER
-    , GETTRIGGEREDVARIABLENAME
-    , GETTRIGGEREDVARIABLEID
+    , GetTickCountFunction
+    , GetElaspedTimeFunction
+    , StartTimerFunction
+    , StopTimerFunction
+    , GetTriggeredVariableNameFunction
+    , GetTriggeredVariableIdFunction
 
     // Obsolete - Continuum?
-    , ROTATE
-    , OPENLIST
-    , GETOBJECT
-    , GETNAME
+    , RotateFunction
+    , OpenListFunction
+    , GetObjectFunction
+    , GetNameFunction
 
+    // Function Range Markers
+    // ----------------------
+    , FirstFunction = GetBufferedValueFunction
+    , LastFunction = GetNameFunction
 
-};
+    //#endregion
 
-export enum EboDeclarations {
+    //#region Declarations 
+    // -------------------
 
+    , FunctionDeclaration
+    , ArgDeclaration
+    , WebserviceDeclaration // web
+    , NumericDeclaration
+    , DatetimeDeclaration
+    , StringDeclaration
 
-    /// Declarations
-    FUNCTION = 1300
-    , ARG, PARAM = ARG // function argument declaration
-    , WEBSERVICE // web
-    , NUMERIC, NUMBER = NUMERIC
-    , DATETIME
-    , STRING
     // Declaration modifiers
-    , INPUT
-    , OUTPUT
-    , PUBLIC
-    , BUFFERED
-    , TRIGGERED
+    , InputDeclaration
+    , OutputDeclaration
+    , PublicDeclaration
+    , BufferedDeclaration
+    , TriggeredDeclaration
 
-};
+    //#endregion
 
-export enum EboControl {
-    // Control
-    TO = EboOperators.TO,
-    END = 2000
-    , STOP
-    , BREAK
-    , CONTINUE
-    , RETURN
-    , BASEDON
-    , GO, GOTO, LINE
-    , IF, THEN, ELSE, ENDIF
-    , FOR, STEP, NEXT
-    , SELECT, CASE, ENDSELECT
-    , REPEAT, UNTIL
-    , WHEN, ENDWHEN
-    , WHILE, ENDWHILE
-    , WAIT, DELAY
+    // -------------------
 
-    // Action Statements 
-    , P, PR   /// print
+    //#region Control Statements
+    // -------------------------
 
-    , SET, ADJUST, CHANGE, LET, MODIFY
+    , EndStatement
+    , StopStatement
+    , BreakStatement
+    , ContinueStatement
+    , ReturnStatement
+    , BasedonStatement
+    , GoStatement
+    , GotoStatement
+    , LineStatement
+    , IfStatement
+    , ThenStatement
+    , ElseStatement
+    , EndIfStatement
+    , ForStatement
+    , StepStatement
+    , NextStatement
+    , SelectStatement
+    , CaseStatement
+    , EndSelectStatement
+    , RepeatStatement
+    , UntilStatement
+    , WhenStatement
+    , EndWhenStatement
+    , WhileStatement
+    , EndWhileStatement
+    , WaitStatement
+
+    //#endregion
+
+    //#region Action Statements 
+    // ------------------------
+    , P /// print
+    , PR
+
+    , SET
+    , ADJUST
+    , CHANGE
+    , LET
+    , MODIFY
 
     , TURN
-    , MOVE, MODULATE
+    , MOVE
+    , MODULATE
 
     , ENABLE
     , DISABLE
@@ -348,12 +361,14 @@ export enum EboControl {
     , START
 
     , E  /// error line
-};
 
-export enum EboReserved {
+    //#endregion
+
+    //#region reserved words
+    // ---------------------
     // reserved words - usage?
 
-    AVERAGED = 9000
+    , AVERAGED
     , BINARY
     , BIT
     , BITSTRING
@@ -369,7 +384,7 @@ export enum EboReserved {
     , FAILED
     , FAULT
     , MISSINGREQUIREDPARAMETER
-    , 'NOVTSESSIONS-AVAILABLE'
+    , NOVTSESSIONS_AVAILABLE
     , OBJECT
     , OBJECTCLASS
     , OBJECTDELETIONNOTPERMITTED
@@ -395,7 +410,7 @@ export enum EboReserved {
     , ONEYEARTONOW
     , TODAY
 
-    , ERRORS
+    // , ERRORS
     , ACCESSLOG
     , ACCESSSERVER
     , ACKALARM
@@ -433,27 +448,208 @@ export enum EboReserved {
     , WHERE
     , WITH
 
+    //#endregion
 };
 
-export type EboKeyWords = EboValues | EboOperators | EboFunctions | EboDeclarations | EboControl | EboReserved;
+type FunctionKind =
+    TokenKind.GetBufferedValueFunction
+    | TokenKind.GetBufferSizeFunction
+    | TokenKind.NumToStrFunction
+    | TokenKind.StrToDateFunction
+    | TokenKind.StrToNumFunction
+    | TokenKind.AbsFunction
+    | TokenKind.ExponentialFunction
+    | TokenKind.FactorialFunction
+    | TokenKind.LnFunction
+    | TokenKind.LogFunction
+    | TokenKind.RandomFunction
+    | TokenKind.SqrtFunction
+    | TokenKind.SumFunction
+    | TokenKind.ReadPropertyFunction
+    | TokenKind.RelinquishFunction
+    | TokenKind.WritePropertyFunction
+    | TokenKind.PassedFunction
+    | TokenKind.CeilingFunction
+    | TokenKind.FloorFunction
+    | TokenKind.RoundFunction
+    | TokenKind.TruncateFunction
+    | TokenKind.AverageFunction
+    | TokenKind.MaximumFunction
+    | TokenKind.MaxItemFunction
+    | TokenKind.MinimumFunction
+    | TokenKind.MinItemFunction
+    | TokenKind.StandardDeviationFunction
+    | TokenKind.AscFunction
+    | TokenKind.ChrFunction
+    | TokenKind.LeftFunction
+    | TokenKind.LengthFunction
+    | TokenKind.MidFunction
+    | TokenKind.RightFunction
+    | TokenKind.SearchFunction
+    | TokenKind.StringFillFunction
+    | TokenKind.TabFunction
+    | TokenKind.DiffTimeFunction
+    | TokenKind.TimePieceFunction
+    | TokenKind.AcosFunction
+    | TokenKind.AsinFunction
+    | TokenKind.AtanFunction
+    | TokenKind.Atan2Function
+    | TokenKind.CosFunction
+    | TokenKind.SinFunction
+    | TokenKind.TanFunction
+    | TokenKind.GetArraySizeFunction
+    | TokenKind.SetArraySizeFunction
+    | TokenKind.GetTickCountFunction
+    | TokenKind.GetElaspedTimeFunction
+    | TokenKind.StartTimerFunction
+    | TokenKind.StopTimerFunction
+    | TokenKind.GetTriggeredVariableNameFunction
+    | TokenKind.GetTriggeredVariableIdFunction
+    | TokenKind.RotateFunction
+    | TokenKind.OpenListFunction
+    | TokenKind.GetObjectFunction
+    | TokenKind.GetNameFunction
+    ;
 
-const numberFilter = (x: string) => isNaN(Number(x));
+type OperatorKind = TokenKind.AboveOperator
+    | TokenKind.AndOperator
+    | TokenKind.BelowOperator
+    | TokenKind.BetweenOperator
+    | TokenKind.BitandOperator
+    | TokenKind.BitnotOperator
+    | TokenKind.BitorOperator
+    | TokenKind.BitxorOperator
+    | TokenKind.DoesOperator
+    | TokenKind.EitherOperator
+    | TokenKind.EqualOperator
+    | TokenKind.EqualsOperator
+    | TokenKind.GreaterOperator
+    | TokenKind.InOperator
+    | TokenKind.IsOperator
+    | TokenKind.LessOperator
+    | TokenKind.NeitherOperator
+    | TokenKind.NotOperator
+    | TokenKind.OrOperator
+    | TokenKind.ThanOperator
+    | TokenKind.TheOperator
+    | TokenKind.ThruOperator
+    | TokenKind.ToKeyWord
 
-export const EboKeyWordNames = Object.keys(EboValues).filter(numberFilter).concat(
-    Object.keys(EboOperators).filter(numberFilter)
-    , Object.keys(EboFunctions).filter(numberFilter)
-    , Object.keys(EboDeclarations).filter(numberFilter)
-    , Object.keys(EboControl).filter(numberFilter)
-    , Object.keys(EboReserved).filter(numberFilter)
-);
+    | TokenKind.DivideOperator
+    | TokenKind.MinusOperator
+    | TokenKind.ModulusOperator
+    | TokenKind.PlusOperator
+    | TokenKind.TimesOperator
+    ;
 
-export function GetEboKeyWord(x: string): EboKeyWords {
-    x = x.toUpperCase();
-    return ((EboValues as any)[x]
-        || (EboOperators as any)[x]
-        || (EboFunctions as any)[x]
-        || (EboDeclarations as any)[x]
-        || (EboControl as any)[x]
-        || (EboReserved as any)[x]
-    );
+
+type ValueKind = TokenKind.minusOnValue
+    | TokenKind.offValue
+    | TokenKind.onValue
+    | TokenKind.amValue
+    | TokenKind.pmValue
+    | TokenKind.JanuaryValue
+    | TokenKind.FebruaryValue
+    | TokenKind.MarchValue
+    | TokenKind.AprilValue
+    | TokenKind.MayValue
+    | TokenKind.JuneValue
+    | TokenKind.JulyValue
+    | TokenKind.AugustValue
+    | TokenKind.SeptemberValue
+    | TokenKind.OctoberValue
+    | TokenKind.NovemberValue
+    | TokenKind.DecemberValue
+    | TokenKind.SundayValue
+    | TokenKind.MondayValue
+    | TokenKind.TuesdayValue
+    | TokenKind.WednesdayValue
+    | TokenKind.ThursdayValue
+    | TokenKind.FridayValue
+    | TokenKind.SaturdayValue
+    | TokenKind.FalseValue
+    | TokenKind.TrueValue
+    | TokenKind.OfflineValue
+    | TokenKind.OnlineValue
+    | TokenKind.SuccessValue
+    | TokenKind.FailureValue
+    | TokenKind.DisabledValue
+    | TokenKind.EnabledValue
+    | TokenKind.ClosedValue
+    | TokenKind.OpenedValue
+    | TokenKind.InactiveValue
+    | TokenKind.ActiveValue
+    | TokenKind.MinutesValue
+    | TokenKind.DaysValue
+    | TokenKind.MonthsValue
+    ;
+
+
+type VariableKind = TokenKind.TsVariable
+    | TokenKind.TmVariable
+    | TokenKind.ThVariable
+    | TokenKind.TdVariable
+    | TokenKind.ScanVariable
+    | TokenKind.DateVariable
+    | TokenKind.UtcOffsetVariable
+    | TokenKind.DayOfMonthVariable
+    | TokenKind.DayOfYearVariable
+    | TokenKind.HourVariable
+    | TokenKind.hourOfDayVariable
+    | TokenKind.MinuteVariable
+    | TokenKind.MonthVariable
+    | TokenKind.SecondVariable
+    | TokenKind.TimeOfDayVariable
+    | TokenKind.WeekdayVariable
+    | TokenKind.YearVariable
+    | TokenKind.ErrorsVariable
+    | TokenKind.FreememVariable
+    | TokenKind.IsBoundVariable
+    ;
+
+
+type SymbolKind = TokenKind.AmpersandSymbol
+    | TokenKind.AngleLeftSymbol
+    | TokenKind.AngleRightSymbol
+    | TokenKind.ApostropheSymbol
+    | TokenKind.AsteriskSymbol
+    | TokenKind.BackslashSymbol
+    | TokenKind.BracketRightSymbol
+    | TokenKind.BracketLeftSymbol
+    | TokenKind.CaretSymbol
+    | TokenKind.ColonSymbol
+    | TokenKind.CommaSymbol
+    | TokenKind.DoubleQuoteSymbol
+    | TokenKind.EqualsSymbol
+    | TokenKind.ExclamationSymbol
+    | TokenKind.GreaterThanSymbol
+    | TokenKind.GreaterThanEqualSymbol
+    | TokenKind.LessThanSymbol
+    | TokenKind.LessThanEqualSymbol
+    | TokenKind.MinusSymbol
+    | TokenKind.NotEqualSymbol
+    | TokenKind.ParenthesesRightSymbol
+    | TokenKind.ParenthesesLeftSymbol
+    | TokenKind.PercentSymbol
+    | TokenKind.PlusSymbol
+    | TokenKind.SemicolonSymbol
+    | TokenKind.SlashSymbol
+    | TokenKind.TildeSymbol
+    ;
+
+
+export function isFunctionKind(s: TokenKind): s is FunctionKind {
+    return TokenKind.FirstFunction <= s && s <= TokenKind.LastFunction;
+}
+export function isOperatorKind(s: TokenKind): s is OperatorKind {
+    return TokenKind.FirstOperator <= s && s <= TokenKind.LastOperator;
+}
+export function isValueKind(s: TokenKind): s is ValueKind {
+    return TokenKind.FirstValue <= s && s <= TokenKind.LastValue;
+}
+export function isVariableKind(s: TokenKind): s is VariableKind {
+    return TokenKind.FirstVariable <= s && s <= TokenKind.LastVariable;
+}
+export function isSymbolKind(s: TokenKind): s is SymbolKind {
+    return TokenKind.FirstSymbol <= s && s <= TokenKind.LastSymbol;
 }

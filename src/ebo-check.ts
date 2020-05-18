@@ -1,5 +1,5 @@
-import { Symbols, LxToken, EboControl, EboDeclarations } from './ebo-types';
-import { TextRange, LexToken, Token, ebo_scan_text } from './ebo-scanner';
+import { TokenKind, isFunctionKind } from './ebo-types';
+import { TextRange, LexToken, ebo_scan_text } from './ebo-scanner';
 
 
 /**
@@ -18,7 +18,8 @@ export enum EboErrors {
     FunctionUsedAsVariable,
     UndeclaredFunction,
     RedeclaredFunction,
-    UnreferencedFunction
+    UnreferencedFunction,
+    IllegalAssignment
 }
 
 
@@ -127,7 +128,7 @@ interface SymbolTable {
  * next position
  */
 function parse_goto_statement(cur: Cursor): boolean {
-    const goto_tags: Token[] = [EboControl.GO, EboControl.TO, EboControl.GOTO, EboControl.LINE];
+    const goto_tags: TokenKind[] = [TokenKind.GoStatement, TokenKind.ToKeyWord, TokenKind.GotoStatement, TokenKind.LineStatement];
     while (goto_tags.includes(cur.current().type)) { cur.advance(); }
     return true;
 }
@@ -138,32 +139,31 @@ function parse_goto(cur: Cursor): LexToken {
 }
 
 
-
 function parse_variable_list_item(cur: Cursor): VariableInst {
     let tk = cur.current();
     cur.advance();
-    if (cur.item(0).type === Symbols.BRACKET_OP) {
-            let id = cur.item(1);
-            cur.advance(3);
+    if (cur.item(0).type === TokenKind.BracketLeftSymbol) {
+        let id = cur.item(1);
+        cur.advance(3);
         return {
             name: tk.value,
             token: tk,
             index: Number(id.value)
         };
-        }
+    }
     return {
         name: tk.value,
         token: tk
     };
-    }
+}
 
 function parse_variable_list_rest(cur: Cursor): VariableInst[] {
     let tks: VariableInst[] = [];
-    while (cur.current().type === Symbols.COMMA) {
+    while (cur.current().type === TokenKind.CommaSymbol) {
         cur.advance();
         let tk = parse_variable_list_item(cur);
         if (tk) { tks.push(tk); }
-}
+    }
     return tks;
 }
 
@@ -177,6 +177,183 @@ function parse_variable_list(cur: Cursor): VariableInst[] {
     return [];
 }
 
+interface FunctionExpression {
+    function: LexToken
+    arguments: LexToken[][];
+}
+
+function parse_function(st: SymbolTable, cur: Cursor): FunctionExpression {
+    let fn = cur.current();
+    let args: LexToken[][] = [];
+    let arg: LexToken[] = [];
+    let count = 1;
+    args.push(arg);
+    cur.advance();
+    cur.advance();
+    let tk = cur.current();
+    while (tk) {
+        if (tk.type === TokenKind.ParenthesesRightSymbol) {
+            --count;
+            if (count === 0) { break; }
+        }
+        if (tk.type === TokenKind.ParenthesesLeftSymbol) { ++count; }
+        if (tk.type === TokenKind.CommaSymbol && count === 1) {
+            arg = [];
+            args.push(arg);
+        } else {
+            arg.push(tk);
+        }
+        cur.advance();
+        tk = cur.current();
+    }
+    args.forEach(arg => { parse_expression(arg, st); });
+    return {
+        function: fn,
+        arguments: args
+    };
+}
+
+interface AssignExpression {
+    assigned: VariableInst[]
+    expression: LexToken[];
+}
+
+function parse_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
+    let assigned: VariableInst[] = [];
+    let expression: LexToken[] = [];
+    let tk = cur.current();
+    while (tk.type !== TokenKind.EqualsSymbol) {
+        if (tk.type === TokenKind.IdentifierToken) {
+            assigned.push(parse_variable_list_item(cur));
+        } else {
+            cur.advance();
+        }
+        tk = cur.current();
+    }
+    cur.advance();
+    tk = cur.current();
+    while (tk && tk.type !== TokenKind.EndOfLineToken) {
+        expression.push(tk);
+        cur.advance();
+        tk = cur.current();
+    }
+    assigned.forEach(id => { st.lookup_variable(id.token, true); });
+    parse_expression(expression, st);
+    return {
+        assigned,
+        expression
+    };
+}
+
+
+function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
+    let assigned: VariableInst[] = [];
+    let expression: LexToken[] = [];
+    let tk = cur.current();
+    while (tk.type !== TokenKind.EqualsSymbol && tk.type !== TokenKind.ToKeyWord) {
+        if (tk.type === TokenKind.IdentifierToken) {
+            assigned.push(parse_variable_list_item(cur));
+        } else {
+            cur.advance();
+        }
+        tk = cur.current();
+    }
+    cur.advance();
+    tk = cur.current();
+    while (tk && tk.type !== TokenKind.EndOfLineToken) {
+        expression.push(tk);
+        cur.advance();
+        tk = cur.current();
+    }
+    assigned.forEach(id => { st.lookup_variable(id.token, true); });
+    parse_expression(expression, st);
+    return {
+        assigned,
+        expression
+    };
+}
+
+function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
+    let assigned: VariableInst[] = [];
+    let expression: LexToken[] = [];
+    let tk = cur.current();
+    while (tk) {
+
+        switch (tk.type) {
+            case TokenKind.IdentifierToken:
+                assigned.push(parse_variable_list_item(cur));
+                break;
+            case TokenKind.offValue:  // fallthru
+            case TokenKind.onValue:
+                expression.push(tk);
+            //fallthru
+            default:
+                cur.advance();
+                break;
+        }
+        tk = cur.current();
+    }
+    assigned.forEach(id => { st.lookup_variable(id.token, true); });
+    parse_expression(expression, st);
+    return {
+        assigned,
+        expression
+    };
+}
+
+
+type ConditionExpression = LexToken[];
+type Expression = LexToken[];
+
+interface ForExpression {
+    cond_expr: ConditionExpression
+    true_expr?: Expression
+    false_expr?: Expression
+}
+
+
+const if_then_states: { [id: number]: string } = {
+    [TokenKind.IfStatement]: 'C',
+    [TokenKind.ThenStatement]: 'T',
+    [TokenKind.ElseStatement]: 'F',
+    [TokenKind.EndOfLineToken]: '$',
+};
+
+
+function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
+
+    const data: { [name: string]: LexToken[] } = {};
+
+    let tks: LexToken[] = [];
+    let state = if_then_states[cur.current().type];
+    cur.advance();
+
+    while (state && state !== '$') {
+        const tk = cur.current();
+        if (if_then_states[tk.type]) {
+            data[state] = tks;
+            state = if_then_states[tk.type];
+            tks = [];
+        } else {
+            tks.push(tk);;
+        }
+        cur.advance();
+    }
+
+    const res = {
+        cond_expr: data['C'] || [],
+        true_expr: data['T'] || [],
+        false_expr: data['F'] || []
+    };
+
+    parse_expression(res.cond_expr, st);
+    parse_statement(res.true_expr, st);
+    parse_statement(res.false_expr, st);
+
+    return res;
+}
+
+
 /**
  * comma separated list of tokens
  */
@@ -185,11 +362,11 @@ function parse_list(cur: Cursor): LexToken[] {
     if (tk) {
         cur.advance();
         let tks: LexToken[] = [tk];
-        while (cur.current().type === Symbols.COMMA) {
+        while (cur.current().type === TokenKind.CommaSymbol) {
             cur.advance();
             tks.push(cur.current());
             cur.advance();
-    }
+        }
         cur.advance(-1);
         return tks;
     }
@@ -197,24 +374,26 @@ function parse_list(cur: Cursor): LexToken[] {
 }
 
 
-const declaration_states: { [id: string]: { [t: number]: [string, { [name: string]: number }] } } = {
-    _: {
-        [EboDeclarations.STRING]: ["T", { type: SymbolType.StringType }],
-        [EboDeclarations.NUMERIC]: ["T", { type: SymbolType.Numeric }],
-        [EboDeclarations.DATETIME]: ["T", { type: SymbolType.DateTime }],
+const enum DeclState { Init, Type, Modifier, Complete };
+
+const declaration_states: { [id: string]: { [t: number]: [DeclState, { [name: string]: number }] } } = {
+    [DeclState.Init]: {
+        [TokenKind.StringDeclaration]: [DeclState.Type, { type: SymbolType.StringType }],
+        [TokenKind.NumericDeclaration]: [DeclState.Type, { type: SymbolType.Numeric }],
+        [TokenKind.DatetimeDeclaration]: [DeclState.Type, { type: SymbolType.DateTime }],
     },
-    "T": {
-        [EboDeclarations.INPUT]: ['$', { modifier: VarModifier.Input }],
-        [EboDeclarations.OUTPUT]: ['$', { modifier: VarModifier.Output }],
-        [EboDeclarations.PUBLIC]: ['$', { modifier: VarModifier.Public }],
-        [EboDeclarations.BUFFERED]: ["M", { tag: VarTag.Buffered }],
-        [EboDeclarations.TRIGGERED]: ["M", { tag: VarTag.Triggered }],
+    [DeclState.Type]: {
+        [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
+        [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
+        [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
+        [TokenKind.BufferedDeclaration]: [DeclState.Modifier, { tag: VarTag.Buffered }],
+        [TokenKind.TriggeredDeclaration]: [DeclState.Modifier, { tag: VarTag.Triggered }],
     },
-    "M": {
-        [EboDeclarations.INPUT]: ['$', { modifier: VarModifier.Input }],
-        [EboDeclarations.OUTPUT]: ['$', { modifier: VarModifier.Output }],
-        [EboDeclarations.PUBLIC]: ['$', { modifier: VarModifier.Public }],
-}
+    [DeclState.Modifier]: {
+        [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
+        [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
+        [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
+    }
 };
 
 function parse_declaration(cur: Cursor): VariableDecl[] {
@@ -225,24 +404,24 @@ function parse_declaration(cur: Cursor): VariableDecl[] {
         modifier: VarModifier.Local
     };
 
-    let state_name = '_';
-    while (state_name !== '$') {
+    let state_name = DeclState.Init;
+    while (state_name !== DeclState.Complete) {
         let tk = cur.current();
-        let next = declaration_states[state_name][tk.type];
+        let next: [DeclState, { [name: string]: number }] = declaration_states[state_name][tk.type];
         if (next) {
             cur.advance();
             Object.assign(variable_dec, next[1]);
             state_name = next[0];
         } else {
             // local variables
-            if (state_name !== '_') { break; }
-            state_name = '$';
+            if (state_name !== DeclState.Type) { break; }
+            state_name = DeclState.Complete;
         }
-        }
-    if (state_name !== '$') {
+    }
+    if (state_name !== DeclState.Complete) {
         //// error!!!
-    return [];
-}
+        return [];
+    }
 
     return parse_variable_list(cur)
         .map(vi => Object.assign({
@@ -255,20 +434,20 @@ function parse_declaration(cur: Cursor): VariableDecl[] {
 
 function parse_parameter(cur: Cursor): ParameterDecl {
     // EboKeyWords.ARG
-    // LxToken.TK_NUMBER
-    // LxToken.TK_IDENT
+    // TokenKind.TK_NUMBER
+    // TokenKind.TK_IDENT
 
     let id = cur.item(1);
     let tk = cur.item(2);
-        cur.advance(2);
+    cur.advance(2);
 
-        return {
-            type: SymbolType.Parameter,
-            name: tk.value,
-            range: tk.range,
-            id: Number(id.value)
-        };
-    }
+    return {
+        type: SymbolType.Parameter,
+        name: tk.value,
+        range: tk.range,
+        id: Number(id.value)
+    };
+}
 
 interface BasedonExpr {
     variable: LexToken
@@ -281,7 +460,7 @@ function parse_basedon(cur: Cursor): BasedonExpr {
     const lines: LexToken[] = [];
     cur.advance(2);
     parse_goto_statement(cur);
-    while (cur.remain() > 0 && cur.current().type !== LxToken.TK_EOL) {
+    while (cur.remain() > 0 && cur.current().type !== TokenKind.EndOfLineToken) {
         lines.push(cur.current());
         cur.advance();
     }
@@ -317,7 +496,7 @@ function functionDecl(tk: LexToken): FunctionDecl {
 class SymbolTable {
 
     errors: ErrorInfo[] = [];
-
+    parens_depth = 0;
     fallthru = false;
     lines: { [name: string]: LexToken } = {};
     line_names: string[] = [];
@@ -329,13 +508,19 @@ class SymbolTable {
     parameters: { [name: string]: ParameterDecl } = {};
     parameter_ids: string[] = [];
 
+    assigned_refs: { [name: string]: LexToken[] } = {};
     variable_refs: { [name: string]: LexToken[] } = {};
     function_refs: { [name: string]: LexToken[] } = {};
 
-    lookup_variable(tk: LexToken) {
+    lookup_variable(tk: LexToken, assign?: boolean) {
         const name = tk.value;
-        const arr = this.variable_refs[name] || (this.variable_refs[name] = []);
-        arr.push(tk);
+        const refs = this.variable_refs[name] || (this.variable_refs[name] = []);
+        refs.push(tk);
+        if (assign) {
+            const sets = this.assigned_refs[name] || (this.assigned_refs[name] = []);
+            sets.push(tk);
+        }
+
         if (name in this.symbols) {
             if (name in this.functions) {
                 this.add_error({
@@ -353,6 +538,17 @@ class SymbolTable {
                     range: tk.range
                 });
             }
+            if (assign) {
+                const vd = this.variables[name];
+                if (vd && (vd.modifier === VarModifier.Input)) {
+                    this.add_error({
+                        severity: Severity.Error,
+                        id: EboErrors.IllegalAssignment,
+                        message: "assignment not allowed",
+                        range: tk.range
+                    });
+                }
+            }
         } else {
             this.add_error({
                 id: EboErrors.UndeclaredVariable,
@@ -361,6 +557,8 @@ class SymbolTable {
                 range: tk.range
             });
         }
+
+        return this.variables[name];
     }
 
     lookup_function(tk: LexToken) {
@@ -475,152 +673,365 @@ class SymbolTable {
 }
 
 
-const states: { [name: string]: { [id: number]: string, _?: string } } = {
-    INIT: {
-        [EboControl.BASEDON]: 'BASEDON',
-        [EboControl.GO]: 'GO',
-        [EboControl.GOTO]: 'GOTO',
-        // [EboControl.IF]: 'IF',
-        [EboControl.LINE]: 'LINE_TAG',
-        [EboDeclarations.ARG]: 'ARG',
-        [EboDeclarations.DATETIME]: 'DECLARE_MOD',
-        [EboDeclarations.FUNCTION]: 'FUNCTION',
-        [EboDeclarations.NUMERIC]: 'DECLARE_MOD',
-        [EboDeclarations.STRING]: 'DECLARE_MOD',
-        [LxToken.TK_ERROR]: 'ERROR',
-        [LxToken.TK_FNCALL]: 'FUNCTION_CALL_END',
-        [LxToken.TK_IDENT]: 'IDENT',
-    },
-    DECLARE_MOD: {
-        [EboDeclarations.BUFFERED]: 'DECLARE_IN',
-        [EboDeclarations.TRIGGERED]: 'DECLARE_IN',
-        [EboDeclarations.PUBLIC]: 'DECLARE_IDENT',
-        [EboDeclarations.INPUT]: 'DECLARE_IDENT',
-        [EboDeclarations.OUTPUT]: 'DECLARE_IDENT',
-        [LxToken.TK_IDENT]: 'DECLARES_LOC'
-    },
-    DECLARE_IN: {
-        [EboDeclarations.INPUT]: 'DECLARE_IDENT'
-    },
-    DECLARE_IDENT: {
-        [LxToken.TK_IDENT]: 'DECLARES'
-    },
-    DECLARE_IDENT_LOC: {
-        [LxToken.TK_IDENT]: 'DECLARES_LOC'
-    },
-    DECLARE_LOC_AR_SZ: {
-        [LxToken.TK_NUMBER]: 'DECLARE_LOC_AR_CL',
-    },
-    DECLARE_LOC_AR_CL: {
-        [Symbols.BRACKET_CL]: 'DECLARES_LOC',
-    },
-    DECLARES_LOC: {
-        [Symbols.BRACKET_OP]: 'DECLARE_LOC_AR_SZ',
-        [Symbols.COMMA]: 'DECLARE_IDENT_LOC',
-        [LxToken.TK_EOL]: 'DECLARES_END'
-    },
-    DECLARES: {
-        [Symbols.COMMA]: 'DECLARE_IDENT',
-        [LxToken.TK_EOL]: 'DECLARES_END'
-    },
-    BASEDON: {
-        [LxToken.TK_IDENT]: 'BASEDON_I'
-    },
-    BASEDON_I: {
-        [EboControl.GO]: 'BASEDON_GO',
-        [EboControl.GOTO]: 'BASEDON_GOTO',
-    },
-    BASEDON_GO: {
-        [EboControl.TO]: 'BASEDON_GOTO',
-        [EboControl.LINE]: 'BASEDON_GOTO_LINE',
-        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
-        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
-    },
-    BASEDON_GOTO: {
-        [EboControl.LINE]: 'BASEDON_GOTO_LINE',
-        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
-        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
-    },
-    BASEDON_GOTO_LINE: {
-        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
-        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST'
-    },
-    BASEDON_GOTO_LIST: {
-        [LxToken.TK_IDENT]: 'BASEDON_GOTO_LIST',
-        [LxToken.TK_NUMBER]: 'BASEDON_GOTO_LIST',
-        [LxToken.TK_EOL]: 'BASEDON_END'
-    },
-    GO: {
-        [EboControl.TO]: 'GOTO',
-        [EboControl.LINE]: 'GOTO_LINE',
-        [LxToken.TK_IDENT]: 'GOTO_END',
-        [LxToken.TK_NUMBER]: 'GOTO_END'
-    },
-    GOTO: {
-        [EboControl.LINE]: 'GOTO_LINE',
-        [LxToken.TK_IDENT]: 'GOTO_END',
-        [LxToken.TK_NUMBER]: 'GOTO_END'
-    },
-    GOTO_LINE: {
-        [EboControl.LINE]: 'BASEDON_GOTO',
-        [LxToken.TK_IDENT]: 'GOTO_END',
-        [LxToken.TK_NUMBER]: 'GOTO_END'
-    },
-    ARG: {
-        [LxToken.TK_NUMBER]: 'ARG_ID',
-    },
-    ARG_ID: {
-        [LxToken.TK_IDENT]: 'ARG_END'
-    },
-    IDENT: {
-        [Symbols.COLON]: 'LINE_ID_END',
-        _: 'IDENT_ID_END'
-    },
-    LINE_TAG: {
-        [LxToken.TK_IDENT]: 'LINE_TAG_END',
-        [LxToken.TK_NUMBER]: 'LINE_TAG_END'
-    },
-    FUNCTION: {
-        [LxToken.TK_IDENT]: 'FUNCTIONS',
-    },
-    FUNCTIONS: {
-        [Symbols.COMMA]: 'FUNCTION',
-        [LxToken.TK_EOL]: 'FUNCTION_END',
-    },
-
-
-
+const enum ParseState {
+    UNKNOWN
+    , ARG
+    , ARG_END
+    , ARG_ID
+    , ARRAY_CLOSE
+    , ARRAY_INDEX
+    , ASSIGN
+    , ASSIGN_ARRAY
+    , ASSIGN_ARRAY_CL
+    , ASSIGN_END
+    , ASSIGN_MORE
+    , ASSIGN_TO
+    , ASSIGN_TO_END
+    , BASEDON
+    , BASEDON_END
+    , BASEDON_GO
+    , BASEDON_GOTO
+    , BASEDON_GOTO_LINE
+    , BASEDON_GOTO_LIST
+    , BASEDON_I
+    , DECLARE_FUNCTION
+    , DECLARE_FUNCTIONS
+    , DECLARE_FUNCTIONS_END
+    , DECLARE_IDENT
+    , DECLARE_IDENT_LOC
+    , DECLARE_IN
+    , DECLARE_LOC_AR_CL
+    , DECLARE_LOC_AR_SZ
+    , DECLARE_MOD
+    , DECLARES
+    , DECLARES_END
+    , DECLARES_LOC
+    , ERROR
+    , EXPR
+    , EXPR_IDENT
+    , FUNCTION_CALL
+    , FUNCTION_CALL_END
+    , GO
+    , GOTO
+    , GOTO_END
+    , GOTO_LINE
+    , IDENT
+    , IDENT_ID_END
+    , IF
+    , IF_EXP
+    , IF_THEN
+    , IF_THEN_ELSE
+    , IF_THEN_ELSE_EXP
+    , IF_THEN_ELSE_EXP_END
+    , IF_THEN_END
+    , IF_THEN_EXP
+    , IF_THEN_EXP_END
+    , INIT
+    , LINE_ID_END
+    , LINE_TAG
+    , LINE_TAG_END
+    , TURN
+    , TURN_VAL
+    , TURN_STATEMENT_END
+    , SET
+    , SET_ARRAY
+    , SET_ARRAY_CL
+    , SET_EXPR
+    , SET_MORE
+    , SET_STATEMENT_END
+    , SET_VAR
+    , SYS_FUNCTION
+    , SYS_FUNCTION_END
+    , ARRAY_INIT
 };
 
-const state_actions: { [id: string]: (ast: SymbolTable, cur: Cursor) => void } = {
-    DECLARES_END(ast: SymbolTable, cur: Cursor) {
+function parse_array_x(expression: LexToken[], symTable: SymbolTable) {
+    let stack: LexToken[] = [];
+    let depth = 0;
+    let i = 0;
+    if (expression[i].type === TokenKind.BracketLeftSymbol) {
+        ++depth;
+        while (depth && ++i < expression.length) {
+            const tk = expression[i];
+            switch (tk.type) {
+                case TokenKind.BracketLeftSymbol: ++depth; break;
+                case TokenKind.BracketRightSymbol: --depth; break;
+            }
+            if (depth) {
+                stack.push(tk);
+            }
+        }
+    }
+    return stack;
+}
+
+
+type ParseMap = { [name: number]: { [id: number]: number, _?: number } };
+
+const states: ParseMap = {
+    [ParseState.INIT]: {
+        [TokenKind.BasedonStatement]: ParseState.BASEDON,
+        [TokenKind.GoStatement]: ParseState.GO,
+        [TokenKind.GotoStatement]: ParseState.GOTO,
+        [TokenKind.IfStatement]: ParseState.IF,
+        [TokenKind.LineStatement]: ParseState.LINE_TAG,
+        [TokenKind.ArgDeclaration]: ParseState.ARG,
+        [TokenKind.DatetimeDeclaration]: ParseState.DECLARE_MOD,
+        [TokenKind.FunctionDeclaration]: ParseState.DECLARE_FUNCTION,
+        [TokenKind.NumericDeclaration]: ParseState.DECLARE_MOD,
+        [TokenKind.StringDeclaration]: ParseState.DECLARE_MOD,
+        [TokenKind.ErrorToken]: ParseState.ERROR,
+        [TokenKind.FunctionCallToken]: ParseState.FUNCTION_CALL,
+        [TokenKind.IdentifierToken]: ParseState.IDENT,
+        [TokenKind.SET]: ParseState.SET,
+        [TokenKind.ADJUST]: ParseState.SET,
+        [TokenKind.MODIFY]: ParseState.SET,
+        [TokenKind.CHANGE]: ParseState.SET,
+        [TokenKind.TURN]: ParseState.TURN,
+    },
+    [ParseState.EXPR]: {
+        [TokenKind.IdentifierToken]: ParseState.EXPR_IDENT,
+        // [TokenKind.NumberToken]: ParseState.EXPR_IDENT,
+        // [TokenKind.TimeToken]: ParseState.EXPR_IDENT,
+        [TokenKind.FunctionCallToken]: ParseState.FUNCTION_CALL,
+    },
+    [ParseState.DECLARE_MOD]: {
+        [TokenKind.BufferedDeclaration]: ParseState.DECLARE_IN,
+        [TokenKind.TriggeredDeclaration]: ParseState.DECLARE_IN,
+        [TokenKind.PublicDeclaration]: ParseState.DECLARE_IDENT,
+        [TokenKind.InputDeclaration]: ParseState.DECLARE_IDENT,
+        [TokenKind.OutputDeclaration]: ParseState.DECLARE_IDENT,
+        [TokenKind.IdentifierToken]: ParseState.DECLARES_LOC
+    },
+    [ParseState.DECLARE_IN]: {
+        [TokenKind.InputDeclaration]: ParseState.DECLARE_IDENT
+    },
+    [ParseState.DECLARE_IDENT]: {
+        [TokenKind.IdentifierToken]: ParseState.DECLARES
+    },
+    [ParseState.DECLARE_IDENT_LOC]: {
+        [TokenKind.IdentifierToken]: ParseState.DECLARES_LOC
+    },
+    [ParseState.DECLARE_LOC_AR_SZ]: {
+        [TokenKind.NumberToken]: ParseState.DECLARE_LOC_AR_CL,
+    },
+    [ParseState.DECLARE_LOC_AR_CL]: {
+        [TokenKind.BracketRightSymbol]: ParseState.DECLARES_LOC,
+    },
+    [ParseState.DECLARES_LOC]: {
+        [TokenKind.BracketLeftSymbol]: ParseState.DECLARE_LOC_AR_SZ,
+        [TokenKind.CommaSymbol]: ParseState.DECLARE_IDENT_LOC,
+        [TokenKind.EndOfLineToken]: ParseState.DECLARES_END
+    },
+    [ParseState.DECLARES]: {
+        [TokenKind.CommaSymbol]: ParseState.DECLARE_IDENT,
+        [TokenKind.EndOfLineToken]: ParseState.DECLARES_END
+    },
+    [ParseState.BASEDON]: {
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_I
+    },
+    [ParseState.BASEDON_I]: {
+        [TokenKind.GoStatement]: ParseState.BASEDON_GO,
+        [TokenKind.GotoStatement]: ParseState.BASEDON_GOTO,
+    },
+    [ParseState.BASEDON_GO]: {
+        [TokenKind.ToKeyWord]: ParseState.BASEDON_GOTO,
+        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO_LINE,
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST
+    },
+    [ParseState.BASEDON_GOTO]: {
+        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO_LINE,
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST
+    },
+    [ParseState.BASEDON_GOTO_LINE]: {
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST
+    },
+    [ParseState.BASEDON_GOTO_LIST]: {
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.EndOfLineToken]: ParseState.BASEDON_END
+    },
+    [ParseState.GO]: {
+        [TokenKind.ToKeyWord]: ParseState.GOTO,
+        [TokenKind.LineStatement]: ParseState.GOTO_LINE,
+        [TokenKind.IdentifierToken]: ParseState.GOTO_END,
+        [TokenKind.NumberToken]: ParseState.GOTO_END
+    },
+    [ParseState.GOTO]: {
+        [TokenKind.LineStatement]: ParseState.GOTO_LINE,
+        [TokenKind.IdentifierToken]: ParseState.GOTO_END,
+        [TokenKind.NumberToken]: ParseState.GOTO_END
+    },
+    [ParseState.GOTO_LINE]: {
+        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO,
+        [TokenKind.IdentifierToken]: ParseState.GOTO_END,
+        [TokenKind.NumberToken]: ParseState.GOTO_END
+    },
+    [ParseState.ARG]: {
+        [TokenKind.NumberToken]: ParseState.ARG_ID,
+    },
+    [ParseState.ARG_ID]: {
+        [TokenKind.IdentifierToken]: ParseState.ARG_END
+    },
+    [ParseState.FUNCTION_CALL]: {
+        _: ParseState.FUNCTION_CALL,
+        [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
+    },
+
+    [ParseState.SYS_FUNCTION]: {
+        _: ParseState.SYS_FUNCTION,
+        [TokenKind.ParenthesesRightSymbol]: ParseState.SYS_FUNCTION_END,
+    },
+    [ParseState.EXPR_IDENT]: {
+        _: ParseState.IDENT_ID_END
+    },
+    [ParseState.IDENT]: {
+        [TokenKind.ColonSymbol]: ParseState.LINE_ID_END,
+        [TokenKind.EqualsSymbol]: ParseState.ASSIGN_END,
+        [TokenKind.BracketLeftSymbol]: ParseState.ASSIGN_ARRAY,
+        [TokenKind.AmpersandSymbol]: ParseState.ASSIGN_MORE,
+        [TokenKind.AndOperator]: ParseState.ASSIGN_MORE,
+        [TokenKind.CommaSymbol]: ParseState.ASSIGN_MORE,
+        _: ParseState.IDENT_ID_END
+    },
+    [ParseState.ASSIGN_ARRAY]: {
+        [TokenKind.IdentifierToken]: ParseState.ASSIGN_ARRAY_CL,
+        [TokenKind.NumberToken]: ParseState.ASSIGN_ARRAY_CL,
+    },
+    [ParseState.ASSIGN_ARRAY_CL]: {
+        [TokenKind.BracketRightSymbol]: ParseState.ASSIGN,
+    },
+    [ParseState.ASSIGN]: {
+        [TokenKind.EqualsSymbol]: ParseState.ASSIGN_END,
+        [TokenKind.AmpersandSymbol]: ParseState.ASSIGN_MORE,
+        [TokenKind.AndOperator]: ParseState.ASSIGN_MORE,
+        [TokenKind.CommaSymbol]: ParseState.ASSIGN_MORE,
+    },
+    [ParseState.TURN]: {
+        [TokenKind.onValue]: ParseState.TURN_VAL,
+        [TokenKind.offValue]: ParseState.TURN_VAL,
+        _: ParseState.TURN,
+    },
+    [ParseState.TURN_VAL]: {
+        _: ParseState.TURN_VAL,
+        [TokenKind.EndOfLineToken]: ParseState.TURN_STATEMENT_END
+    },
+    [ParseState.SET]: {
+        [TokenKind.TheOperator]: ParseState.SET,
+        [TokenKind.IdentifierToken]: ParseState.SET_VAR,
+    },
+    [ParseState.SET_MORE]: {
+        [TokenKind.IdentifierToken]: ParseState.SET_VAR,
+    },
+    [ParseState.SET_VAR]: {
+        [TokenKind.ToKeyWord]: ParseState.SET_EXPR,
+        [TokenKind.EqualsSymbol]: ParseState.SET_EXPR,
+        [TokenKind.BracketLeftSymbol]: ParseState.SET_ARRAY,
+        [TokenKind.CommaSymbol]: ParseState.SET_MORE,
+        [TokenKind.AndOperator]: ParseState.SET_MORE,
+    },
+    [ParseState.SET_ARRAY]: {
+        [TokenKind.IdentifierToken]: ParseState.SET_ARRAY_CL,
+        [TokenKind.NumberToken]: ParseState.SET_ARRAY_CL,
+    },
+    [ParseState.SET_ARRAY_CL]: {
+        [TokenKind.BracketRightSymbol]: ParseState.SET_VAR,
+    },
+    [ParseState.SET_EXPR]: {
+        _: ParseState.SET_EXPR,
+        [TokenKind.EndOfLineToken]: ParseState.SET_STATEMENT_END
+    },
+    // [ParseState.FUNCTION_CALL_OPEN]: {
+    //     _: ParseState.FUNCTION_CALL_OPEN,
+    //     [TokenKind.PARENTHESES_CL]: ParseState.FUNCTION_CALL_CLOSE,
+    // },
+
+    // [ParseState.FUNCTION_CALL_CLOSE]: {
+    //     [TokenKind.PARENTHESES_CL]: ParseState.IDENT,
+    // },
+    [ParseState.ASSIGN_END]: {
+        _: ParseState.ASSIGN_TO,
+    },
+    [ParseState.ASSIGN_MORE]: {
+        [TokenKind.AmpersandSymbol]: ParseState.ASSIGN_MORE,
+        [TokenKind.AndOperator]: ParseState.ASSIGN_MORE,
+        [TokenKind.IdentifierToken]: ParseState.ASSIGN,
+        _: ParseState.IDENT_ID_END
+    },
+    [ParseState.ASSIGN_TO]: {
+        [TokenKind.EndOfLineToken]: ParseState.ASSIGN_TO_END,
+        _: ParseState.ASSIGN_TO,
+    },
+    [ParseState.LINE_TAG]: {
+        [TokenKind.IdentifierToken]: ParseState.LINE_TAG_END,
+        [TokenKind.NumberToken]: ParseState.LINE_TAG_END
+    },
+
+    [ParseState.DECLARE_FUNCTION]: {
+        [TokenKind.IdentifierToken]: ParseState.DECLARE_FUNCTIONS,
+    },
+    [ParseState.DECLARE_FUNCTIONS]: {
+        [TokenKind.CommaSymbol]: ParseState.DECLARE_FUNCTION,
+        [TokenKind.EndOfLineToken]: ParseState.DECLARE_FUNCTIONS_END,
+    },
+
+    [ParseState.IF]: {
+        _: ParseState.IF_EXP,
+    },
+    [ParseState.IF_EXP]: {
+        _: ParseState.IF_EXP,
+        [TokenKind.ThenStatement]: ParseState.IF_THEN,
+    },
+    [ParseState.IF_THEN]: {
+        _: ParseState.IF_THEN_EXP,
+        [TokenKind.EndOfLineToken]: ParseState.IF_THEN_END,
+    },
+    [ParseState.IF_THEN_EXP]: {
+        _: ParseState.IF_THEN_EXP,
+        [TokenKind.ElseStatement]: ParseState.IF_THEN_ELSE,
+        [TokenKind.EndOfLineToken]: ParseState.IF_THEN_EXP_END,
+    },
+    [ParseState.IF_THEN_ELSE]: {
+        _: ParseState.IF_THEN_ELSE_EXP,
+    },
+    [ParseState.IF_THEN_ELSE_EXP]: {
+        _: ParseState.IF_THEN_ELSE_EXP,
+        [TokenKind.EndOfLineToken]: ParseState.IF_THEN_ELSE_EXP_END,
+    },
+};
+
+const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } = {
+    [ParseState.DECLARES_END](ast: SymbolTable, cur: Cursor) {
         parse_declaration(cur)
             .forEach(decl => {
                 ast.declare_variable(decl);
             });
     },
-    BASEDON_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.BASEDON_END](ast: SymbolTable, cur: Cursor) {
         const bo = parse_basedon(cur);
         if (bo) {
             ast.lookup_variable(bo.variable);
             bo.lines.forEach(line => { ast.lookup_line(line); });
         }
     },
-    GOTO_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.GOTO_END](ast: SymbolTable, cur: Cursor) {
         const gt = parse_goto(cur);
         if (gt) {
             ast.lookup_line(gt);
         }
     },
-    ARG_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.ARG_END](ast: SymbolTable, cur: Cursor) {
         const decl = parse_parameter(cur);
         ast.declare_parameter(decl);
     },
-    IDENT_ID_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.IDENT_ID_END](ast: SymbolTable, cur: Cursor) {
         const tk = cur.current();
         ast.lookup_variable(tk);
     },
-    LINE_ID_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.LINE_ID_END](ast: SymbolTable, cur: Cursor) {
         const tk = cur.current();
         if (tk.range.begin === 0) {
             ast.declare_line(cur.current());
@@ -628,26 +1039,53 @@ const state_actions: { [id: string]: (ast: SymbolTable, cur: Cursor) => void } =
             ast.lookup_variable(tk);
         }
     },
-    FUNCTION_CALL_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.FUNCTION_CALL_END](ast: SymbolTable, cur: Cursor) {
         ast.lookup_function(cur.current());
+        parse_function(ast, cur);
     },
-    LINE_TAG_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.LINE_TAG_END](ast: SymbolTable, cur: Cursor) {
         ast.declare_line(cur.item(1));
     },
-    FUNCTION_END(ast: SymbolTable, cur: Cursor) {
+    [ParseState.DECLARE_FUNCTIONS_END](ast: SymbolTable, cur: Cursor) {
         cur.advance();
-            parse_list(cur).forEach(tk => {
-                ast.declare_function(functionDecl(tk));
-            });
+        parse_list(cur).forEach(tk => {
+            ast.declare_function(functionDecl(tk));
+        });
     },
-    ERROR(ast: SymbolTable, cur: Cursor) {
-            let tk = cur.current();
-            ast.add_error({
-                id: EboErrors.ParseError,
-                severity: Severity.Error,
-                message: `Parse error '${tk.value}'`,
-                range: tk.range
-            });
+    [ParseState.ERROR](ast: SymbolTable, cur: Cursor) {
+        let tk = cur.current();
+        ast.add_error({
+            id: EboErrors.ParseError,
+            severity: Severity.Error,
+            message: `Parse error '${tk.value}'`,
+            range: tk.range
+        });
+    },
+    [ParseState.IF_THEN_END](ast: SymbolTable, cur: Cursor) {
+        parse_if_exp(ast, cur);
+    },
+    [ParseState.IF_THEN_EXP_END](ast: SymbolTable, cur: Cursor) {
+        parse_if_exp(ast, cur);
+    },
+    [ParseState.IF_THEN_ELSE_EXP_END](ast: SymbolTable, cur: Cursor) {
+        parse_if_exp(ast, cur);
+    },
+    [ParseState.ASSIGN_TO_END](ast: SymbolTable, cur: Cursor) {
+        parse_assignment(ast, cur);
+    },
+    [ParseState.SET_STATEMENT_END](ast: SymbolTable, cur: Cursor) {
+        parse_set_assignment(ast, cur);
+    },
+    [ParseState.TURN_STATEMENT_END](ast: SymbolTable, cur: Cursor) {
+        parse_turn_assignment(ast, cur);
+    },
+
+
+    // [ParseState.FUNCTION_CALL_CLOSE](ast: SymbolTable, cur: Cursor) {
+    //     parse_function(ast, cur);
+    // },
+    [ParseState.SYS_FUNCTION_END](ast: SymbolTable, cur: Cursor) {
+        parse_function(ast, cur);
     },
 };
 
@@ -732,52 +1170,127 @@ function check_usage(st: SymbolTable) {
 
 }
 
-const reFallthru = /\bfallthru\b/i;
 
-export function ebo_parse_file(fileText: string) {
+function parse_expression(line: LexToken[], symTable: SymbolTable) {
 
-    const symTable = new SymbolTable();
+    let state = states[ParseState.EXPR];
+    let stack: LexToken[] = [];
 
-    const tkn_lists = ebo_scan_text(fileText);
+    for (const tk of line) {
+        let next = state[tk.type] || state._;
+        if (tk.type === TokenKind.ParenthesesLeftSymbol) {
+            ++symTable.parens_depth;
+        }
+        if (tk.type === TokenKind.ParenthesesRightSymbol) {
+            --symTable.parens_depth;
+            if (symTable.parens_depth) {
+                if (next === ParseState.SYS_FUNCTION_END) { next = ParseState.SYS_FUNCTION; }
+                if (next === ParseState.FUNCTION_CALL_END) { next = ParseState.FUNCTION_CALL; }
+            }
+        }
+        if (!next && isFunctionKind(tk.type)) { next = ParseState.SYS_FUNCTION; }
+        if (next) {
+            stack.push(tk);
+            state = states[next];
+            let fn = state_actions[next];
+            if (fn) {
+                fn(symTable, new LineCursor(stack));
+            }
+            if (!state) {
+                state = states[ParseState.EXPR];
+                stack = [];
+            }
+        } else {
+            if (state !== states[ParseState.EXPR]) {
+                state = states[ParseState.EXPR];
+                stack = [];
+            }
+        }
+    }
+    let next = state && (state[TokenKind.EndOfLineToken] || state._);
+    if (next) {
+        state = states[next];
+        let fn = state_actions[next];
+        if (fn) {
+            fn(symTable, new LineCursor(stack));
+        }
+    }
+}
 
-    const tkData = tkn_lists.map(l =>
-        l.filter(t => t.type !== LxToken.TK_WHITESPACE && t.type !== LxToken.TK_COMMENT)
-    );
 
+function parse_statement(line: LexToken[], symTable: SymbolTable) {
+
+    let state = states[ParseState.INIT];
+    let stack: LexToken[] = [];
+
+    for (const tk of line) {
+        let next = state[tk.type] || state._;
+        if (tk.type === TokenKind.ParenthesesLeftSymbol) {
+            ++symTable.parens_depth;
+        }
+        if (tk.type === TokenKind.ParenthesesRightSymbol) {
+            --symTable.parens_depth;
+            if (symTable.parens_depth) {
+                if (next === ParseState.SYS_FUNCTION_END) { next = ParseState.SYS_FUNCTION; }
+                if (next === ParseState.FUNCTION_CALL_END) { next = ParseState.FUNCTION_CALL; }
+            }
+        }
+        if (!next && isFunctionKind(tk.type)) { next = ParseState.SYS_FUNCTION; }
+        if (next) {
+            stack.push(tk);
+            state = states[next];
+            let fn = state_actions[next];
+            if (fn) {
+                fn(symTable, new LineCursor(stack));
+            }
+            if (!state) {
+                state = states[ParseState.INIT];
+                stack = [];
+            }
+        } else {
+            if (state !== states[ParseState.INIT]) {
+                state = states[ParseState.INIT];
+                stack = [];
+            }
+        }
+    }
+    let next = state && (state[TokenKind.EndOfLineToken] || state._);
+    if (next) {
+        state = states[next];
+        let fn = state_actions[next];
+        if (fn) {
+            fn(symTable, new LineCursor(stack));
+        }
+    }
+}
+
+function check_is_fallthru(tkn_lists: LexToken[][]) {
+    const reFallthru = /\bfallthru\b/i;
     // check for fallthru to disable warnings
     tkn_lists.forEach(tks => {
         tks.forEach(tk => {
-            if (tk.type === LxToken.TK_COMMENT && reFallthru.test(tk.value)) {
-                symTable.fallthru = true;
+            if (tk.type === TokenKind.CommentToken && reFallthru.test(tk.value)) {
+                return true;
             }
-            });
         });
+    });
+    return false;
+}
+
+
+export function ebo_parse_file(fileText: string) {
+
+    const tkn_lists = ebo_scan_text(fileText);
+
+    const symTable = new SymbolTable();
+    symTable.fallthru = check_is_fallthru(tkn_lists);
+
+    const tkData = tkn_lists.map(l =>
+        l.filter(t => t.type !== TokenKind.WhitespaceToken && t.type !== TokenKind.CommentToken)
+    );
 
     for (const line of tkData) {
-
-        let state = states.INIT;
-        let stack: LexToken[] = [];
-
-        for (const tk of line) {
-            let next = state[tk.type] || state._;
-            if (next) {
-                stack.push(tk);
-                state = states[next];
-                let fn = state_actions[next];
-                if (fn) {
-                    fn(symTable, new LineCursor(stack));
-                }
-                if (!state) {
-                    state = states.INIT;
-                    stack = [];
-                }
-            } else {
-                if (state !== states.INIT) {
-                    state = states.INIT;
-                    stack = [];
-                }
-            }
-        }
+        parse_statement(line, symTable);
     }
 
     check_lines(symTable);

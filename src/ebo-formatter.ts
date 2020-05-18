@@ -1,23 +1,23 @@
 import * as vscode from 'vscode';
-import { ebo_scan_text, LexToken, TextRange, Token } from './ebo-scanner';
-import { LxToken, EboControl, EboFunctions, EboValues, Symbols, EboOperators } from './ebo-types';
+import { ebo_scan_text, LexToken, TextRange } from './ebo-scanner';
+import { TokenKind, isFunctionKind, isOperatorKind, isVariableKind, isValueKind, isSymbolKind } from './ebo-types';
 
 const size = 2;
 
 function test_if_then_open(line: LexToken[]) {
 
     let s = 0;
-    if (line[0].type === LxToken.TK_WHITESPACE) { ++s; }
-    if (line[s].type !== EboControl.IF) {
+    if (line[0].type === TokenKind.WhitespaceToken) { ++s; }
+    if (line[s].type !== TokenKind.IfStatement) {
         return false;
     }
     let i = line.length - 1;
     while (i > 0) {
         let ty = line[--i].type;
-        if (ty === EboControl.THEN) {
+        if (ty === TokenKind.ThenStatement) {
             return true;
         }
-        if (!(ty === LxToken.TK_WHITESPACE || ty === LxToken.TK_COMMENT)) {
+        if (!(ty === TokenKind.WhitespaceToken || ty === TokenKind.CommentToken)) {
             break;
         }
     }
@@ -29,14 +29,14 @@ function test_line(line: LexToken[]) {
     if (line.length > 2) {
         let tk = line[0];
         switch (tk.type) {
-            case LxToken.TK_IDENT:
-                if (line[1].type === Symbols.COLON) {
+            case TokenKind.IdentifierToken:
+                if (line[1].type === TokenKind.ColonSymbol) {
                     return tk;
                 }
                 break;
-            case EboControl.LINE:
+            case TokenKind.LineStatement:
                 tk = line[1];
-                if (tk.type === LxToken.TK_IDENT || tk.type === LxToken.TK_NUMBER) {
+                if (tk.type === TokenKind.IdentifierToken || tk.type === TokenKind.NumberToken) {
                     return tk;
                 }
                 break;
@@ -45,25 +45,25 @@ function test_line(line: LexToken[]) {
     return undefined;
 }
 
-const close_tags: Token[] = [
-    EboControl.ELSE
-    , EboControl.CASE
-    , EboControl.ENDIF
-    , EboControl.ENDSELECT
-    , EboControl.ENDWHEN
-    , EboControl.ENDWHILE
-    , EboControl.UNTIL
-    , EboControl.NEXT
+const close_tags: TokenKind[] = [
+    TokenKind.ElseStatement
+    , TokenKind.CaseStatement
+    , TokenKind.EndIfStatement
+    , TokenKind.EndSelectStatement
+    , TokenKind.EndWhenStatement
+    , TokenKind.EndWhileStatement
+    , TokenKind.UntilStatement
+    , TokenKind.NextStatement
 ];
 
-const open_tags: Token[] = [
-    EboControl.ELSE
-    , EboControl.CASE
-    , EboControl.FOR
-    , EboControl.REPEAT
-    , EboControl.SELECT
-    , EboControl.WHEN
-    , EboControl.WHILE
+const open_tags: TokenKind[] = [
+    TokenKind.ElseStatement
+    , TokenKind.CaseStatement
+    , TokenKind.ForStatement
+    , TokenKind.RepeatStatement
+    , TokenKind.SelectStatement
+    , TokenKind.WhenStatement
+    , TokenKind.WhileStatement
 ];
 
 
@@ -133,9 +133,9 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         // trim trailing spaces
 
-        if (lastTk.type === LxToken.TK_WHITESPACE) {
+        if (lastTk.type === TokenKind.WhitespaceToken) {
             edits.push(vscode.TextEdit.delete(toRange(lastTk.range)));
-        } else if (lastTk.type === LxToken.TK_COMMENT) {
+        } else if (lastTk.type === TokenKind.CommentToken) {
             const we = reTrailingSpaces.exec(lastTk.value);
             if (we) {
                 edits.push(vscode.TextEdit.delete(range_back(lastTk.range.begin + we.index, lastTk.range)));
@@ -144,13 +144,13 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         // do indentations
 
-        const ws = line_tks[0].type === LxToken.TK_WHITESPACE ? line_tks[0] : undefined;
+        const ws = line_tks[0].type === TokenKind.WhitespaceToken ? line_tks[0] : undefined;
         const first = ws ? line_tks[1] : line_tks[0];
 
         if (close_tags.includes(first.type)) {
             depth -= size;
         }
-        if (first.type === LxToken.TK_EOL && ws && range_size(ws.range)) {
+        if (first.type === TokenKind.EndOfLineToken && ws && range_size(ws.range)) {
             /// needed??
         }
 
@@ -179,37 +179,41 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             const tk = line_tks[i];
             switch (tk.type) {
 
-                case Symbols.MINUS_SIGN: {
+                case TokenKind.MinusSymbol: {
                     // special handling on `-` signs could be unary operation 
                     // in which case there is no trailing space.
 
                     let p = line_tks[i - 1];
                     const n = line_tks[i + 1];
-                    const nn = n.type === LxToken.TK_WHITESPACE ? line_tks[i + 2] : n;
+                    const nn = n.type === TokenKind.WhitespaceToken ? line_tks[i + 2] : n;
 
-                    if (p.type !== LxToken.TK_WHITESPACE) {
-                        if (!Symbols[p.type]) {
+                    if (p.type !== TokenKind.WhitespaceToken) {
+                        if (!isSymbolKind(p.type)) {
                             edits.push(insertSpace(tk.range));
                         }
                     } else {
                         if (n.range.end - n.range.begin > 1) {
-                            if (!Symbols[line_tks[i - 2].type]) {
+                            if (!isSymbolKind(line_tks[i - 2].type)) {
                                 edits.push(vscode.TextEdit.delete(range1(p.range)));
                             }
                         }
                         p = line_tks[i - 2];
                     }
 
-                    const is_not_unary1 = EboFunctions[p.type] || EboValues[p.type] || EboOperators[p.type];  // for system variables and functions. 
-                    const is_not_unary2 = LxToken.TK_NUMBER === p.type || LxToken.TK_IDENT === p.type;
-                    const is_not_unary3 = Symbols.PARENTHESES_CL === p.type || Symbols.BRACKET_CL === p.type;
-                    const is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && Symbols[p.type];
+                    // for system variables and functions. 
+                    const is_not_unary1 = isFunctionKind(p.type)
+                        || isValueKind(p.type)
+                        || isVariableKind(p.type)
+                        || isOperatorKind(p.type);
+                    const is_not_unary2 = TokenKind.NumberToken === p.type || TokenKind.IdentifierToken === p.type;
+                    const is_not_unary3 = TokenKind.ParenthesesRightSymbol === p.type || TokenKind.BracketRightSymbol === p.type;
+                    const is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && isSymbolKind(p.type);
 
-                    if (is_unary && (nn.type !== Symbols.PARENTHESES_OP)) {
-                        if (n.type === LxToken.TK_WHITESPACE) {
+                    if (is_unary && (nn.type !== TokenKind.ParenthesesLeftSymbol)) {
+                        if (n.type === TokenKind.WhitespaceToken) {
                             edits.push(vscode.TextEdit.delete(toRange(n.range)));
                         }
-                    } else if (n.type !== LxToken.TK_WHITESPACE) {
+                    } else if (n.type !== TokenKind.WhitespaceToken) {
                         edits.push(insertSpace(n.range));
                     } else if (n.range.end - n.range.begin > 1) {
                         edits.push(vscode.TextEdit.delete(range1(n.range)));
@@ -217,60 +221,60 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     break;
                 }
 
-                case Symbols.GREATER_THAN_EQUALS: //   '>='
-                case Symbols.LESS_THAN_EQUALS:    //   '<='
-                case Symbols.NOT_EQUAL:           //   '<>'
-                case Symbols.ANGLE_LEFT:          //   '<'
-                case Symbols.ANGLE_RIGHT:         //   '>'
-                case Symbols.ASTERISK:             //   '*'
-                case Symbols.CARET:               //   '^'
-                case Symbols.EQUALS_SIGN:         //   '='
-                case Symbols.GREATER_THAN:        //   '>'
-                case Symbols.LESS_THAN:           //   '<'
-                case Symbols.PLUS_SIGN:           //   '+'
-                case Symbols.SLASH:               //   '/'
+                case TokenKind.GreaterThanEqualSymbol:  //  '>='
+                case TokenKind.LessThanEqualSymbol:     //  '<='
+                case TokenKind.NotEqualSymbol:          //  '<>'
+                case TokenKind.AngleLeftSymbol:         //  '<'
+                case TokenKind.AngleRightSymbol:        //  '>'
+                case TokenKind.AsteriskSymbol:          //  '*'
+                case TokenKind.CaretSymbol:             //  '^'
+                case TokenKind.EqualsSymbol:            //  '='
+                case TokenKind.GreaterThanSymbol:       //  '>'
+                case TokenKind.LessThanSymbol:          //  '<'
+                case TokenKind.PlusSymbol:              //  '+'
+                case TokenKind.SlashSymbol:             //  '/'
                     {
                         // single space padding surrounding operator symbols
                         const p = line_tks[i - 1];
                         const n = line_tks[i + 1];
-                        if (p.type !== LxToken.TK_WHITESPACE) {
+                        if (p.type !== TokenKind.WhitespaceToken) {
                             edits.push(insertSpace(tk.range));
                         } else if (range_size(p.range) > 1) {
                             edits.push(vscode.TextEdit.delete(range1(p.range)));
                         }
-                        if (n.type !== LxToken.TK_WHITESPACE) {
+                        if (n.type !== TokenKind.WhitespaceToken) {
                             edits.push(insertSpace(n.range));
                         } else if (range_size(n.range) > 1) {
                             edits.push(vscode.TextEdit.delete(range1(n.range)));
                         }
                         break;
                     }
-                case Symbols.COMMA: {
+                case TokenKind.CommaSymbol: {
                     //   ','
                     const p = line_tks[i - 1];
-                    if (p.type === LxToken.TK_WHITESPACE && range_size(p.range) > 0) {
+                    if (p.type === TokenKind.WhitespaceToken && range_size(p.range) > 0) {
                         edits.push(vscode.TextEdit.delete(toRange(p.range)));
                     }
                     const n = line_tks[i + 1];
-                    if (n.type !== LxToken.TK_WHITESPACE) {
+                    if (n.type !== TokenKind.WhitespaceToken) {
                         edits.push(insertSpace(n.range));
                     } else if (range_size(n.range) > 1) {
                         edits.push(vscode.TextEdit.delete(range1(n.range)));
                     }
                     break;
                 }
-                case Symbols.PARENTHESES_OP: {
+                case TokenKind.ParenthesesLeftSymbol: {
                     // remove spaces after opening parens
                     const n = line_tks[i + 1];
-                    if (n.type === LxToken.TK_WHITESPACE) {
+                    if (n.type === TokenKind.WhitespaceToken) {
                         edits.push(vscode.TextEdit.delete(toRange(n.range)));
                     }
                     break;
                 }
-                case Symbols.PARENTHESES_CL: {
+                case TokenKind.ParenthesesRightSymbol: {
                     //  remove spaces before closing parens
                     const p = line_tks[i - 1];
-                    if (p.type === LxToken.TK_WHITESPACE) {
+                    if (p.type === TokenKind.WhitespaceToken) {
                         edits.push(vscode.TextEdit.delete(toRange(p.range)));
                     }
                     break;
@@ -278,7 +282,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 default:
                     break;
             }
-            if (Symbols[tk.type]) {
+            if (isSymbolKind(tk.type)) {
             }
         }
     }
