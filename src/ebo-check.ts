@@ -283,8 +283,8 @@ function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
             case TokenKind.IdentifierToken:
                 assigned.push(parse_variable_list_item(cur));
                 break;
-            case TokenKind.offValue:  // fallthru
-            case TokenKind.onValue:
+            case TokenKind.OffValue:  // fallthru
+            case TokenKind.OnValue:
                 expression.push(tk);
             //fallthru
             default:
@@ -783,11 +783,11 @@ const states: ParseMap = {
         [TokenKind.ErrorToken]: ParseState.ERROR,
         [TokenKind.FunctionCallToken]: ParseState.FUNCTION_CALL,
         [TokenKind.IdentifierToken]: ParseState.IDENT,
-        [TokenKind.SET]: ParseState.SET,
-        [TokenKind.ADJUST]: ParseState.SET,
-        [TokenKind.MODIFY]: ParseState.SET,
-        [TokenKind.CHANGE]: ParseState.SET,
-        [TokenKind.TURN]: ParseState.TURN,
+        [TokenKind.SetAction]: ParseState.SET,
+        [TokenKind.AdjustAction]: ParseState.SET,
+        [TokenKind.ModifyAction]: ParseState.SET,
+        [TokenKind.ChangeAction]: ParseState.SET,
+        [TokenKind.TurnAction]: ParseState.TURN,
     },
     [ParseState.EXPR]: {
         [TokenKind.IdentifierToken]: ParseState.EXPR_IDENT,
@@ -911,8 +911,8 @@ const states: ParseMap = {
         [TokenKind.CommaSymbol]: ParseState.ASSIGN_MORE,
     },
     [ParseState.TURN]: {
-        [TokenKind.onValue]: ParseState.TURN_VAL,
-        [TokenKind.offValue]: ParseState.TURN_VAL,
+        [TokenKind.OnValue]: ParseState.TURN_VAL,
+        [TokenKind.OffValue]: ParseState.TURN_VAL,
         _: ParseState.TURN,
     },
     [ParseState.TURN_VAL]: {

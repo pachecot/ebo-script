@@ -35,12 +35,12 @@ const TokenMap: TokenDictionary = {
 
     //// VALUES
 
-    '-ON': TokenKind.minusOnValue
-    , OFF: TokenKind.offValue
-    , ON: TokenKind.onValue
+    '-ON': TokenKind.MinusOnValue
+    , OFF: TokenKind.OffValue
+    , ON: TokenKind.OnValue
 
-    , AM: TokenKind.amValue
-    , PM: TokenKind.pmValue
+    , AM: TokenKind.AmValue
+    , PM: TokenKind.PmValue
 
     , JANUARY: TokenKind.JanuaryValue
     , FEBRUARY: TokenKind.FebruaryValue
@@ -348,110 +348,110 @@ const TokenMap: TokenDictionary = {
     , DELAY: TokenKind.WaitStatement
 
     // Action Statements 
-    , P: TokenKind.P        /// print   
-    , PR: TokenKind.PR      /// print
+    , P: TokenKind.PrintAction        /// print   
+    , PR: TokenKind.PrintAction      /// print
 
-    , SET: TokenKind.SET
-    , ADJUST: TokenKind.ADJUST
-    , CHANGE: TokenKind.CHANGE
-    , LET: TokenKind.LET
-    , MODIFY: TokenKind.MODIFY
+    , SET: TokenKind.SetAction
+    , ADJUST: TokenKind.AdjustAction
+    , CHANGE: TokenKind.ChangeAction
+    , LET: TokenKind.LetAction
+    , MODIFY: TokenKind.ModifyAction
 
-    , TURN: TokenKind.TURN
-    , MOVE: TokenKind.MOVE
-    , MODULATE: TokenKind.MODULATE
+    , TURN: TokenKind.TurnAction
+    , MOVE: TokenKind.MoveAction
+    , MODULATE: TokenKind.ModulateAction
 
-    , ENABLE: TokenKind.ENABLE
-    , DISABLE: TokenKind.DISABLE
-    , EN: TokenKind.EN
-    , DIS: TokenKind.DIS
-    , OPEN: TokenKind.OPEN
-    , SHUT: TokenKind.SHUT
-    , START: TokenKind.START
+    , ENABLE: TokenKind.EnableKeyword
+    , DISABLE: TokenKind.DisableAction
+    , EN: TokenKind.EnAction
+    , DIS: TokenKind.DisAction
+    , OPEN: TokenKind.OpenAction
+    , SHUT: TokenKind.ShutAction
+    , START: TokenKind.StartAction
 
-    , E: TokenKind.E  /// error line
+    , E: TokenKind.ErrorLine  /// error line
 
     // reserved words - usage?
 
-    , AVERAGED: TokenKind.AVERAGED
-    , BINARY: TokenKind.BINARY
-    , BIT: TokenKind.BIT
-    , BITSTRING: TokenKind.BITSTRING
-    , CHAR: TokenKind.CHAR
-    , CHARACTERSETNOTSUPPORTED: TokenKind.CHARACTERSETNOTSUPPORTED
-    , CHARTYPE: TokenKind.CHARTYPE
-    , CONSTANT: TokenKind.CONSTANT
-    , CURRENTVALUE: TokenKind.CURRENTVALUE
-    , DELETE: TokenKind.DELETE
-    , DIGITAL: TokenKind.DIGITAL
-    , ENABLEDISABLE: TokenKind.ENABLEDISABLE
-    , ENDRESTORE: TokenKind.ENDRESTORE
-    , FAILED: TokenKind.FAILED
-    , FAULT: TokenKind.FAULT
-    , MISSINGREQUIREDPARAMETER: TokenKind.MISSINGREQUIREDPARAMETER
-    , NOVTSESSIONS_AVAILABLE: TokenKind.NOVTSESSIONS_AVAILABLE
-    , OBJECT: TokenKind.OBJECT
-    , OBJECTCLASS: TokenKind.OBJECTCLASS
-    , OBJECTDELETIONNOTPERMITTED: TokenKind.OBJECTDELETIONNOTPERMITTED
-    , OBJECTID: TokenKind.OBJECTID
-    , OBJECTIDENTIFIERALREADYEXISTS: TokenKind.OBJECTIDENTIFIERALREADYEXISTS
-    , OBJECTREFERENCE: TokenKind.OBJECTREFERENCE
-    , ODD: TokenKind.ODD
-    , OTHER: TokenKind.OTHER
-    , OVERRANGE: TokenKind.OVERRANGE
-    , OVERRIDDEN: TokenKind.OVERRIDDEN
-    , PRINT: TokenKind.PRINT
-    , RUN: TokenKind.RUN
-    , RUNNING: TokenKind.RUNNING
-    , SINGULAR: TokenKind.SINGULAR
-    , SITE_CONFIG: TokenKind.SITE_CONFIG
-    , SITE_CONFIGB: TokenKind.SITE_CONFIGB
+    , AVERAGED: TokenKind.AveragedKeyword
+    , BINARY: TokenKind.BinaryKeyword
+    , BIT: TokenKind.BitKeyword
+    , BITSTRING: TokenKind.BitstringKeyword
+    , CHAR: TokenKind.CharKeyword
+    , CHARACTERSETNOTSUPPORTED: TokenKind.CharacterSetNotSupportedKeyword
+    , CHARTYPE: TokenKind.ChartypeKeyword
+    , CONSTANT: TokenKind.ConstantKeyword
+    , CURRENTVALUE: TokenKind.CurrentValueKeyword
+    , DELETE: TokenKind.DeleteKeyword
+    , DIGITAL: TokenKind.DigitalKeyword
+    , ENABLEDISABLE: TokenKind.EnableDisableKeyword
+    , ENDRESTORE: TokenKind.EndRestoreKeyword
+    , FAILED: TokenKind.FailedKeyword
+    , FAULT: TokenKind.FaultKeyword
+    , MISSINGREQUIREDPARAMETER: TokenKind.MissingRequiredParamterKeyword
+    , NOVTSESSIONS_AVAILABLE: TokenKind.NoVTSessionsAvailableKeyword
+    , OBJECT: TokenKind.ObjectKeyword
+    , OBJECTCLASS: TokenKind.ObjectClassKeyword
+    , OBJECTDELETIONNOTPERMITTED: TokenKind.ObjectDeletionNotPermittedKeyword
+    , OBJECTID: TokenKind.ObjectIdKeyword
+    , OBJECTIDENTIFIERALREADYEXISTS: TokenKind.ObjectIdentifierAlreadyExistsKeyword
+    , OBJECTREFERENCE: TokenKind.ObjectReferenceKeyword
+    , ODD: TokenKind.OddKeyword
+    , OTHER: TokenKind.OtherKeyword
+    , OVERRANGE: TokenKind.OverrangeKeyword
+    , OVERRIDDEN: TokenKind.OverriddenKeyword
+    , PRINT: TokenKind.PrintKeyword
+    , RUN: TokenKind.RunKeyword
+    , RUNNING: TokenKind.RunningKeyword
+    , SINGULAR: TokenKind.SingularKeyword
+    , SITE_CONFIG: TokenKind.SiteConfigKeyword
+    , SITE_CONFIGB: TokenKind.SiteConfigBKeyword
 
-    , MONTHTODATE: TokenKind.MONTHTODATE
-    , MONTHTONOW: TokenKind.MONTHTONOW
-    , ONEWEEKTODATE: TokenKind.ONEWEEKTODATE
-    , ONEWEEKTONOW: TokenKind.ONEWEEKTONOW
-    , ONEYEARTODATE: TokenKind.ONEYEARTODATE
-    , ONEYEARTONOW: TokenKind.ONEYEARTONOW
-    , TODAY: TokenKind.TODAY
+    , MONTHTODATE: TokenKind.MonthToDateKeyword
+    , MONTHTONOW: TokenKind.MonthToNowKeyword
+    , ONEWEEKTODATE: TokenKind.OneWeekToDateKeyword
+    , ONEWEEKTONOW: TokenKind.OneWeekToNowKeyword
+    , ONEYEARTODATE: TokenKind.OneYearToDateKeyword
+    , ONEYEARTONOW: TokenKind.OneYearToNowKeyword
+    , TODAY: TokenKind.TodayKeyword
 
     // , ERRORS
-    , ACCESSLOG: TokenKind.ACCESSLOG
-    , ACCESSSERVER: TokenKind.ACCESSSERVER
-    , ACKALARM: TokenKind.ACKALARM
-    , ALL: TokenKind.ALL
-    , APPEND: TokenKind.APPEND
-    , ASK: TokenKind.ASK
-    , BREAKPOINT: TokenKind.BREAKPOINT
-    , C: TokenKind.C
-    , CD: TokenKind.CD
-    , CURVEFIT: TokenKind.CURVEFIT
-    , DEL: TokenKind.DEL
-    , DT: TokenKind.DT
-    , ENCRYPT: TokenKind.ENCRYPT
-    , ENCRYPTED: TokenKind.ENCRYPTED
-    , ERASE: TokenKind.ERASE
-    , EXECUTE: TokenKind.EXECUTE
-    , EXISTS: TokenKind.EXISTS
-    , FROM: TokenKind.FROM
-    , LOOKUP: TokenKind.LOOKUP
-    , MESSAGEWINDOW: TokenKind.MESSAGEWINDOW
-    , PID: TokenKind.PID
-    , SITE: TokenKind.SITE
-    , STATUS: TokenKind.STATUS
-    , STATUSLINE: TokenKind.STATUSLINE
-    , TMTO: TokenKind.TMTO
-    , TOUCHEDCELL: TokenKind.TOUCHEDCELL
-    , TRACE: TokenKind.TRACE
-    , UNADVISE: TokenKind.UNADVISE
-    , UNIQUEPIN: TokenKind.UNIQUEPIN
-    , UPDATE: TokenKind.UPDATE
-    , UPDATEALARMS: TokenKind.UPDATEALARMS
-    , UPDATEEVENTS: TokenKind.UPDATEEVENTS
-    , UPDATEEXITLOG: TokenKind.UPDATEEXITLOG
-    , VERSION: TokenKind.VERSION
-    , WHERE: TokenKind.WHERE
-    , WITH: TokenKind.WITH
+    , ACCESSLOG: TokenKind.AccessLogKeyword
+    , ACCESSSERVER: TokenKind.AccessServerKeyword
+    , ACKALARM: TokenKind.AckAlarmKeyword
+    , ALL: TokenKind.AllKeyword
+    , APPEND: TokenKind.AppendKeyword
+    , ASK: TokenKind.AskKeyword
+    , BREAKPOINT: TokenKind.BreakpointKeyword
+    , C: TokenKind.CKeyword
+    , CD: TokenKind.CDKeyword
+    , CURVEFIT: TokenKind.CurvefitKeyword
+    , DEL: TokenKind.DelKeyword
+    , DT: TokenKind.DTKeyword
+    , ENCRYPT: TokenKind.EncryptKeyword
+    , ENCRYPTED: TokenKind.EncryptedKeyword
+    , ERASE: TokenKind.EraseKeyword
+    , EXECUTE: TokenKind.ExecuteKeyword
+    , EXISTS: TokenKind.ExistsKeyword
+    , FROM: TokenKind.FromKeyword
+    , LOOKUP: TokenKind.LookupKeyword
+    , MESSAGEWINDOW: TokenKind.MessageWindowKeyword
+    , PID: TokenKind.PidKeyword
+    , SITE: TokenKind.SiteKeyword
+    , STATUS: TokenKind.StatusKeyword
+    , STATUSLINE: TokenKind.StatusLineKeyword
+    , TMTO: TokenKind.TmToKeyword
+    , TOUCHEDCELL: TokenKind.TouchedCellKeyword
+    , TRACE: TokenKind.TraceKeyword
+    , UNADVISE: TokenKind.UnadviseKeyword
+    , UNIQUEPIN: TokenKind.UniquePinKeyword
+    , UPDATE: TokenKind.UpdateKeyword
+    , UPDATEALARMS: TokenKind.UpdateAlarmsKeyword
+    , UPDATEEVENTS: TokenKind.UpdateEventsKeyword
+    , UPDATEEXITLOG: TokenKind.UpdateExitLogKeyword
+    , VERSION: TokenKind.VersionKeyword
+    , WHERE: TokenKind.WhereKeyword
+    , WITH: TokenKind.WithKeyword
 };
 
 const EboKeyWordNames = Object.keys(TokenMap);

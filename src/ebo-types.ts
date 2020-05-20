@@ -56,12 +56,12 @@ export const enum TokenKind {
     //#region system values
     //  -------------------
 
-    , minusOnValue
-    , offValue
-    , onValue
+    , MinusOnValue
+    , OffValue
+    , OnValue
 
-    , amValue
-    , pmValue
+    , AmValue
+    , PmValue
 
     , JanuaryValue
     , FebruaryValue
@@ -110,7 +110,7 @@ export const enum TokenKind {
 
     // Value Range Markers
     // -------------------
-    , FirstValue = minusOnValue
+    , FirstValue = MinusOnValue
     , LastValue = MonthsValue
 
     //#endregion
@@ -339,28 +339,27 @@ export const enum TokenKind {
 
     //#region Action Statements 
     // ------------------------
-    , P /// print
-    , PR
+    , PrintAction /// print
 
-    , SET
-    , ADJUST
-    , CHANGE
-    , LET
-    , MODIFY
+    , SetAction
+    , AdjustAction
+    , ChangeAction
+    , LetAction
+    , ModifyAction
 
-    , TURN
-    , MOVE
-    , MODULATE
+    , TurnAction
+    , MoveAction
+    , ModulateAction
 
-    , ENABLE
-    , DISABLE
-    , EN
-    , DIS
-    , OPEN
-    , SHUT
-    , START
+    , EnableKeyword
+    , DisableAction
+    , EnAction
+    , DisAction
+    , OpenAction
+    , ShutAction
+    , StartAction
 
-    , E  /// error line
+    , ErrorLine  /// error line
 
     //#endregion
 
@@ -368,85 +367,85 @@ export const enum TokenKind {
     // ---------------------
     // reserved words - usage?
 
-    , AVERAGED
-    , BINARY
-    , BIT
-    , BITSTRING
-    , CHAR
-    , CHARACTERSETNOTSUPPORTED
-    , CHARTYPE
-    , CONSTANT
-    , CURRENTVALUE
-    , DELETE
-    , DIGITAL
-    , ENABLEDISABLE
-    , ENDRESTORE
-    , FAILED
-    , FAULT
-    , MISSINGREQUIREDPARAMETER
-    , NOVTSESSIONS_AVAILABLE
-    , OBJECT
-    , OBJECTCLASS
-    , OBJECTDELETIONNOTPERMITTED
-    , OBJECTID
-    , OBJECTIDENTIFIERALREADYEXISTS
-    , OBJECTREFERENCE
-    , ODD
-    , OTHER
-    , OVERRANGE
-    , OVERRIDDEN
-    , PRINT
-    , RUN
-    , RUNNING
-    , SINGULAR
-    , SITE_CONFIG
-    , SITE_CONFIGB
+    , AveragedKeyword
+    , BinaryKeyword
+    , BitKeyword
+    , BitstringKeyword
+    , CharKeyword
+    , CharacterSetNotSupportedKeyword
+    , ChartypeKeyword
+    , ConstantKeyword
+    , CurrentValueKeyword
+    , DeleteKeyword
+    , DigitalKeyword
+    , EnableDisableKeyword
+    , EndRestoreKeyword
+    , FailedKeyword
+    , FaultKeyword
+    , MissingRequiredParamterKeyword
+    , NoVTSessionsAvailableKeyword
+    , ObjectKeyword
+    , ObjectClassKeyword
+    , ObjectDeletionNotPermittedKeyword
+    , ObjectIdKeyword
+    , ObjectIdentifierAlreadyExistsKeyword
+    , ObjectReferenceKeyword
+    , OddKeyword
+    , OtherKeyword
+    , OverrangeKeyword
+    , OverriddenKeyword
+    , PrintKeyword
+    , RunKeyword
+    , RunningKeyword
+    , SingularKeyword
+    , SiteConfigKeyword
+    , SiteConfigBKeyword
 
-    , MONTHTODATE
-    , MONTHTONOW
-    , ONEWEEKTODATE
-    , ONEWEEKTONOW
-    , ONEYEARTODATE
-    , ONEYEARTONOW
-    , TODAY
+    , MonthToDateKeyword
+    , MonthToNowKeyword
+    , OneWeekToDateKeyword
+    , OneWeekToNowKeyword
+    , OneYearToDateKeyword
+    , OneYearToNowKeyword
+    , TodayKeyword
 
     // , ERRORS
-    , ACCESSLOG
-    , ACCESSSERVER
-    , ACKALARM
-    , ALL
-    , APPEND
-    , ASK
-    , BREAKPOINT
-    , C
-    , CD
-    , CURVEFIT
-    , DEL
-    , DT
-    , ENCRYPT
-    , ENCRYPTED
-    , ERASE
-    , EXECUTE
-    , EXISTS
-    , FROM
-    , LOOKUP
-    , MESSAGEWINDOW
-    , PID
-    , SITE
-    , STATUS
-    , STATUSLINE
-    , TMTO
-    , TOUCHEDCELL
-    , TRACE
-    , UNADVISE
-    , UNIQUEPIN
-    , UPDATE
-    , UPDATEALARMS
-    , UPDATEEVENTS
-    , UPDATEEXITLOG
-    , VERSION
-    , WHERE
-    , WITH
+    , AccessLogKeyword
+    , AccessServerKeyword
+    , AckAlarmKeyword
+    , AllKeyword
+    , AppendKeyword
+    , AskKeyword
+    , BreakpointKeyword
+    , CKeyword
+    , CDKeyword
+    , CurvefitKeyword
+    , DelKeyword
+    , DTKeyword
+    , EncryptKeyword
+    , EncryptedKeyword
+    , EraseKeyword
+    , ExecuteKeyword
+    , ExistsKeyword
+    , FromKeyword
+    , LookupKeyword
+    , MessageWindowKeyword
+    , PidKeyword
+    , SiteKeyword
+    , StatusKeyword
+    , StatusLineKeyword
+    , TmToKeyword
+    , TouchedCellKeyword
+    , TraceKeyword
+    , UnadviseKeyword
+    , UniquePinKeyword
+    , UpdateKeyword
+    , UpdateAlarmsKeyword
+    , UpdateEventsKeyword
+    , UpdateExitLogKeyword
+    , VersionKeyword
+    , WhereKeyword
+    , WithKeyword
 
     //#endregion
 };
@@ -543,11 +542,11 @@ type OperatorKind = TokenKind.AboveOperator
     ;
 
 
-type ValueKind = TokenKind.minusOnValue
-    | TokenKind.offValue
-    | TokenKind.onValue
-    | TokenKind.amValue
-    | TokenKind.pmValue
+type ValueKind = TokenKind.MinusOnValue
+    | TokenKind.OffValue
+    | TokenKind.OnValue
+    | TokenKind.AmValue
+    | TokenKind.PmValue
     | TokenKind.JanuaryValue
     | TokenKind.FebruaryValue
     | TokenKind.MarchValue
@@ -653,3 +652,6 @@ export function isVariableKind(s: TokenKind): s is VariableKind {
 export function isSymbolKind(s: TokenKind): s is SymbolKind {
     return TokenKind.FirstSymbol <= s && s <= TokenKind.LastSymbol;
 }
+
+
+
