@@ -457,7 +457,8 @@ const TokenMap: TokenDictionary = {
 const EboKeyWordNames = Object.keys(TokenMap);
 
 const reEndLine = /\r?\n/;
-const reWhiteSpace = /\s+/;
+const reContLine = /~\r?\n/;
+const reWhiteSpace = /[ \t]+/;
 const reComment = /'.*/;
 const reQuotedString = /"(?:\|"|[^"|]*)*"/;
 const reNumber = /\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?/;
@@ -489,59 +490,60 @@ function getTokenKind(x: string): TokenKind {
 const scannerRe = new RegExp(`(${[
     //                          0
     reEndLine.source         // 1
-    , reWhiteSpace.source    // 2
-    , reComment.source       // 3
-    , reQuotedString.source  // 4
-    , reNumber.source        // 5
-    , reTime.source          // 6
-    , reSymbol.source        // 7
-    , reKWords.source        // 8
-    , reFnCall.source        // 9
-    , reToken.source         // 10
-    , reErr.source           // 11
+    , reContLine.source      // 2
+    , reWhiteSpace.source    // 3
+    , reComment.source       // 4
+    , reQuotedString.source  // 5
+    , reNumber.source        // 6
+    , reTime.source          // 7
+    , reSymbol.source        // 8
+    , reKWords.source        // 9
+    , reFnCall.source        // 10
+    , reToken.source         // 11
+    , reErr.source           // 12
 ].join(')|(')})`, 'yi');
 
 
 const scannerFns: ((m: string) => TokenKind)[] = [
 /* 0 */    () => TokenKind.EndOfLineToken,
-/* 1 */    () => TokenKind.WhitespaceToken,
-/* 2 */    () => TokenKind.CommentToken,
-/* 3 */    () => TokenKind.StringToken,
-/* 4 */    () => TokenKind.NumberToken,
-/* 5 */    () => TokenKind.TimeToken,
-/* 6 */    (m: string) => SymbolMap[m] || TokenKind.OperatorToken,
-/* 7 */    (m: string): TokenKind => getTokenKind(m) || TokenKind.KeywordToken,
-/* 8 */    () => TokenKind.FunctionCallToken,
-/* 9 */    () => TokenKind.IdentifierToken,
-/* 10*/    () => TokenKind.ErrorToken,
+/* 1 */    () => TokenKind.ContinueLineToken,
+/* 2 */    () => TokenKind.WhitespaceToken,
+/* 3 */    () => TokenKind.CommentToken,
+/* 4 */    () => TokenKind.StringToken,
+/* 5 */    () => TokenKind.NumberToken,
+/* 6 */    () => TokenKind.TimeToken,
+/* 7 */    (m: string) => SymbolMap[m] || TokenKind.OperatorToken,
+/* 8 */    (m: string): TokenKind => getTokenKind(m) || TokenKind.KeywordToken,
+/* 9 */    () => TokenKind.FunctionCallToken,
+/* 10 */   () => TokenKind.IdentifierToken,
+/* 11 */   () => TokenKind.ErrorToken,
 ];
 
-function ebo_scan_line(line: string, line_id: number): LexToken[] {
-
+// function ebo_scan_line(line: string, line_id: number): LexToken[] {
+function ebo_scan_line(line: string): LexToken[] {
+    let line_id = 0;
+    let offset = 0;
     const tks: LexToken[] = [];
     let m: RegExpExecArray | null;
+
     while ((m = scannerRe.exec(line))) {
         let i = 1;
         while (!m[i] && i < m.length) { ++i; }
+        let begin = m.index - offset;
         tks.push({
             range: {
                 line: line_id,
-                begin: m.index,
-                end: m.index + m[i].length
+                begin: begin,
+                end: begin + m[i].length
             },
             type: scannerFns[i - 1](m[i]),
             value: m[i]
         });
+        if (m[1] || m[2]) {
+            ++line_id;
+            offset = m.index + m[0].length;
+        }
     }
-    tks.push({
-        range: {
-            line: line_id,
-            begin: line.length,
-            end: line.length + 1,
-        },
-        type: TokenKind.EndOfLineToken,
-        value: "\n"
-    });
     return tks;
 }
 
@@ -554,5 +556,6 @@ function ebo_scan_lines(lines: string[]) {
  * @param fileText 
  */
 export function ebo_scan_text(fileText: string) {
-    return ebo_scan_lines(fileText.split(reEndLine));
+    return ebo_scan_line(fileText);
+    // return ebo_scan_lines(fileText.split(reEndLine));
 }

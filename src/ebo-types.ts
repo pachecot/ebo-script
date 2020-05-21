@@ -4,6 +4,7 @@ export const enum TokenKind {
     Unknown
     , EndOfFileToken
     , EndOfLineToken
+    , ContinueLineToken
     , WhitespaceToken
     , CommentToken
     , NumberToken

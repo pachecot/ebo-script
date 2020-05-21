@@ -126,7 +126,19 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
     let edits: vscode.TextEdit[] = [];
     let depth = 0;
 
-    for (let line_tks of tokens) {
+    let tokensByLine = tokens.reduce((ar, tk) => {
+        ar[ar.length - 1].push(tk);
+        if (tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.ContinueLineToken) {
+            ar.push([]);
+        }
+        return ar;
+    }, [[]] as LexToken[][]);
+
+    if (tokensByLine[tokensByLine.length - 1].length === 0) {
+        tokensByLine.pop();
+    }
+
+    for (let line_tks of tokensByLine) {
         if (line_tks.length === 1) { /* EOL */ continue; }
 
         const lastTk = line_tks[line_tks.length - 2];

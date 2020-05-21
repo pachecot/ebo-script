@@ -8,6 +8,8 @@ import { TextRange, LexToken, ebo_scan_text } from './ebo-scanner';
 export enum EboErrors {
     None,
     ParseError,
+    MissingCloseParentheses,
+    ExtraCloseParentheses,
     DuplicateLine,
     UnreferencedLine,
     UndefinedLine,
@@ -350,8 +352,8 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
     };
 
     parse_expression(res.cond_expr, st);
-    parse_statement(res.true_expr, st);
-    parse_statement(res.false_expr, st);
+    parse_statements(res.true_expr, st);
+    parse_statements(res.false_expr, st);
 
     return res;
 }
@@ -465,7 +467,7 @@ function parse_basedon(cur: Cursor): BasedonExpr {
     parse_goto_statement(cur);
     while (cur.remain() > 0 && cur.current().type !== TokenKind.EndOfLineToken) {
         if (cur.current().type !== TokenKind.CommaSymbol) {
-        lines.push(cur.current());
+            lines.push(cur.current());
         }
         cur.advance();
     }
@@ -1189,7 +1191,7 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
             if (symTable.parens_depth && next === ParseState.FUNCTION_CALL_END) {
                 next = ParseState.FUNCTION_CALL;
             }
-            }
+        }
         if (!next && isFunctionKind(tk.type)) {
             next = ParseState.FUNCTION_CALL;
         }
@@ -1222,7 +1224,7 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
 }
 
 
-function parse_statement(line: LexToken[], symTable: SymbolTable) {
+function parse_statements(line: LexToken[], symTable: SymbolTable) {
 
     let state = states[ParseState.INIT];
     let stack: LexToken[] = [];
@@ -1257,7 +1259,29 @@ function parse_statement(line: LexToken[], symTable: SymbolTable) {
                 stack = [];
             }
         }
+        if (tk.type === TokenKind.EndOfLineToken) {
+            state = states[ParseState.INIT];
+            if (symTable.parens_depth) {
+                if (symTable.parens_depth > 0) {
+                    symTable.add_error({
+                        id: EboErrors.MissingCloseParentheses,
+                        severity: Severity.Error,
+                        message: `Missing closing Parentheses!`,
+                        range: tk.range
+                    });
+                } else {
+                    symTable.add_error({
+                        id: EboErrors.ExtraCloseParentheses,
+                        severity: Severity.Error,
+                        message: `Extra closing Parentheses!`,
+                        range: tk.range
+                    });
+                }
+                symTable.parens_depth = 0;
+            }
+        }
     }
+
     let next = state && (state[TokenKind.EndOfLineToken] || state._);
     if (next) {
         state = states[next];
@@ -1268,17 +1292,11 @@ function parse_statement(line: LexToken[], symTable: SymbolTable) {
     }
 }
 
-function check_is_fallthru(tkn_lists: LexToken[][]) {
-    const reFallthru = /\bfallthru\b/i;
+const reFallthru = /\bfallthru\b/i;
+const isFallthru = (tk: LexToken) => tk.type === TokenKind.CommentToken && reFallthru.test(tk.value);
+function check_is_fallthru(tkn_lists: LexToken[]) {
     // check for fallthru to disable warnings
-    tkn_lists.forEach(tks => {
-        tks.forEach(tk => {
-            if (tk.type === TokenKind.CommentToken && reFallthru.test(tk.value)) {
-                return true;
-            }
-        });
-    });
-    return false;
+    return tkn_lists.some(isFallthru);
 }
 
 
@@ -1289,13 +1307,13 @@ export function ebo_parse_file(fileText: string) {
     const symTable = new SymbolTable();
     symTable.fallthru = check_is_fallthru(tkn_lists);
 
-    const tkData = tkn_lists.map(l =>
-        l.filter(t => t.type !== TokenKind.WhitespaceToken && t.type !== TokenKind.CommentToken)
+    const tkData = tkn_lists.filter(t =>
+        t.type !== TokenKind.WhitespaceToken && t.type !== TokenKind.CommentToken
     );
 
-    for (const line of tkData) {
-        parse_statement(line, symTable);
-    }
+    // for (const line of tkData) {
+    parse_statements(tkData, symTable);
+    // }
 
     check_lines(symTable);
     check_usage(symTable);
