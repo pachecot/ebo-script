@@ -85,7 +85,7 @@
                     "match": "(?i:\\b(NUMERIC(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?|STRING(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?|DATETIME(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?)\\b)"
                 },
                 {
-                    "match": "(?i:\\b(BASEDON)\\b\\s+\\b([a-zA-Z_\\d]+)\\b\\s+\\b(GO(?:\\s)?TO)\\b\\s+\\b([a-zA-Z_\\d]+)\\b(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?(?:\\s+\\b([a-zA-Z_\\d]+)\\b)?)",
+                    "match": "(?i:\\b(BASEDON)\\b\\s+\\b([a-zA-Z_\\d]+)\\b\\s+\\b(GO(?:\\s*TO)?\\b\\s+\\b([a-zA-Z_\\d]+)\\b(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?)",
                     "captures": {
                         "1": {
                             "name": "keyword.control.ebo-script"
