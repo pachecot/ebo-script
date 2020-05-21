@@ -37,9 +37,14 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+
+### 0.5.8
+
+- added line continuations.
+- misc bug fixes
+
 
 ### 0.5.0
 
-Initial release.
+- Initial release.
 
