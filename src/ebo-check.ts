@@ -464,7 +464,9 @@ function parse_basedon(cur: Cursor): BasedonExpr {
     cur.advance(2);
     parse_goto_statement(cur);
     while (cur.remain() > 0 && cur.current().type !== TokenKind.EndOfLineToken) {
+        if (cur.current().type !== TokenKind.CommaSymbol) {
         lines.push(cur.current());
+        }
         cur.advance();
     }
     return { variable, lines };
@@ -696,6 +698,7 @@ const enum ParseState {
     , BASEDON_GOTO
     , BASEDON_GOTO_LINE
     , BASEDON_GOTO_LIST
+    , BASEDON_GOTO_LIST_ITEM
     , BASEDON_I
     , DECLARE_FUNCTION
     , DECLARE_FUNCTIONS
@@ -839,22 +842,21 @@ const states: ParseMap = {
     },
     [ParseState.BASEDON_GO]: {
         [TokenKind.ToKeyWord]: ParseState.BASEDON_GOTO,
-        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO_LINE,
-        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
-        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST
+        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST_ITEM,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST_ITEM
     },
     [ParseState.BASEDON_GOTO]: {
-        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO_LINE,
-        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
-        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST
-    },
-    [ParseState.BASEDON_GOTO_LINE]: {
-        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
-        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST
+        [TokenKind.LineStatement]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST_ITEM,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST_ITEM
     },
     [ParseState.BASEDON_GOTO_LIST]: {
-        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST,
-        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST,
+        [TokenKind.IdentifierToken]: ParseState.BASEDON_GOTO_LIST_ITEM,
+        [TokenKind.NumberToken]: ParseState.BASEDON_GOTO_LIST_ITEM,
+    },
+    [ParseState.BASEDON_GOTO_LIST_ITEM]: {
+        [TokenKind.CommaSymbol]: ParseState.BASEDON_GOTO_LIST,
         [TokenKind.EndOfLineToken]: ParseState.BASEDON_END
     },
     [ParseState.GO]: {
