@@ -1308,7 +1308,9 @@ export function ebo_parse_file(fileText: string) {
     symTable.fallthru = check_is_fallthru(tkn_lists);
 
     const tkData = tkn_lists.filter(t =>
-        t.type !== TokenKind.WhitespaceToken && t.type !== TokenKind.CommentToken
+        t.type !== TokenKind.WhitespaceToken &&
+        t.type !== TokenKind.CommentToken &&
+        t.type !== TokenKind.ContinueLineToken
     );
 
     // for (const line of tkData) {
@@ -1320,6 +1322,7 @@ export function ebo_parse_file(fileText: string) {
 
     return symTable;
 }
+
 
 
 
