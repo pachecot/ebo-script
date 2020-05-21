@@ -184,6 +184,9 @@ interface FunctionExpression {
 
 function parse_function(st: SymbolTable, cur: Cursor): FunctionExpression {
     let fn = cur.current();
+    if (!isFunctionKind(fn.type)) {
+        st.lookup_function(fn);
+    }
     let args: LexToken[][] = [];
     let arg: LexToken[] = [];
     let count = 1;
@@ -880,11 +883,10 @@ const states: ParseMap = {
         _: ParseState.FUNCTION_CALL,
         [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
     },
-
-    [ParseState.SYS_FUNCTION]: {
-        _: ParseState.SYS_FUNCTION,
-        [TokenKind.ParenthesesRightSymbol]: ParseState.SYS_FUNCTION_END,
-    },
+    // [ParseState.SYS_FUNCTION]: {
+    //     _: ParseState.FUNCTION_CALL,
+    //     [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
+    // },
     [ParseState.EXPR_IDENT]: {
         _: ParseState.IDENT_ID_END
     },
@@ -1040,7 +1042,6 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
         }
     },
     [ParseState.FUNCTION_CALL_END](ast: SymbolTable, cur: Cursor) {
-        ast.lookup_function(cur.current());
         parse_function(ast, cur);
     },
     [ParseState.LINE_TAG_END](ast: SymbolTable, cur: Cursor) {
@@ -1084,9 +1085,9 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
     // [ParseState.FUNCTION_CALL_CLOSE](ast: SymbolTable, cur: Cursor) {
     //     parse_function(ast, cur);
     // },
-    [ParseState.SYS_FUNCTION_END](ast: SymbolTable, cur: Cursor) {
-        parse_function(ast, cur);
-    },
+    // [ParseState.SYS_FUNCTION_END](ast: SymbolTable, cur: Cursor) {
+    //     parse_function(ast, cur);
+    // },
 };
 
 /**
@@ -1183,12 +1184,13 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
         }
         if (tk.type === TokenKind.ParenthesesRightSymbol) {
             --symTable.parens_depth;
-            if (symTable.parens_depth) {
-                if (next === ParseState.SYS_FUNCTION_END) { next = ParseState.SYS_FUNCTION; }
-                if (next === ParseState.FUNCTION_CALL_END) { next = ParseState.FUNCTION_CALL; }
+            if (symTable.parens_depth && next === ParseState.FUNCTION_CALL_END) {
+                next = ParseState.FUNCTION_CALL;
             }
+            }
+        if (!next && isFunctionKind(tk.type)) {
+            next = ParseState.FUNCTION_CALL;
         }
-        if (!next && isFunctionKind(tk.type)) { next = ParseState.SYS_FUNCTION; }
         if (next) {
             stack.push(tk);
             state = states[next];
