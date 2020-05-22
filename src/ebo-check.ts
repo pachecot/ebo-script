@@ -310,6 +310,8 @@ function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
 type ConditionExpression = LexToken[];
 type Expression = LexToken[];
 
+const enum ForState { C, T, F, E }
+
 interface ForExpression {
     cond_expr: ConditionExpression
     true_expr?: Expression
@@ -317,11 +319,11 @@ interface ForExpression {
 }
 
 
-const if_then_states: { [id: number]: string } = {
-    [TokenKind.IfStatement]: 'C',
-    [TokenKind.ThenStatement]: 'T',
-    [TokenKind.ElseStatement]: 'F',
-    [TokenKind.EndOfLineToken]: '$',
+const if_then_states: { [id: number]: ForState } = {
+    [TokenKind.IfStatement]: ForState.C,
+    [TokenKind.ThenStatement]: ForState.T,
+    [TokenKind.ElseStatement]: ForState.F,
+    [TokenKind.EndOfLineToken]: ForState.E,
 };
 
 
@@ -333,7 +335,7 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
     let state = if_then_states[cur.current().type];
     cur.advance();
 
-    while (state && state !== '$') {
+    while (state && state !== ForState.E) {
         const tk = cur.current();
         if (if_then_states[tk.type]) {
             data[state] = tks;
@@ -346,9 +348,9 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
     }
 
     const res = {
-        cond_expr: data['C'] || [],
-        true_expr: data['T'] || [],
-        false_expr: data['F'] || []
+        cond_expr: data[ForState.C] || [],
+        true_expr: data[ForState.T] || [],
+        false_expr: data[ForState.F] || []
     };
 
     parse_expression(res.cond_expr, st);
@@ -381,7 +383,11 @@ function parse_list(cur: Cursor): LexToken[] {
 
 const enum DeclState { Init, Type, Modifier, Complete };
 
-const declaration_states: { [id: string]: { [t: number]: [DeclState, { [name: string]: number }] } } = {
+const declaration_states: {
+    [id: string]: {
+        [t: number]: [DeclState, { [name: string]: number }]
+    }
+} = {
     [DeclState.Init]: {
         [TokenKind.StringDeclaration]: [DeclState.Type, { type: SymbolType.StringType }],
         [TokenKind.NumericDeclaration]: [DeclState.Type, { type: SymbolType.Numeric }],
