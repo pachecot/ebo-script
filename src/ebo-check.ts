@@ -144,13 +144,19 @@ function parse_goto(cur: Cursor): LexToken {
 function parse_variable_list_item(cur: Cursor): VariableInst {
     let tk = cur.current();
     cur.advance();
-    if (cur.item(0).type === TokenKind.BracketLeftSymbol) {
-        let id = cur.item(1);
-        cur.advance(3);
+    if (cur.current().type === TokenKind.BracketLeftSymbol) {
+        cur.advance();
+        let id = cur.current();
+        let index = -1;
+        if (id.type === TokenKind.NumberToken) {
+            cur.advance();
+            index = Number(id.value);
+        }
+        cur.advance();
         return {
             name: tk.value,
             token: tk,
-            index: Number(id.value)
+            index: index
         };
     }
     return {
