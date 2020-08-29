@@ -21,7 +21,9 @@ export enum EboErrors {
     UndeclaredFunction,
     RedeclaredFunction,
     UnreferencedFunction,
-    IllegalAssignment
+    IllegalAssignment,
+    ArrayNotAllowed,
+    ArraySizeInvalid
 }
 
 
@@ -649,6 +651,22 @@ class SymbolTable {
         } else {
             this.symbols[name] = variable;
             this.variables[name] = variable;
+            if (variable.modifier !== VarModifier.Local && variable.size !== undefined) {
+                this.add_error({
+                    id: EboErrors.ArrayNotAllowed,
+                    severity: Severity.Error,
+                    message: `Variable '${name}' array index not allowed here.`,
+                    range: variable.range
+                });
+            }
+            if (variable.size !== undefined && variable.size <= 0) {
+                this.add_error({
+                    id: EboErrors.ArraySizeInvalid,
+                    severity: Severity.Error,
+                    message: `Variable '${name}' size is not valid.`,
+                    range: variable.range
+                });
+            }
         }
     }
 
