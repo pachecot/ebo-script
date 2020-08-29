@@ -353,6 +353,10 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
         false_expr: data[ForState.F] || []
     };
 
+    if (res.true_expr.length === 0) {
+        ++st.context.if_state;
+    }
+
     parse_expression(res.cond_expr, st);
     parse_statements(res.true_expr, st);
     parse_statements(res.false_expr, st);
@@ -506,10 +510,11 @@ function functionDecl(tk: LexToken): FunctionDecl {
     };
 }
 
+
 class SymbolTable {
 
+    context: ParseContext = new ParseContext();
     errors: ErrorInfo[] = [];
-    parens_depth = 0;
     fallthru = false;
     lines: { [name: string]: LexToken } = {};
     line_names: string[] = [];
@@ -683,6 +688,13 @@ class SymbolTable {
     add_error(info: ErrorInfo) {
         this.errors.push(info);
     }
+}
+
+class ParseContext {
+    parens_depth = 0;
+    for_depth = 0;
+    if_state = 0;
+    select_depth = 0;
 }
 
 
@@ -1190,11 +1202,11 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
     for (const tk of line) {
         let next = state[tk.type] || state._;
         if (tk.type === TokenKind.ParenthesesLeftSymbol) {
-            ++symTable.parens_depth;
+            ++symTable.context.parens_depth;
         }
         if (tk.type === TokenKind.ParenthesesRightSymbol) {
-            --symTable.parens_depth;
-            if (symTable.parens_depth && next === ParseState.FUNCTION_CALL_END) {
+            --symTable.context.parens_depth;
+            if (symTable.context.parens_depth && next === ParseState.FUNCTION_CALL_END) {
                 next = ParseState.FUNCTION_CALL;
             }
         }
@@ -1237,12 +1249,15 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
 
     for (const tk of line) {
         let next = state[tk.type] || state._;
+        if (tk.type === TokenKind.EndIfStatement) {
+            --symTable.context.if_state;
+        }
         if (tk.type === TokenKind.ParenthesesLeftSymbol) {
-            ++symTable.parens_depth;
+            ++symTable.context.parens_depth;
         }
         if (tk.type === TokenKind.ParenthesesRightSymbol) {
-            --symTable.parens_depth;
-            if (symTable.parens_depth) {
+            --symTable.context.parens_depth;
+            if (symTable.context.parens_depth) {
                 if (next === ParseState.SYS_FUNCTION_END) { next = ParseState.SYS_FUNCTION; }
                 if (next === ParseState.FUNCTION_CALL_END) { next = ParseState.FUNCTION_CALL; }
             }
@@ -1267,8 +1282,8 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
         }
         if (tk.type === TokenKind.EndOfLineToken) {
             state = states[ParseState.INIT];
-            if (symTable.parens_depth) {
-                if (symTable.parens_depth > 0) {
+            if (symTable.context.parens_depth) {
+                if (symTable.context.parens_depth > 0) {
                     symTable.add_error({
                         id: EboErrors.MissingCloseParentheses,
                         severity: Severity.Error,
@@ -1283,7 +1298,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                         range: tk.range
                     });
                 }
-                symTable.parens_depth = 0;
+                symTable.context.parens_depth = 0;
             }
         }
     }
