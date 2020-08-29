@@ -318,7 +318,12 @@ function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
 type ConditionExpression = LexToken[];
 type Expression = LexToken[];
 
-const enum ForState { C, T, F, E }
+const enum ForState {
+    FOR_COND = 1,
+    FOR_TRUE,
+    FOR_FALSE,
+    FOR_END
+}
 
 interface ForExpression {
     cond_expr: ConditionExpression
@@ -328,24 +333,35 @@ interface ForExpression {
 
 
 const if_then_states: { [id: number]: ForState } = {
-    [TokenKind.IfStatement]: ForState.C,
-    [TokenKind.ThenStatement]: ForState.T,
-    [TokenKind.ElseStatement]: ForState.F,
-    [TokenKind.EndOfLineToken]: ForState.E,
+    [TokenKind.IfStatement]: ForState.FOR_COND,
+    [TokenKind.ThenStatement]: ForState.FOR_TRUE,
+    [TokenKind.ElseStatement]: ForState.FOR_FALSE,
+    [TokenKind.EndOfLineToken]: ForState.FOR_END,
 };
 
 
 function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
 
-    const data: { [name: string]: LexToken[] } = {};
+    const data: { [name: number]: LexToken[] } = {};
 
     let tks: LexToken[] = [];
     let state = if_then_states[cur.current().type];
     cur.advance();
+    let depth = 1;
 
-    while (state && state !== ForState.E) {
+    while (state && state !== ForState.FOR_END) {
         const tk = cur.current();
-        if (if_then_states[tk.type]) {
+        switch (tk.type) {
+            case TokenKind.IfStatement:
+                ++depth;
+            case TokenKind.ElseStatement:
+                --depth;
+                break;
+            case TokenKind.EndOfLineToken:
+                if (tks.length) { --depth; }
+                break;
+        }
+        if (if_then_states[tk.type] && depth <= 1) {
             data[state] = tks;
             state = if_then_states[tk.type];
             tks = [];
@@ -355,10 +371,10 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): ForExpression {
         cur.advance();
     }
 
-    const res = {
-        cond_expr: data[ForState.C] || [],
-        true_expr: data[ForState.T] || [],
-        false_expr: data[ForState.F] || []
+    const res: Required<ForExpression> = {
+        cond_expr: data[ForState.FOR_COND] || [],
+        true_expr: data[ForState.FOR_TRUE] || [],
+        false_expr: data[ForState.FOR_FALSE] || []
     };
 
     if (res.true_expr.length === 0) {
