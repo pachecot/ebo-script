@@ -234,7 +234,7 @@ export const Signatures: SignatureMap = {
         , alias: ['ARCSINE']
     },
     ATAN: {
-        description: 'returns the arctanget of the given number.'
+        description: 'returns the arctangent of the given number.'
         , syntaxes: ['ATAN(number)']
         , alias: ['ARCTANGENT']
     },
