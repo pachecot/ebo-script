@@ -864,6 +864,7 @@ const states: ParseMap = {
     },
     [ParseState.DECLARE_LOC_AR_SZ]: {
         [TokenKind.NumberToken]: ParseState.DECLARE_LOC_AR_CL,
+        [TokenKind.BracketRightSymbol]: ParseState.DECLARES_LOC, // error empty []
     },
     [ParseState.DECLARE_LOC_AR_CL]: {
         [TokenKind.BracketRightSymbol]: ParseState.DECLARES_LOC,
