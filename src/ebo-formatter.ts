@@ -139,13 +139,21 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
     }
 
     for (let line_tks of tokensByLine) {
-        if (line_tks.length === 1) { /* EOL */ continue; }
+
+        if (line_tks.length === 1) {
+            // trim trailing whitespace at EOF if no EOF token
+            if (line_tks[0].type === TokenKind.WhitespaceToken && line_tks[0].value.length > 0) {
+                edits.push(vscode.TextEdit.delete(toRange(line_tks[0].range)));
+            }
+            /* EOL */
+            continue;
+        }
 
         const lastTk = line_tks[line_tks.length - 2];
 
         // trim trailing spaces
 
-        if (lastTk.type === TokenKind.WhitespaceToken) {
+        if (lastTk.type === TokenKind.EndOfLineToken || lastTk.type === TokenKind.WhitespaceToken) {
             edits.push(vscode.TextEdit.delete(toRange(lastTk.range)));
         } else if (lastTk.type === TokenKind.CommentToken) {
             const we = reTrailingSpaces.exec(lastTk.value);
