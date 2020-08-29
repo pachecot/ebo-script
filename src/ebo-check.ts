@@ -519,7 +519,7 @@ export class LineCursor implements Cursor {
         return this.items[this.#pos];
     }
     item(index: number) {
-        return this.items[index];
+        return this.items[this.#pos + index];
     }
     advance(amt = 1) {
         this.#pos += amt;
