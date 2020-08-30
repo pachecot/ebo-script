@@ -214,10 +214,10 @@ function parse_function(st: SymbolTable, cur: Cursor): FunctionExpression {
     let arg: LexToken[] = [];
     let count = 1;
     args.push(arg);
-    cur.advance();
-    cur.advance();
-    let tk = cur.current();
-    while (tk) {
+    cur.advance(2);
+    let tk: LexToken;
+
+    while (tk = cur.current()) {
         if (tk.type === TokenKind.ParenthesesRightSymbol) {
             --count;
             if (count === 0) { break; }
@@ -230,7 +230,6 @@ function parse_function(st: SymbolTable, cur: Cursor): FunctionExpression {
             arg.push(tk);
         }
         cur.advance();
-        tk = cur.current();
     }
     args.forEach(arg => { parse_expression(arg, st); });
     return {
