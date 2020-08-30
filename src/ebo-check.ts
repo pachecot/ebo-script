@@ -408,6 +408,148 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): IfExpression {
     return res;
 }
 
+interface ForExpression {
+    numeric_name: LexToken
+    begin: Expression
+    end: Expression
+    step: Expression
+    statements: Expression
+}
+
+const enum ForNextState {
+    FOR_NAME = 1,
+    FOR_BEGIN,
+    FOR_END,
+    FOR_STEP,
+    FOR_BLOCK,
+}
+
+const for_next_states: { [id: number]: ForNextState } = {
+    [TokenKind.ForStatement]: ForNextState.FOR_NAME,
+    [TokenKind.EqualsSymbol]: ForNextState.FOR_BEGIN,
+    [TokenKind.ToKeyWord]: ForNextState.FOR_END,
+    [TokenKind.StepStatement]: ForNextState.FOR_STEP,
+    [TokenKind.EndOfLineToken]: ForNextState.FOR_BLOCK,
+};
+
+function parse_for_exp(st: SymbolTable, cur: Cursor): ForExpression {
+
+    const data: { [name: number]: LexToken[] } = {};
+
+    const for_tk = cur.current();
+    let tks: LexToken[] = [];
+    let state = for_next_states[for_tk.type];
+    st.context.for_next_state.push(for_tk);
+    cur.advance();
+
+    while (state && state !== ForNextState.FOR_BLOCK) {
+        const tk = cur.current();
+        if (for_next_states[tk.type]) {
+            parse_expression(tks, st);
+            data[state] = tks;
+            state = for_next_states[tk.type];
+            tks = [];
+        } else {
+            tks.push(tk);;
+        }
+        cur.advance();
+    }
+
+    const numeric_exp = data[ForNextState.FOR_NAME];
+    const numeric_name = numeric_exp[0];
+    const res = {
+        numeric_name
+        , begin: data[ForNextState.FOR_BEGIN]
+        , end: data[ForNextState.FOR_END]
+        , step: data[ForNextState.FOR_STEP]
+        , statements: []
+    };
+
+    let vn = st.lookup_variable(numeric_name);
+
+    if (!numeric_name
+        || numeric_name.type !== TokenKind.IdentifierToken
+        || numeric_exp.length > 1
+        || !vn
+        || vn.modifier !== VarModifier.Local
+    ) {
+        st.errors.push({
+            severity: Severity.Error,
+            id: EboErrors.ForIdentifierInvalid,
+            message: "For identifier is invalid, local numeric required",
+            range: numeric_name.range
+        });
+    }
+
+
+    if (!res.begin || res.begin.length === 0) {
+        st.errors.push({
+            severity: Severity.Error,
+            id: EboErrors.ForStatementInvalidRange,
+            message: "For statement missing begin range",
+            range: for_tk.range
+        });
+    }
+
+    if (!res.end || res.end.length === 0) {
+        st.errors.push({
+            severity: Severity.Error,
+            id: EboErrors.ForStatementInvalidRange,
+            message: "For statement missing end range",
+            range: for_tk.range
+        });
+    }
+
+    return res;
+}
+
+interface CaseExpression {
+    cases: Expression
+    statements: Expression[]
+}
+
+interface SelectExpression {
+    test: Expression
+    cases: CaseExpression[]
+}
+
+function parse_select_exp(st: SymbolTable, cur: Cursor): SelectExpression {
+    let test: Expression = [];
+    st.context.select_state.push(cur.current());
+    if (cur.current().type === TokenKind.SelectStatement) {
+        cur.advance();
+    }
+    if (cur.current().type === TokenKind.CaseStatement) {
+        cur.advance();
+    }
+    while (cur.remain()) {
+        test.push(cur.current());
+        cur.advance();
+    }
+
+    return {
+        test,
+        cases: []
+    };
+}
+
+function parse_select_case_exp(st: SymbolTable, cur: Cursor): CaseExpression {
+    let cases: Expression = [];
+    st.context.select_state.push(cur.current());
+
+    if (cur.current().type === TokenKind.CaseStatement) {
+        cur.advance();
+    }
+    while (cur.remain()) {
+        cases.push(cur.current());
+        cur.advance();
+    }
+    return {
+        cases: cases,
+        statements: []
+    };
+}
+
 
 /**
  * comma separated list of tokens
@@ -752,9 +894,8 @@ class SymbolTable {
 
 class ParseContext {
     parens_depth = 0;
-    for_depth = 0;
-    if_state = 0;
-    select_depth = 0;
+    for_next_state: LexToken[] = [];
+    select_state: LexToken[] = [];
 }
 
 
@@ -765,6 +906,7 @@ const enum ParseState {
     , ARG_ID
     , ARRAY_CLOSE
     , ARRAY_INDEX
+    , ARRAY_INIT
     , ASSIGN
     , ASSIGN_ARRAY
     , ASSIGN_ARRAY_CL
@@ -795,6 +937,8 @@ const enum ParseState {
     , ERROR
     , EXPR
     , EXPR_IDENT
+    , FOR_EXP
+    , FOR_EXP_END
     , FUNCTION_CALL
     , FUNCTION_CALL_END
     , GO
@@ -816,9 +960,10 @@ const enum ParseState {
     , LINE_ID_END
     , LINE_TAG
     , LINE_TAG_END
-    , TURN
-    , TURN_VAL
-    , TURN_STATEMENT_END
+    , SELECT_CASE
+    , SELECT_CASE_END
+    , SELECT_EXP
+    , SELECT_EXP_END
     , SET
     , SET_ARRAY
     , SET_ARRAY_CL
@@ -828,7 +973,9 @@ const enum ParseState {
     , SET_VAR
     , SYS_FUNCTION
     , SYS_FUNCTION_END
-    , ARRAY_INIT
+    , TURN
+    , TURN_STATEMENT_END
+    , TURN_VAL
 };
 
 function parse_array_x(expression: LexToken[], symTable: SymbolTable) {
@@ -860,6 +1007,9 @@ const states: ParseMap = {
         [TokenKind.GoStatement]: ParseState.GO,
         [TokenKind.GotoStatement]: ParseState.GOTO,
         [TokenKind.IfStatement]: ParseState.IF,
+        [TokenKind.ForStatement]: ParseState.FOR_EXP,
+        [TokenKind.SelectStatement]: ParseState.SELECT_EXP,
+        [TokenKind.CaseStatement]: ParseState.SELECT_CASE,
         [TokenKind.LineStatement]: ParseState.LINE_TAG,
         [TokenKind.ArgDeclaration]: ParseState.ARG,
         [TokenKind.DatetimeDeclaration]: ParseState.DECLARE_MOD,
@@ -911,6 +1061,7 @@ const states: ParseMap = {
         [TokenKind.EndOfLineToken]: ParseState.DECLARES_END
     },
     [ParseState.DECLARES]: {
+        _: ParseState.DECLARES,
         [TokenKind.CommaSymbol]: ParseState.DECLARE_IDENT,
         [TokenKind.EndOfLineToken]: ParseState.DECLARES_END
     },
@@ -970,6 +1121,18 @@ const states: ParseMap = {
     //     _: ParseState.FUNCTION_CALL,
     //     [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
     // },
+    [ParseState.FOR_EXP]: {
+        _: ParseState.FOR_EXP,
+        [TokenKind.EndOfLineToken]: ParseState.FOR_EXP_END
+    },
+    [ParseState.SELECT_EXP]: {
+        _: ParseState.SELECT_EXP,
+        [TokenKind.EndOfLineToken]: ParseState.SELECT_EXP_END
+    },
+    [ParseState.SELECT_CASE]: {
+        _: ParseState.SELECT_CASE,
+        [TokenKind.EndOfLineToken]: ParseState.SELECT_CASE_END
+    },
     [ParseState.EXPR_IDENT]: {
         _: ParseState.IDENT_ID_END
     },
@@ -1145,6 +1308,15 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
             range: tk.range
         });
     },
+    [ParseState.FOR_EXP_END](ast: SymbolTable, cur: Cursor) {
+        parse_for_exp(ast, cur);
+    },
+    [ParseState.SELECT_EXP_END](ast: SymbolTable, cur: Cursor) {
+        parse_select_exp(ast, cur);
+    },
+    [ParseState.SELECT_CASE_END](ast: SymbolTable, cur: Cursor) {
+        parse_select_case_exp(ast, cur);
+    },
     [ParseState.IF_THEN_END](ast: SymbolTable, cur: Cursor) {
         parse_if_exp(ast, cur);
     },
@@ -1312,6 +1484,12 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
         let next = state[tk.type] || state._;
         if (tk.type === TokenKind.EndIfStatement) {
             --symTable.context.if_state;
+        }
+        if (tk.type === TokenKind.NextStatement) {
+            symTable.context.for_next_state.pop();
+        }
+        if (tk.type === TokenKind.EndSelectStatement) {
+            symTable.context.select_state.pop();
         }
         if (tk.type === TokenKind.ParenthesesLeftSymbol) {
             ++symTable.context.parens_depth;
