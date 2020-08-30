@@ -149,11 +149,13 @@ function parse_goto(cur: Cursor): LexToken {
 
 
 function parse_variable_list_item(cur: Cursor): VariableInst {
-    let tk = cur.current();
+
+    const tk = cur.current();
     cur.advance();
+
     if (cur.current().type === TokenKind.BracketLeftSymbol) {
         cur.advance();
-        let id = cur.current();
+        const id = cur.current();
         let index = -1;
         if (id.type === TokenKind.NumberToken) {
             cur.advance();
@@ -166,6 +168,7 @@ function parse_variable_list_item(cur: Cursor): VariableInst {
             index: index
         };
     }
+
     return {
         name: tk.value,
         token: tk
@@ -173,17 +176,20 @@ function parse_variable_list_item(cur: Cursor): VariableInst {
 }
 
 function parse_variable_list_rest(cur: Cursor): VariableInst[] {
-    let tks: VariableInst[] = [];
+    
+    const tks: VariableInst[] = [];
+    
     while (cur.current().type === TokenKind.CommaSymbol) {
         cur.advance();
-        let tk = parse_variable_list_item(cur);
+        const tk = parse_variable_list_item(cur);
         if (tk) { tks.push(tk); }
     }
+    
     return tks;
 }
 
 function parse_variable_list(cur: Cursor): VariableInst[] {
-    let itm = parse_variable_list_item(cur);
+    const itm = parse_variable_list_item(cur);
     if (itm) {
         const tks = [itm].concat(parse_variable_list_rest(cur));
         cur.advance(-1);
@@ -198,11 +204,13 @@ interface FunctionExpression {
 }
 
 function parse_function(st: SymbolTable, cur: Cursor): FunctionExpression {
-    let fn = cur.current();
+    const fn = cur.current();
+
     if (!isFunctionKind(fn.type)) {
         st.lookup_function(fn);
     }
-    let args: LexToken[][] = [];
+
+    const args: LexToken[][] = [];
     let arg: LexToken[] = [];
     let count = 1;
     args.push(arg);
@@ -237,9 +245,11 @@ interface AssignExpression {
 }
 
 function parse_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
-    let assigned: VariableInst[] = [];
-    let expression: LexToken[] = [];
+
+    const assigned: VariableInst[] = [];
+    const expression: LexToken[] = [];
     let tk = cur.current();
+
     while (tk.type !== TokenKind.EqualsSymbol) {
         if (tk.type === TokenKind.IdentifierToken) {
             assigned.push(parse_variable_list_item(cur));
@@ -250,6 +260,7 @@ function parse_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
     }
     cur.advance();
     tk = cur.current();
+
     while (tk && tk.type !== TokenKind.EndOfLineToken) {
         expression.push(tk);
         cur.advance();
@@ -257,6 +268,7 @@ function parse_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
     }
     assigned.forEach(id => { st.lookup_variable(id.token, true); });
     parse_expression(expression, st);
+
     return {
         assigned,
         expression
@@ -265,9 +277,11 @@ function parse_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
 
 
 function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
-    let assigned: VariableInst[] = [];
-    let expression: LexToken[] = [];
+    
+    const assigned: VariableInst[] = [];
+    const expression: LexToken[] = [];
     let tk = cur.current();
+
     while (tk.type !== TokenKind.EqualsSymbol && tk.type !== TokenKind.ToKeyWord) {
         if (tk.type === TokenKind.IdentifierToken) {
             assigned.push(parse_variable_list_item(cur));
@@ -278,6 +292,7 @@ function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
     }
     cur.advance();
     tk = cur.current();
+
     while (tk && tk.type !== TokenKind.EndOfLineToken) {
         expression.push(tk);
         cur.advance();
@@ -285,6 +300,7 @@ function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
     }
     assigned.forEach(id => { st.lookup_variable(id.token, true); });
     parse_expression(expression, st);
+
     return {
         assigned,
         expression
@@ -292,10 +308,10 @@ function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
 }
 
 function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
-    let assigned: VariableInst[] = [];
-    let expression: LexToken[] = [];
+    
+    const assigned: VariableInst[] = [];
+    const expression: LexToken[] = [];
     let tk = cur.current();
-    while (tk) {
 
         switch (tk.type) {
             case TokenKind.IdentifierToken:
