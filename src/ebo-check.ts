@@ -312,6 +312,7 @@ function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
     const expression: LexToken[] = [];
     let tk = cur.current();
 
+    while (tk) {
         switch (tk.type) {
             case TokenKind.IdentifierToken:
                 assigned.push(parse_variable_list_item(cur));
@@ -319,7 +320,7 @@ function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
             case TokenKind.OffValue:  // fallthru
             case TokenKind.OnValue:
                 expression.push(tk);
-            //fallthru
+            // fallthru
             default:
                 cur.advance();
                 break;
@@ -365,6 +366,7 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): IfExpression {
 
     let tks: LexToken[] = [];
     let state = if_then_states[cur.current().type];
+    st.context.if_then_state.push(cur.current());
     cur.advance();
     let depth = 1;
 
@@ -397,8 +399,8 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): IfExpression {
         false_expr: data[IfState.IF_FALSE] || []
     };
 
-    if (res.true_expr.length === 0) {
-        ++st.context.if_state;
+    if (res.true_expr.length > 0) {
+        st.context.if_then_state.pop();
     }
 
     parse_expression(res.cond_expr, st);
@@ -895,6 +897,7 @@ class SymbolTable {
 class ParseContext {
     parens_depth = 0;
     for_next_state: LexToken[] = [];
+    if_then_state: LexToken[] = [];
     select_state: LexToken[] = [];
 }
 
@@ -1483,7 +1486,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
     for (const tk of line) {
         let next = state[tk.type] || state._;
         if (tk.type === TokenKind.EndIfStatement) {
-            --symTable.context.if_state;
+            symTable.context.if_then_state.pop();
         }
         if (tk.type === TokenKind.NextStatement) {
             symTable.context.for_next_state.pop();
