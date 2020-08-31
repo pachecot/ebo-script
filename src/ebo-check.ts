@@ -176,15 +176,15 @@ function parse_variable_list_item(cur: Cursor): VariableInst {
 }
 
 function parse_variable_list_rest(cur: Cursor): VariableInst[] {
-    
+
     const tks: VariableInst[] = [];
-    
+
     while (cur.current().type === TokenKind.CommaSymbol) {
         cur.advance();
         const tk = parse_variable_list_item(cur);
         if (tk) { tks.push(tk); }
     }
-    
+
     return tks;
 }
 
@@ -276,7 +276,7 @@ function parse_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
 
 
 function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
-    
+
     const assigned: VariableInst[] = [];
     const expression: LexToken[] = [];
     let tk = cur.current();
@@ -307,7 +307,7 @@ function parse_set_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
 }
 
 function parse_turn_assignment(st: SymbolTable, cur: Cursor): AssignExpression {
-    
+
     const assigned: VariableInst[] = [];
     const expression: LexToken[] = [];
     let tk = cur.current();
