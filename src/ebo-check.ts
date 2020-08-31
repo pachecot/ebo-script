@@ -1583,6 +1583,33 @@ export function ebo_parse_file(fileText: string) {
     check_lines(symTable);
     check_usage(symTable);
 
+    symTable.context.if_then_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.IfThenStatementMissingEndIf,
+            severity: Severity.Error,
+            message: `If statement missing closing EndIf!`,
+            range: tk.range
+        });
+    });
+
+    symTable.context.for_next_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.ForStatementMissingNext,
+            severity: Severity.Error,
+            message: `For statement missing closing Next!`,
+            range: tk.range
+        });
+    });
+
+    symTable.context.select_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.SelectCaseMissingEnd,
+            severity: Severity.Error,
+            message: `Select statement missing closing EndSelect!`,
+            range: tk.range
+        });
+    });
+
     return symTable;
 }
 
