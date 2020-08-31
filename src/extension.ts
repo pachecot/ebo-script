@@ -16,6 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     context.subscriptions.push(
+        vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
+            fileDeleteEvent.files.forEach(file => collection.delete(file));
+        })
+    );
+
+    context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(document => {
             updateDiagnostics(document, collection);
         })
