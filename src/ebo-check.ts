@@ -22,6 +22,7 @@ export enum EboErrors {
     MissingCloseParentheses,
     ParseError,
     RedeclaredFunction,
+    RepeatStatementMissingUntil,
     SelectCaseMissingEnd,
     UndeclaredFunction,
     UndeclaredVariable,
@@ -29,6 +30,7 @@ export enum EboErrors {
     UnreferencedDeclaration,
     UnreferencedFunction,
     UnreferencedLine,
+    WhileMissingEndWhile,
 }
 
 
@@ -529,6 +531,8 @@ function parse_select_exp(st: SymbolTable, cur: Cursor): SelectExpression {
         cur.advance();
     }
 
+    parse_expression(test, st);
+
     return {
         test,
         cases: []
@@ -536,21 +540,77 @@ function parse_select_exp(st: SymbolTable, cur: Cursor): SelectExpression {
 }
 
 function parse_select_case_exp(st: SymbolTable, cur: Cursor): CaseExpression {
-    let cases: Expression = [];
-    st.context.select_state.push(cur.current());
 
+    let cases: Expression = [];
     if (cur.current().type === TokenKind.CaseStatement) {
         cur.advance();
     }
+
     while (cur.remain()) {
         cases.push(cur.current());
         cur.advance();
     }
+
+    parse_expression(cases, st);
+
     return {
         cases: cases,
         statements: []
     };
 }
+
+interface RepeatUntilExpression {
+    condition: Expression
+    statements: Expression
+}
+
+
+function parse_until_exp(st: SymbolTable, cur: Cursor): RepeatUntilExpression {
+
+    let condition: Expression = [];
+    if (cur.current().type === TokenKind.UntilStatement) {
+        cur.advance();
+    }
+    while (cur.remain()) {
+        condition.push(cur.current());
+        cur.advance();
+    }
+
+    parse_expression(condition, st);
+
+    return {
+        condition,
+        statements: []
+    };
+}
+
+interface WhileExpression {
+    condition: Expression
+    statements: Expression
+}
+
+function parse_while_exp(st: SymbolTable, cur: Cursor): WhileExpression {
+
+    st.context.while_state.push(cur.current());
+    let condition: Expression = [];
+    if (cur.current().type === TokenKind.UntilStatement) {
+        cur.advance();
+    }
+    while (cur.remain()) {
+        condition.push(cur.current());
+        cur.advance();
+    }
+
+    parse_expression(condition, st);
+
+    return {
+        condition,
+        statements: []
+    };
+}
+
+
+
 
 
 /**
@@ -899,6 +959,8 @@ class ParseContext {
     for_next_state: LexToken[] = [];
     if_then_state: LexToken[] = [];
     select_state: LexToken[] = [];
+    while_state: LexToken[] = [];
+    repeat_state: LexToken[] = [];
 }
 
 
@@ -963,6 +1025,9 @@ const enum ParseState {
     , LINE_ID_END
     , LINE_TAG
     , LINE_TAG_END
+    , REPEAT_EXP
+    , UNTIL_EXP
+    , UNTIL_EXP_END
     , SELECT_CASE
     , SELECT_CASE_END
     , SELECT_EXP
@@ -979,6 +1044,8 @@ const enum ParseState {
     , TURN
     , TURN_STATEMENT_END
     , TURN_VAL
+    , WHILE_EXP
+    , WHILE_EXP_END
 };
 
 function parse_array_x(expression: LexToken[], symTable: SymbolTable) {
@@ -1015,6 +1082,8 @@ const states: ParseMap = {
         [TokenKind.CaseStatement]: ParseState.SELECT_CASE,
         [TokenKind.LineStatement]: ParseState.LINE_TAG,
         [TokenKind.ArgDeclaration]: ParseState.ARG,
+        [TokenKind.UntilStatement]: ParseState.UNTIL_EXP,
+        [TokenKind.WhileStatement]: ParseState.WHILE_EXP,
         [TokenKind.DatetimeDeclaration]: ParseState.DECLARE_MOD,
         [TokenKind.FunctionDeclaration]: ParseState.DECLARE_FUNCTION,
         [TokenKind.NumericDeclaration]: ParseState.DECLARE_MOD,
@@ -1195,6 +1264,14 @@ const states: ParseMap = {
         _: ParseState.SET_EXPR,
         [TokenKind.EndOfLineToken]: ParseState.SET_STATEMENT_END
     },
+    [ParseState.UNTIL_EXP]: {
+        _: ParseState.UNTIL_EXP,
+        [TokenKind.EndOfLineToken]: ParseState.UNTIL_EXP_END
+    },
+    [ParseState.WHILE_EXP]: {
+        _: ParseState.WHILE_EXP,
+        [TokenKind.EndOfLineToken]: ParseState.WHILE_EXP_END
+    },
     // [ParseState.FUNCTION_CALL_OPEN]: {
     //     _: ParseState.FUNCTION_CALL_OPEN,
     //     [TokenKind.PARENTHESES_CL]: ParseState.FUNCTION_CALL_CLOSE,
@@ -1314,6 +1391,13 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
     [ParseState.FOR_EXP_END](ast: SymbolTable, cur: Cursor) {
         parse_for_exp(ast, cur);
     },
+    [ParseState.UNTIL_EXP_END](ast: SymbolTable, cur: Cursor) {
+        ast.context.repeat_state.pop();
+        parse_until_exp(ast, cur);
+    },
+    [ParseState.WHILE_EXP_END](ast: SymbolTable, cur: Cursor) {
+        parse_while_exp(ast, cur);
+    },
     [ParseState.SELECT_EXP_END](ast: SymbolTable, cur: Cursor) {
         parse_select_exp(ast, cur);
     },
@@ -1390,6 +1474,8 @@ function check_lines_valid_and_used(st: SymbolTable) {
  * - If...Then...Else...EndIf 
  * - For...Next 
  * - Repeat...Until
+ * - Select...EndSelect
+ * - While...EndWhile
  * 
  * @param symTable 
  */
@@ -1421,6 +1507,23 @@ function check_open_block(symTable: SymbolTable) {
         });
     });
 
+    symTable.context.while_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.WhileMissingEndWhile,
+            severity: Severity.Error,
+            message: `While statement missing closing EndWhile!`,
+            range: tk.range
+        });
+    });
+
+    symTable.context.repeat_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.RepeatStatementMissingUntil,
+            severity: Severity.Error,
+            message: `Repeat statement missing closing Until!`,
+            range: tk.range
+        });
+    });
 }
 
 /**
@@ -1522,27 +1625,41 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
     let stack: LexToken[] = [];
 
     for (const tk of line) {
+
         let next = state[tk.type] || state._;
-        if (tk.type === TokenKind.EndIfStatement) {
-            symTable.context.if_then_state.pop();
+
+        switch (tk.type) {
+            case TokenKind.RepeatStatement:
+                symTable.context.repeat_state.push(tk);
+                break;
+            case TokenKind.EndIfStatement:
+                symTable.context.if_then_state.pop();
+                break;
+            case TokenKind.NextStatement:
+                symTable.context.for_next_state.pop();
+                break;
+            case TokenKind.EndSelectStatement:
+                symTable.context.select_state.pop();
+                break;
+            case TokenKind.EndWhileStatement:
+                symTable.context.while_state.pop();
+                break;
+            case TokenKind.ParenthesesLeftSymbol:
+                ++symTable.context.parens_depth;
+                break;
+            case TokenKind.ParenthesesRightSymbol:
+                --symTable.context.parens_depth;
+                if (symTable.context.parens_depth) {
+                    if (next === ParseState.SYS_FUNCTION_END) { next = ParseState.SYS_FUNCTION; }
+                    if (next === ParseState.FUNCTION_CALL_END) { next = ParseState.FUNCTION_CALL; }
+                }
+                break;
         }
-        if (tk.type === TokenKind.NextStatement) {
-            symTable.context.for_next_state.pop();
+
+        if (!next && isFunctionKind(tk.type)) {
+            next = ParseState.SYS_FUNCTION;
         }
-        if (tk.type === TokenKind.EndSelectStatement) {
-            symTable.context.select_state.pop();
-        }
-        if (tk.type === TokenKind.ParenthesesLeftSymbol) {
-            ++symTable.context.parens_depth;
-        }
-        if (tk.type === TokenKind.ParenthesesRightSymbol) {
-            --symTable.context.parens_depth;
-            if (symTable.context.parens_depth) {
-                if (next === ParseState.SYS_FUNCTION_END) { next = ParseState.SYS_FUNCTION; }
-                if (next === ParseState.FUNCTION_CALL_END) { next = ParseState.FUNCTION_CALL; }
-            }
-        }
-        if (!next && isFunctionKind(tk.type)) { next = ParseState.SYS_FUNCTION; }
+
         if (next) {
             stack.push(tk);
             state = states[next];
@@ -1560,6 +1677,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                 stack = [];
             }
         }
+
         if (tk.type === TokenKind.EndOfLineToken) {
             state = states[ParseState.INIT];
             if (symTable.context.parens_depth) {
@@ -1583,7 +1701,8 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
         }
     }
 
-    let next = state && (state[TokenKind.EndOfLineToken] || state._);
+    const next = state && (state[TokenKind.EndOfLineToken] || state._);
+
     if (next) {
         state = states[next];
         let fn = state_actions[next];
