@@ -1527,6 +1527,35 @@ function check_open_block(symTable: SymbolTable) {
 }
 
 /**
+ * check unmatched parentheses
+ * 
+ * @param symTable 
+ * @param tk 
+ */
+function check_parens(symTable: SymbolTable, tk: LexToken) {
+    if (symTable.context.parens_depth) {
+        if (symTable.context.parens_depth > 0) {
+            symTable.add_error({
+                id: EboErrors.MissingCloseParentheses,
+                severity: Severity.Error,
+                message: `Missing closing Parentheses!`,
+                range: tk.range
+            });
+        }
+        else {
+            symTable.add_error({
+                id: EboErrors.ExtraCloseParentheses,
+                severity: Severity.Error,
+                message: `Extra closing Parentheses!`,
+                range: tk.range
+            });
+        }
+        symTable.context.parens_depth = 0;
+    }
+}
+
+
+/**
  * check for unused declarations 
  * 
  * @param symbol_table 
@@ -1679,25 +1708,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
         }
 
         if (tk.type === TokenKind.EndOfLineToken) {
-            state = states[ParseState.INIT];
-            if (symTable.context.parens_depth) {
-                if (symTable.context.parens_depth > 0) {
-                    symTable.add_error({
-                        id: EboErrors.MissingCloseParentheses,
-                        severity: Severity.Error,
-                        message: `Missing closing Parentheses!`,
-                        range: tk.range
-                    });
-                } else {
-                    symTable.add_error({
-                        id: EboErrors.ExtraCloseParentheses,
-                        severity: Severity.Error,
-                        message: `Extra closing Parentheses!`,
-                        range: tk.range
-                    });
-                }
-                symTable.context.parens_depth = 0;
-            }
+            check_parens(symTable, tk);
         }
     }
 
