@@ -1624,7 +1624,7 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
         if (next) {
             stack.push(tk);
             state = states[next];
-            let fn = state_actions[next];
+            const fn = state_actions[next];
             if (fn) {
                 fn(symTable, new LineCursor(stack));
             }
@@ -1639,6 +1639,7 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
             }
         }
     }
+
     let next = state && (state[TokenKind.EndOfLineToken] || state._);
     if (next) {
         state = states[next];
@@ -1647,6 +1648,7 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
             fn(symTable, new LineCursor(stack));
         }
     }
+
 }
 
 const init_state = states[ParseState.INIT];
@@ -1695,7 +1697,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
         if (next) {
             stack.push(tk);
             state = states[next];
-            let fn = state_actions[next];
+            const fn = state_actions[next];
             if (fn) {
                 fn(symTable, new LineCursor(stack));
             }
@@ -1720,7 +1722,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
 
     if (next) {
         state = states[next];
-        let fn = state_actions[next];
+        const fn = state_actions[next];
         if (fn) {
             fn(symTable, new LineCursor(stack));
         }
@@ -1730,6 +1732,7 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
 const reFallthru = /\bfallthru\b/i;
 
 const isFallthru = (tk: LexToken) => tk.type === TokenKind.CommentToken && reFallthru.test(tk.value);
+
 
 function check_is_fallthru(tkn_lists: LexToken[]) {
     // check for fallthru to disable warnings
