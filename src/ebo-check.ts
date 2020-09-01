@@ -1712,7 +1712,9 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                 fn(symTable, new LineCursor(stack));
             }
             if (!state) {
-                emit_parse_error(symTable, tk);
+                if (!fn) {
+                    emit_parse_error(symTable, tk);
+                }
                 state = init_state;
                 stack = [];
             }
