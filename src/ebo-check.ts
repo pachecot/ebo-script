@@ -1600,9 +1600,11 @@ function check_declarations_used(st: SymbolTable) {
 }
 
 
+const expr_state = states[ParseState.EXPR];
+
 function parse_expression(line: LexToken[], symTable: SymbolTable) {
 
-    let state = states[ParseState.EXPR];
+    let state = expr_state;
     let stack: LexToken[] = [];
 
     for (const tk of line) {
@@ -1627,12 +1629,12 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
                 fn(symTable, new LineCursor(stack));
             }
             if (!state) {
-                state = states[ParseState.EXPR];
+                state = expr_state;
                 stack = [];
             }
         } else {
-            if (state !== states[ParseState.EXPR]) {
-                state = states[ParseState.EXPR];
+            if (state !== expr_state) {
+                state = expr_state;
                 stack = [];
             }
         }
@@ -1647,10 +1649,11 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
     }
 }
 
+const init_state = states[ParseState.INIT];
 
 function parse_statements(line: LexToken[], symTable: SymbolTable) {
 
-    let state = states[ParseState.INIT];
+    let state = init_state;
     let stack: LexToken[] = [];
 
     for (const tk of line) {
@@ -1697,17 +1700,18 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                 fn(symTable, new LineCursor(stack));
             }
             if (!state) {
-                state = states[ParseState.INIT];
+                state = init_state;
                 stack = [];
             }
         } else {
-            if (state !== states[ParseState.INIT]) {
-                state = states[ParseState.INIT];
+            if (state !== init_state) {
+                state = init_state;
                 stack = [];
             }
         }
 
         if (tk.type === TokenKind.EndOfLineToken) {
+            state = init_state;
             check_parens(symTable, tk);
         }
     }
