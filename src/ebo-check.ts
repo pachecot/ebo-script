@@ -1353,7 +1353,7 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
  * 
  * @param symbol_table
  */
-function check_lines(st: SymbolTable) {
+function check_lines_valid_and_used(st: SymbolTable) {
 
     let issues: ErrorInfo[] = st.errors;
 
@@ -1386,11 +1386,49 @@ function check_lines(st: SymbolTable) {
 }
 
 /**
+ * check for open block statements 
+ * - If...Then...Else...EndIf 
+ * - For...Next 
+ * - Repeat...Until
+ * 
+ * @param symTable 
+ */
+function check_open_block(symTable: SymbolTable) {
+    symTable.context.if_then_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.IfThenStatementMissingEndIf,
+            severity: Severity.Error,
+            message: `If statement missing closing EndIf!`,
+            range: tk.range
+        });
+    });
+
+    symTable.context.for_next_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.ForStatementMissingNext,
+            severity: Severity.Error,
+            message: `For statement missing closing Next!`,
+            range: tk.range
+        });
+    });
+
+    symTable.context.select_state.forEach(tk => {
+        symTable.add_error({
+            id: EboErrors.SelectCaseMissingEnd,
+            severity: Severity.Error,
+            message: `Select statement missing closing EndSelect!`,
+            range: tk.range
+        });
+    });
+
+}
+
+/**
  * check for unused declarations 
  * 
  * @param symbol_table 
  */
-function check_usage(st: SymbolTable) {
+function check_declarations_used(st: SymbolTable) {
 
     let issues: ErrorInfo[] = st.errors;
 
@@ -1556,7 +1594,9 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
 }
 
 const reFallthru = /\bfallthru\b/i;
+
 const isFallthru = (tk: LexToken) => tk.type === TokenKind.CommentToken && reFallthru.test(tk.value);
+
 function check_is_fallthru(tkn_lists: LexToken[]) {
     // check for fallthru to disable warnings
     return tkn_lists.some(isFallthru);
@@ -1568,6 +1608,7 @@ export function ebo_parse_file(fileText: string) {
     const tkn_lists = ebo_scan_text(fileText);
 
     const symTable = new SymbolTable();
+
     symTable.fallthru = check_is_fallthru(tkn_lists);
 
     const tkData = tkn_lists.filter(t =>
@@ -1576,39 +1617,11 @@ export function ebo_parse_file(fileText: string) {
         t.type !== TokenKind.ContinueLineToken
     );
 
-    // for (const line of tkData) {
     parse_statements(tkData, symTable);
-    // }
 
-    check_lines(symTable);
-    check_usage(symTable);
-
-    symTable.context.if_then_state.forEach(tk => {
-        symTable.add_error({
-            id: EboErrors.IfThenStatementMissingEndIf,
-            severity: Severity.Error,
-            message: `If statement missing closing EndIf!`,
-            range: tk.range
-        });
-    });
-
-    symTable.context.for_next_state.forEach(tk => {
-        symTable.add_error({
-            id: EboErrors.ForStatementMissingNext,
-            severity: Severity.Error,
-            message: `For statement missing closing Next!`,
-            range: tk.range
-        });
-    });
-
-    symTable.context.select_state.forEach(tk => {
-        symTable.add_error({
-            id: EboErrors.SelectCaseMissingEnd,
-            severity: Severity.Error,
-            message: `Select statement missing closing EndSelect!`,
-            range: tk.range
-        });
-    });
+    check_lines_valid_and_used(symTable);
+    check_declarations_used(symTable);
+    check_open_block(symTable);
 
     return symTable;
 }
