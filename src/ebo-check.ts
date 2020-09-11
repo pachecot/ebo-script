@@ -155,7 +155,7 @@ function parse_variable_list_item(cur: Cursor): VariableInst {
     const tk = cur.current();
     cur.advance();
 
-    if (cur.current().type === TokenKind.BracketLeftSymbol) {
+    if (cur.remain() > 0 && cur.current().type === TokenKind.BracketLeftSymbol) {
         cur.advance();
         const id = cur.current();
         let index = -1;
