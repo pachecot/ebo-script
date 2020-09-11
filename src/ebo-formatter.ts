@@ -125,6 +125,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
     let tokens = ebo_scan_text(document.getText());
     let edits: vscode.TextEdit[] = [];
     let depth = 0;
+    let line_continue = false;
 
     let tokensByLine = tokens.reduce((ar, tk) => {
         ar[ar.length - 1].push(tk);
@@ -149,11 +150,12 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             continue;
         }
 
-        const lastTk = line_tks[line_tks.length - 2];
+        const last_id = line_tks.length - 1;
+        const lastTk = line_tks[last_id].type === TokenKind.EndOfLineToken ? line_tks[last_id - 1] : line_tks[last_id];
 
         // trim trailing spaces
 
-        if (lastTk.type === TokenKind.EndOfLineToken || lastTk.type === TokenKind.WhitespaceToken) {
+        if (lastTk.type === TokenKind.WhitespaceToken) {
             edits.push(vscode.TextEdit.delete(toRange(lastTk.range)));
         } else if (lastTk.type === TokenKind.CommentToken) {
             const we = reTrailingSpaces.exec(lastTk.value);
@@ -170,6 +172,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         if (close_tags.includes(first.type)) {
             depth -= size;
         }
+
         if (first.type === TokenKind.EndOfLineToken && ws && range_size(ws.range)) {
             /// needed??
         }
@@ -178,14 +181,15 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             // reset on starting new line
             depth = size;
         } else {
-            const cnt = depth - first.range.begin;
-            if (line_tks.length > 2 && depth && ws && /\t/.test(ws.value)) { // remove tabs 
-                edits.push(vscode.TextEdit.replace(toRange(ws.range), ' '.repeat(Math.abs(depth))));
+            const x_depth = line_continue ? depth + size * 2 : depth;
+            const cnt = x_depth - first.range.begin;
+            if (line_tks.length > 2 && x_depth && ws && /\t/.test(ws.value)) { // remove tabs 
+                edits.push(vscode.TextEdit.replace(toRange(ws.range), ' '.repeat(Math.abs(x_depth))));
             } else {
                 if (cnt > 0) {
                     edits.push(vscode.TextEdit.insert(pos_start(first.range), ' '.repeat(cnt)));
                 } else if (line_tks.length > 2 && cnt < 0 && ws) {
-                    edits.push(vscode.TextEdit.delete(range_back(ws.range.begin + depth, ws.range)));
+                    edits.push(vscode.TextEdit.delete(range_back(ws.range.begin + x_depth, ws.range)));
                 }
             }
         }
@@ -198,23 +202,89 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         for (let i = 0; i < line_tks.length - 1; ++i) {
             const tk = line_tks[i];
+
             switch (tk.type) {
+
+                case TokenKind.ToKeyWord:
+                case TokenKind.ElseStatement:
+                case TokenKind.ThenStatement:
+                    {
+                        const p = line_tks[i - 1];
+                        if (i > 1 && p && p.type === TokenKind.WhitespaceToken) {
+                            if (p.range.end - p.range.begin > 1) {
+                                edits.push(vscode.TextEdit.delete(range1(p.range)));
+                                p.range.end = p.range.begin + 1;
+                            }
+                        }
+                        const n = line_tks[i + 1];
+                        if (n && n.type === TokenKind.WhitespaceToken) {
+                            if (n.range.end - n.range.begin > 1) {
+                                edits.push(vscode.TextEdit.delete(range1(n.range)));
+                                n.range.end = n.range.begin + 1;
+                            }
+                        }
+                        i += 1;
+                        break;
+                    }
+
+                case TokenKind.ModulateAction:
+                case TokenKind.SetAction:
+                case TokenKind.ShutAction:
+                case TokenKind.TurnAction:
+                case TokenKind.OpenAction:
+                case TokenKind.ForStatement:
+                case TokenKind.WhileStatement:
+                case TokenKind.NextStatement:
+                case TokenKind.StepStatement:
+                case TokenKind.IfStatement:
+                case TokenKind.GotoStatement:
+                    {
+                        const n = line_tks[i + 1];
+                        if (n && n.type === TokenKind.WhitespaceToken) {
+                            if (n.range.end - n.range.begin > 1) {
+                                edits.push(vscode.TextEdit.delete(range1(n.range)));
+                                n.range.end = n.range.begin + 1;
+                            }
+                        }
+                        i += 1;
+
+                        break;
+                    }
+
+                case TokenKind.DatetimeDeclaration:
+                case TokenKind.FunctionDeclaration:
+                case TokenKind.InputDeclaration:
+                case TokenKind.NumericDeclaration:
+                case TokenKind.OutputDeclaration:
+                case TokenKind.PublicDeclaration:
+                case TokenKind.StringDeclaration:
+                    {
+                        const n = line_tks[i + 1];
+                        if (n && n.type === TokenKind.WhitespaceToken) {
+                            if (n.range.end - n.range.begin > 1) {
+                                edits.push(vscode.TextEdit.delete(range1(n.range)));
+                                n.range.end = n.range.begin + 1;
+                            }
+                        }
+                        i += 1;
+
+                        break;
+                    }
 
                 case TokenKind.MinusSymbol: {
                     // special handling on `-` signs could be unary operation 
                     // in which case there is no trailing space.
 
                     let p = line_tks[i - 1];
-                    const n = line_tks[i + 1];
-                    const nn = n.type === TokenKind.WhitespaceToken ? line_tks[i + 2] : n;
 
                     if (p.type !== TokenKind.WhitespaceToken) {
                         if (!isSymbolKind(p.type)) {
                             edits.push(insertSpace(tk.range));
                         }
                     } else {
-                        if (n.range.end - n.range.begin > 1) {
-                            if (!isSymbolKind(line_tks[i - 2].type)) {
+                        if (p.range.end - p.range.begin > 1) {
+                            const prev_tk = line_tks[i - 2].type;
+                            if (!isSymbolKind(prev_tk) || prev_tk === TokenKind.BracketRightSymbol) {
                                 edits.push(vscode.TextEdit.delete(range1(p.range)));
                             }
                         }
@@ -230,6 +300,9 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     const is_not_unary3 = TokenKind.ParenthesesRightSymbol === p.type || TokenKind.BracketRightSymbol === p.type;
                     const is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && isSymbolKind(p.type);
 
+                    const n = line_tks[i + 1];
+                    const nn = n.type === TokenKind.WhitespaceToken ? line_tks[i + 2] : n;
+
                     if (is_unary && (nn.type !== TokenKind.ParenthesesLeftSymbol)) {
                         if (n.type === TokenKind.WhitespaceToken) {
                             edits.push(vscode.TextEdit.delete(toRange(n.range)));
@@ -241,6 +314,70 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     }
                     break;
                 }
+
+
+
+                case TokenKind.AboveOperator:
+                case TokenKind.AndOperator:
+                case TokenKind.BelowOperator:
+                case TokenKind.BetweenOperator:
+                case TokenKind.BitandOperator:
+                case TokenKind.BitnotOperator:
+                case TokenKind.BitorOperator:
+                case TokenKind.BitxorOperator:
+                case TokenKind.DivideOperator:
+                case TokenKind.DoesOperator:
+                case TokenKind.EitherOperator:
+                case TokenKind.EqualOperator:
+                case TokenKind.EqualsOperator:
+                case TokenKind.FirstOperator:
+                case TokenKind.GreaterOperator:
+                case TokenKind.InOperator:
+                case TokenKind.IsOperator:
+                case TokenKind.LastOperator:
+                case TokenKind.LessOperator:
+                case TokenKind.MinusOperator:
+                case TokenKind.ModulusOperator:
+                case TokenKind.NeitherOperator:
+                case TokenKind.NotOperator:
+                case TokenKind.OrOperator:
+                case TokenKind.PlusOperator:
+                case TokenKind.ThanOperator:
+                case TokenKind.TheOperator:
+                case TokenKind.ThruOperator:
+                case TokenKind.TimesOperator:
+
+                case TokenKind.OffValue:
+                case TokenKind.OnValue:
+                case TokenKind.OpenedValue:
+                case TokenKind.ClosedValue:
+                    {
+                        const p = line_tks[i - 1];
+                        if (p.type === TokenKind.WhitespaceToken && range_size(p.range) > 1) {
+                            edits.push(vscode.TextEdit.delete(range1(p.range)));
+                            p.range.end = p.range.begin + 1;
+                        }
+                        const n = line_tks[i + 1];
+                        if (n.type === TokenKind.WhitespaceToken && range_size(n.range) > 1) {
+                            edits.push(vscode.TextEdit.delete(range1(n.range)));
+                            n.range.end = n.range.begin + 1;
+                        }
+                        break;
+                    }
+
+                case TokenKind.ContinueLineToken:  //  '~'
+                    {
+                        const p = line_tks[i - 1];
+                        if (p.type === TokenKind.WhitespaceToken) {
+                            if (range_size(p.range) > 1) {
+                                edits.push(vscode.TextEdit.delete(range1(p.range)));
+                                p.range.end = p.range.begin + 1;
+                            }
+                        } else {
+                            edits.push(insertSpace(p.range));
+                        }
+                        break;
+                    }
 
                 case TokenKind.GreaterThanEqualSymbol:  //  '>='
                 case TokenKind.LessThanEqualSymbol:     //  '<='
@@ -262,18 +399,21 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                             edits.push(insertSpace(tk.range));
                         } else if (range_size(p.range) > 1) {
                             edits.push(vscode.TextEdit.delete(range1(p.range)));
+                            p.range.end = p.range.begin + 1;
                         }
                         if (n.type !== TokenKind.WhitespaceToken) {
                             edits.push(insertSpace(n.range));
                         } else if (range_size(n.range) > 1) {
                             edits.push(vscode.TextEdit.delete(range1(n.range)));
+                            n.range.end = n.range.begin + 1;
                         }
                         break;
                     }
+
                 case TokenKind.CommaSymbol: {
                     //   ','
                     const p = line_tks[i - 1];
-                    if (p.type === TokenKind.WhitespaceToken && range_size(p.range) > 0) {
+                    if (i > 1 && p && p.type === TokenKind.WhitespaceToken && range_size(p.range) > 0) {
                         edits.push(vscode.TextEdit.delete(toRange(p.range)));
                     }
                     const n = line_tks[i + 1];
@@ -281,9 +421,11 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         edits.push(insertSpace(n.range));
                     } else if (range_size(n.range) > 1) {
                         edits.push(vscode.TextEdit.delete(range1(n.range)));
+                        n.range.end = n.range.begin + 1;
                     }
                     break;
                 }
+
                 case TokenKind.ParenthesesLeftSymbol: {
                     // remove spaces after opening parens
                     const n = line_tks[i + 1];
@@ -303,9 +445,13 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 default:
                     break;
             }
+
+
             if (isSymbolKind(tk.type)) {
             }
         }
+
+        line_continue = lastTk.type === TokenKind.ContinueLineToken;
     }
     return edits;
 }
