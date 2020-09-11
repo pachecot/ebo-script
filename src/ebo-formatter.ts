@@ -24,7 +24,7 @@ function test_if_then_open(line: LexToken[]) {
     return false;
 }
 
-function test_line(line: LexToken[]) {
+function test_is_line(line: LexToken[]) {
 
     if (line.length > 2) {
         let tk = line[0];
@@ -174,7 +174,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             /// needed??
         }
 
-        if (test_line(line_tks)) {
+        if (test_is_line(line_tks)) {
+            // reset on starting new line
             depth = size;
         } else {
             const cnt = depth - first.range.begin;
