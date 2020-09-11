@@ -1599,11 +1599,11 @@ function check_declarations_used(st: SymbolTable) {
 
 }
 
-function emit_parse_error(symTable: SymbolTable, tk: LexToken) {
-    symTable.add_error({
+function emit_parse_error(ast: SymbolTable, tk: LexToken) {
+    ast.add_error({
         id: EboErrors.ParseError,
         severity: Severity.Information,
-        message: `Parse error.`,
+        message: `Parse error '${tk.value}'`,
         range: tk.range
     });
 }
@@ -1639,11 +1639,15 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
                 fn(symTable, new LineCursor(stack));
             }
             if (!state) {
+                if (!fn) {
+                    emit_parse_error(symTable, tk);
+                }
                 state = expr_state;
                 stack = [];
             }
         } else {
             if (state !== expr_state) {
+                emit_parse_error(symTable, tk);
                 state = expr_state;
                 stack = [];
             }
