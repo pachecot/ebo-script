@@ -410,8 +410,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         break;
                     }
 
-                case TokenKind.CommaSymbol: {
-                    //   ','
+                case TokenKind.CommaSymbol: { //   ','
                     const p = line_tks[i - 1];
                     if (i > 1 && p && p.type === TokenKind.WhitespaceToken && range_size(p.range) > 0) {
                         edits.push(vscode.TextEdit.delete(toRange(p.range)));
