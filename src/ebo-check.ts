@@ -833,10 +833,10 @@ class SymbolTable {
         arr.push(tk);
         if (!(name in this.functions)) {
             this.add_error({
-                id: EboErrors.UndeclaredVariable,
+                id: EboErrors.UndeclaredFunction,
                 severity: Severity.Error,
                 message: `Function '${name}' is not declared`,
-                range: tk.range
+                range: tk.range,
             });
         }
     }
