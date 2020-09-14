@@ -28,6 +28,12 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument(e => {
+            diagnostics.update(e.document);
+        })
+    );
+
+    context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (editor) {
                 diagnostics.update(editor.document);
