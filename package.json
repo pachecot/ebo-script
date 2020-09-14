@@ -21,7 +21,12 @@
 		"capabilities": {
 			"documentFormattingProvider": "true"
 		},
-		"commands": [],
+		"commands": [
+			{
+				"command": "ebo-script.clean-declarations",
+				"title": "Clean Declarations"
+			}
+		],
 		"languages": [
 			{
 				"id": "ebo-script",

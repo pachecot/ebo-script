@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import * as ebo from './ebo-check';
 import * as sig from './ebo-signatures';
 import { getReformatEdits } from './ebo-formatter';
+import { clean_declarations } from './ebo-declares';
+import { EboCodeActionProvider } from './ebo-actions';
+import { EboDeclarationConverter } from './ebo-declaration-converter';
 
 const EBO_SCRIPT = 'ebo-script';
 
@@ -14,6 +17,10 @@ export function activate(context: vscode.ExtensionContext) {
     if (vscode.window.activeTextEditor) {
         diagnostics.update(vscode.window.activeTextEditor.document);
     }
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("ebo-script.clean-declarations", clean_declarations)
+    );
 
     context.subscriptions.push(
         vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
@@ -51,6 +58,18 @@ export function activate(context: vscode.ExtensionContext) {
             EBO_SCRIPT, new EboScriptDocumentFormatter())
     );
 
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            EBO_SCRIPT, new EboCodeActionProvider(), {
+            providedCodeActionKinds: EboCodeActionProvider.providedCodeActionKinds
+        })
+    );
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            EBO_SCRIPT, new EboDeclarationConverter(), {
+            providedCodeActionKinds: EboCodeActionProvider.providedCodeActionKinds
+        })
+    );
 }
 
 
