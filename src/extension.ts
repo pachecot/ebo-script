@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
-import * as ebo from './ebo-check';
-import * as sig from './ebo-signatures';
-import { getReformatEdits } from './ebo-formatter';
 import { clean_declarations } from './ebo-declares';
 import { EboCodeActionProvider } from './ebo-actions';
 import { EboDeclarationConverter } from './ebo-declaration-converter';
-
-const EBO_SCRIPT = 'ebo-script';
+import { EboDiagnostics } from './ebo-diagnostics';
+import { EboScriptDocumentFormatter } from './ebo-script-document-formatter';
+import { EboSignatureHelpProvider } from './ebo-signature-help-provider';
+import { EBO_SCRIPT } from './extension-types';
 
 export function deactivate() { }
 
@@ -70,97 +69,5 @@ export function activate(context: vscode.ExtensionContext) {
             providedCodeActionKinds: EboCodeActionProvider.providedCodeActionKinds
         })
     );
-}
-
-
-class EboDiagnostics {
-
-    readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
-
-    clear(uri: vscode.Uri): void {
-        this.collection.delete(uri);
-    }
-
-    update(document: vscode.TextDocument): void {
-
-        if (document && document.languageId === 'ebo-script') {
-
-            const ast = ebo.ebo_parse_file(document.getText());
-            const issues = ast.errors.map(issue => (
-                {
-                    code: issue.id,
-                    message: issue.message,
-                    range: new vscode.Range(
-                        issue.range.line, issue.range.begin,
-                        issue.range.line, issue.range.end
-                    ),
-                    severity: issue.severity as unknown as vscode.DiagnosticSeverity,
-                    source: ''
-                }
-            ));
-
-            this.collection.set(document.uri, issues);
-        }
-    }
-}
-
-
-function toSignatureHelp(info: sig.Signature) {
-    let h = new vscode.SignatureHelp();
-    // h.activeParameter = 0;
-    // h.activeSignature = 0;
-    if (info.alias) {
-        let alias = info.alias.join(',');
-        h.signatures = info.syntaxes.map(syn => new vscode.SignatureInformation(syn, new vscode.MarkdownString(
-            `${info.description}
-
-+ Alias: ${alias}`
-        )));
-    } else {
-        h.signatures = info.syntaxes.map(syn => new vscode.SignatureInformation(syn, new vscode.MarkdownString(
-            `${info.description}`
-        )));
-    }
-    return h;
-}
-
-
-const reFunctionName = /.*\b(\w[\w\d]*)\s*\(/;
-function getFunctionName(text: string) {
-    let m = reFunctionName.exec(text);
-    return m ? m[1] : '';
-}
-
-
-function lineSoFar(document: vscode.TextDocument, position: vscode.Position) {
-    return document.lineAt(position.line).text.substring(0, position.character);
-}
-
-class EboSignatureHelpProvider implements vscode.SignatureHelpProvider {
-    public provideSignatureHelp(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        token: vscode.CancellationToken
-    ): Promise<vscode.SignatureHelp> {
-        return new Promise((resolve, reject) => {
-            let name = getFunctionName(lineSoFar(document, position));
-            if (name) {
-                const info = sig.get(name);
-                if (info) {
-                    resolve(toSignatureHelp(info));
-                } else {
-                    reject();
-                }
-            }
-        });
-
-    }
-}
-
-
-class EboScriptDocumentFormatter implements vscode.DocumentFormattingEditProvider {
-    provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
-        return getReformatEdits(document);
-    }
 }
 
