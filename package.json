@@ -24,7 +24,7 @@
 		"commands": [
 			{
 				"command": "ebo-script.clean-declarations",
-				"title": "Clean Declarations"
+				"title": "ebo-script: Clean Declarations"
 			}
 		],
 		"languages": [
