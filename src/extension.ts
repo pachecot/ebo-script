@@ -9,28 +9,28 @@ export function deactivate() { }
 
 export function activate(context: vscode.ExtensionContext) {
 
-    const collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
+    const diagnostics = new EboDiagnostics();
 
     if (vscode.window.activeTextEditor) {
-        updateDiagnostics(vscode.window.activeTextEditor.document, collection);
+        diagnostics.update(vscode.window.activeTextEditor.document);
     }
 
     context.subscriptions.push(
         vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
-            fileDeleteEvent.files.forEach(file => collection.delete(file));
+            fileDeleteEvent.files.forEach(file => diagnostics.clear(file));
         })
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(document => {
-            updateDiagnostics(document, collection);
+            diagnostics.update(document);
         })
     );
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (editor) {
-                updateDiagnostics(editor.document, collection);
+                diagnostics.update(editor.document);
             }
         })
     );
@@ -47,25 +47,35 @@ export function activate(context: vscode.ExtensionContext) {
 
 }
 
-function updateDiagnostics(document: vscode.TextDocument, collection: vscode.DiagnosticCollection): void {
 
-    if (document && document.languageId === 'ebo-script') {
+class EboDiagnostics {
 
-        const ast = ebo.ebo_parse_file(document.getText());
-        const issues = ast.errors.map(issue => (
-            {
-                code: issue.id,
-                message: issue.message,
-                range: new vscode.Range(
-                    new vscode.Position(issue.range.line, issue.range.begin),
-                    new vscode.Position(issue.range.line, issue.range.end)
-                ),
-                severity: issue.severity as unknown as vscode.DiagnosticSeverity,
-                source: ''
-            }
-        ));
+    readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
 
-        collection.set(document.uri, issues);
+    clear(uri: vscode.Uri): void {
+        this.collection.delete(uri);
+    }
+
+    update(document: vscode.TextDocument): void {
+
+        if (document && document.languageId === 'ebo-script') {
+
+            const ast = ebo.ebo_parse_file(document.getText());
+            const issues = ast.errors.map(issue => (
+                {
+                    code: issue.id,
+                    message: issue.message,
+                    range: new vscode.Range(
+                        issue.range.line, issue.range.begin,
+                        issue.range.line, issue.range.end
+                    ),
+                    severity: issue.severity as unknown as vscode.DiagnosticSeverity,
+                    source: ''
+                }
+            ));
+
+            this.collection.set(document.uri, issues);
+        }
     }
 }
 
