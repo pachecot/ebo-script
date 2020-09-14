@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { clean_declarations } from './ebo-declares';
-import { EboCodeActionProvider } from './ebo-actions';
+import { EboCodeActionProvider } from './ebo-code-actions';
 import { EboDeclarationConverter } from './ebo-declaration-converter';
 import { EboDiagnostics } from './ebo-diagnostics';
 import { EboScriptDocumentFormatter } from './ebo-script-document-formatter';
