@@ -51,7 +51,7 @@ function createAddDeclarations(document: vscode.TextDocument, diagnostic: vscode
         action.diagnostics = [diagnostic];
         action.edit = new vscode.WorkspaceEdit();
         const line = document.lineAt(0);
-        action.edit.insert(document.uri, line.range.start, `${dec} ${name}${document.eol}`);
+        action.edit.insert(document.uri, line.range.start, `${dec} ${name}\n`);
         return action;
     });
 }
@@ -63,7 +63,7 @@ function createAddFunctionDeclaration(document: vscode.TextDocument, diagnostic:
     action.edit = new vscode.WorkspaceEdit();
     const line = document.lineAt(0);
 
-    action.edit.insert(document.uri, line.range.start, `Function ${name}${document.eol}`);
+    action.edit.insert(document.uri, line.range.start, `Function ${name}\n`);
     return action;
 }
 
