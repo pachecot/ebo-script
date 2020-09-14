@@ -235,6 +235,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.ForStatement:
                 case TokenKind.WhileStatement:
                 case TokenKind.NextStatement:
+                case TokenKind.UntilStatement:
                 case TokenKind.StepStatement:
                 case TokenKind.IfStatement:
                 case TokenKind.GotoStatement:
