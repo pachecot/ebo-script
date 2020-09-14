@@ -13,6 +13,7 @@ Extensions
 + Hover definitions
 + Limited hints, warnings, and errors
 + Limited formatting
++ Code fixes
 
 Fallthru programs with multiple lines should have a comment line with fallthru to prevent warnings of unreferenced lines.
 
@@ -28,6 +29,12 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
  + Line statements that are not referenced (warning)
  + Goto calls to non-existing lines (error)
 
+### Code Fixes
+
+ + Add declarations for undeclared Functions and Variables.
+ + Remove declarations for duplicate and unused Functions and Variables.
+ + Change Declaration types  
+
 ## References
 
  + [ecostruxure-building](https://ecostruxure-building-help.se.com/bms/home/index.castle?locale=en-US&productversion=3.1)
@@ -37,12 +44,25 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.7.0
+
+- added code fixes for declaration errors
+- added code fixes to change declaration types
+
+### 0.6.0
+
+- better formatting.
+- additional error checking
+
+### 0.5.8
+
+- additional error checking
+- misc bug fixes
 
 ### 0.5.8
 
 - added line continuations.
 - misc bug fixes
-
 
 ### 0.5.0
 
