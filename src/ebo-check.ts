@@ -1,37 +1,6 @@
 import { TokenKind, isFunctionKind } from './ebo-types';
 import { TextRange, LexToken, ebo_scan_text } from './ebo-scanner';
-
-
-/**
- *
- */
-export enum EboErrors {
-    None,
-    ArrayNotAllowed,
-    ArraySizeInvalid,
-    DuplicateDeclaration,
-    DuplicateLine,
-    ExtraCloseParentheses,
-    ForIdentifierInvalid,
-    ForStatementInvalidRange,
-    ForStatementMissingNext,
-    FunctionUsedAsVariable,
-    IfThenStatementMissingEndIf,
-    IllegalAssignment,
-    LineUsedAsVariable,
-    MissingCloseParentheses,
-    ParseError,
-    RedeclaredFunction,
-    RepeatStatementMissingUntil,
-    SelectCaseMissingEnd,
-    UndeclaredFunction,
-    UndeclaredVariable,
-    UndefinedLine,
-    UnreferencedDeclaration,
-    UnreferencedFunction,
-    UnreferencedLine,
-    WhileMissingEndWhile,
-}
+import { EboErrors } from "./EboErrors";
 
 
 /**

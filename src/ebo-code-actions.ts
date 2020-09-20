@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as ebo from './ebo-check';
 import { declarations } from './ebo-declaration';
+import { EboErrors } from "./EboErrors";
 
 
 /**
@@ -21,18 +22,18 @@ export class EboCodeActionProvider implements vscode.CodeActionProvider {
             .reduce((actions: vscode.CodeAction[], diagnostic) => {
                 const name = document.getText(diagnostic.range);
                 switch (diagnostic.code) {
-                    case ebo.EboErrors.DuplicateDeclaration:
-                    case ebo.EboErrors.RedeclaredFunction:
-                    case ebo.EboErrors.UnreferencedDeclaration:
-                    case ebo.EboErrors.UnreferencedFunction:
+                    case EboErrors.DuplicateDeclaration:
+                    case EboErrors.RedeclaredFunction:
+                    case EboErrors.UnreferencedDeclaration:
+                    case EboErrors.UnreferencedFunction:
                         actions.push(createRemoveDeclaration(document, diagnostic));
                         break;
 
-                    case ebo.EboErrors.UndeclaredFunction:
+                    case EboErrors.UndeclaredFunction:
                         actions.push(createAddFunctionDeclaration(document, diagnostic, name));
                         break;
 
-                    case ebo.EboErrors.UndeclaredVariable:
+                    case EboErrors.UndeclaredVariable:
                         actions = actions.concat(createAddDeclarations(document, diagnostic, name));
                         break;
                 };
@@ -68,9 +69,9 @@ function createAddFunctionDeclaration(document: vscode.TextDocument, diagnostic:
 }
 
 const diagnostic_fix_titles: { [id: string]: string } = {
-    [ebo.EboErrors.DuplicateDeclaration]: "Remove Duplicate Declaration",
-    [ebo.EboErrors.UnreferencedDeclaration]: "Remove Unreferenced Declaration",
-    [ebo.EboErrors.UnreferencedFunction]: "Remove Unreferenced Function",
+    [EboErrors.DuplicateDeclaration]: "Remove Duplicate Declaration",
+    [EboErrors.UnreferencedDeclaration]: "Remove Unreferenced Declaration",
+    [EboErrors.UnreferencedFunction]: "Remove Unreferenced Function",
 };
 
 function createRemoveDeclaration(document: vscode.TextDocument, diagnostic: vscode.Diagnostic): vscode.CodeAction {
