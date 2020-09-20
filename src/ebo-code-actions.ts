@@ -87,11 +87,14 @@ function createRemoveDeclaration(document: vscode.TextDocument, diagnostic: vsco
         const prefix = line.text.substr(0, diagnostic.range.start.character - 1);
         if (prefix.match(",\s*")) {
             const start = prefix.lastIndexOf(',');
+            const end_pos = diagnostic.range.end.character;
+            const m = /^\s*\[\s*\d+\s*\]\s*/.exec(line.text.substr(end_pos));
+            const end_offset = m ? m[0].length : 0;
             const range = new vscode.Range(
                 new vscode.Position(
                     diagnostic.range.start.line,
                     start),
-                diagnostic.range.end
+                diagnostic.range.end.translate(0, end_offset)
             );
             action.edit.delete(document.uri, range);
         } else {
