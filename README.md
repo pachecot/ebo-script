@@ -14,6 +14,7 @@ Extensions
 + Limited hints, warnings, and errors
 + Limited formatting
 + Code fixes
++ Commands
 
 Fallthru programs with multiple lines should have a comment line with fallthru to prevent warnings of unreferenced lines.
 
@@ -35,6 +36,14 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
  + Remove declarations for duplicate and unused Functions and Variables.
  + Change Declaration types  
 
+### Commands
+
+- __ebo-script: Clean Declarations__ - Clean all declarations removing unused and adding missing 
+
+- __ebo-script: Compact Declarations__ - Compact declarations onto a single line
+
+- __ebo-script: Expand Declarations__ - Expand declarations onto individual lines
+
 ## References
 
  + [ecostruxure-building](https://ecostruxure-building-help.se.com/bms/home/index.castle?locale=en-US&productversion=3.1)
@@ -43,6 +52,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 
 ## Release Notes
+
+### 0.8.0
+
+- added new commands
+- minor fixes
 
 ### 0.7.0
 
