@@ -69,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(
-            EBO_SCRIPT, new EboCodeActionProvider(), {
+            EBO_SCRIPT, new EboCodeActionProvider(eboExt), {
             providedCodeActionKinds: EboCodeActionProvider.providedCodeActionKinds
         })
     );

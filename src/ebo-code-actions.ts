@@ -1,13 +1,16 @@
 import * as vscode from 'vscode';
-import * as ebo from './ebo-check';
 import { declarations } from './ebo-declaration';
 import { EboErrors } from "./EboErrors";
+import { EboExt } from './EboExt';
 
 
 /**
  * Provide code actions for diagnostics of declaration errors
+ * 
  */
 export class EboCodeActionProvider implements vscode.CodeActionProvider {
+
+    constructor(readonly eboExt: EboExt) { }
 
     public static readonly providedCodeActionKinds = [
         vscode.CodeActionKind.QuickFix
@@ -34,7 +37,9 @@ export class EboCodeActionProvider implements vscode.CodeActionProvider {
                         break;
 
                     case EboErrors.UndeclaredVariable:
-                        actions = actions.concat(createAddDeclarations(document, diagnostic, name));
+                        const id = document.getText(diagnostic.range);
+                        const st = this.eboExt.symbols.get(document.uri);
+                        actions = actions.concat(createAddDeclarations(document, diagnostic, name, id in st.assigned_refs));
                         break;
                 };
                 return actions;
@@ -44,17 +49,22 @@ export class EboCodeActionProvider implements vscode.CodeActionProvider {
     }
 }
 
+export const reReadOnlyDeclaration = /(Input|Triggered)$/i;
 
-function createAddDeclarations(document: vscode.TextDocument, diagnostic: vscode.Diagnostic, name: string): vscode.CodeAction[] {
+function createAddDeclarations(document: vscode.TextDocument, diagnostic: vscode.Diagnostic, name: string, writeable: boolean): vscode.CodeAction[] {
 
-    return declarations.map(dec => {
-        const action = new vscode.CodeAction(`Add ${dec} Declaration`, vscode.CodeActionKind.QuickFix);
-        action.diagnostics = [diagnostic];
-        action.edit = new vscode.WorkspaceEdit();
-        const line = document.lineAt(0);
-        action.edit.insert(document.uri, line.range.start, `${dec} ${name}\n`);
-        return action;
-    });
+    return declarations
+        .filter(dec =>
+            !writeable || !reReadOnlyDeclaration.test(dec)
+        )
+        .map(dec => {
+            const action = new vscode.CodeAction(`Add ${dec} Declaration`, vscode.CodeActionKind.QuickFix);
+            action.diagnostics = [diagnostic];
+            action.edit = new vscode.WorkspaceEdit();
+            const line = document.lineAt(0);
+            action.edit.insert(document.uri, line.range.start, `${dec} ${name}\n`);
+            return action;
+        });
 }
 
 function createAddFunctionDeclaration(document: vscode.TextDocument, diagnostic: vscode.Diagnostic, name: string): vscode.CodeAction {
