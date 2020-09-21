@@ -283,12 +283,17 @@ export function clean_declarations(diagnostics: EboDiagnostics) {
                 editBuilder.delete(line.rangeIncludingLineBreak);
             }
             let text = "";
+            let insert_newline = false;
             for (let name of declarations) {
                 if (name === "Numeric") {
-                    text += "\n";
+                    insert_newline = true;
                 }
                 const list = dec[name];
                 if (list) {
+                    if (insert_newline) {
+                        insert_newline = false;
+                        text += "\n";
+                    }
                     if (name === "Function") {
                         text += "\n";
                     }
@@ -309,7 +314,6 @@ export function clean_declarations(diagnostics: EboDiagnostics) {
                     }
                 }
             }
-            text += '\n';
             editBuilder.insert(new vscode.Position(0, 0), text);
         });
     }
