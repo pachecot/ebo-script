@@ -35,7 +35,8 @@ const TokenMap: TokenDictionary = {
 
     //// VALUES
 
-    '-ON': TokenKind.MinusOnValue
+    'NULL': TokenKind.NullValue
+    , '-ON': TokenKind.MinusOnValue
     , OFF: TokenKind.OffValue
     , ON: TokenKind.OnValue
 

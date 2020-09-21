@@ -57,6 +57,7 @@ export const enum TokenKind {
     //#region system values
     //  -------------------
 
+    , NullValue
     , MinusOnValue
     , OffValue
     , OnValue
@@ -543,7 +544,8 @@ type OperatorKind = TokenKind.AboveOperator
     ;
 
 
-type ValueKind = TokenKind.MinusOnValue
+type ValueKind = TokenKind.NullValue
+    | TokenKind.MinusOnValue
     | TokenKind.OffValue
     | TokenKind.OnValue
     | TokenKind.AmValue
