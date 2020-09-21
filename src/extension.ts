@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { clean_declarations } from './ebo-declares';
+import { clean_declarations, compact_declarations, expand_declarations } from './ebo-declares';
 import { EboCodeActionProvider } from './ebo-code-actions';
 import { EboDeclarationConverter } from './ebo-declaration-converter';
 import { EboDiagnostics } from './ebo-diagnostics';
@@ -18,7 +18,17 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("ebo-script.clean-declarations", clean_declarations)
+        vscode.commands.registerCommand("ebo-script.clean-declarations", () => {
+            clean_declarations(diagnostics);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("ebo-script.compact_declarations", compact_declarations)
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("ebo-script.expand_declarations", expand_declarations)
     );
 
     context.subscriptions.push(

@@ -25,6 +25,14 @@
 			{
 				"command": "ebo-script.clean-declarations",
 				"title": "ebo-script: Clean Declarations"
+			},
+			{
+				"command": "ebo-script.compact_declarations",
+				"title": "ebo-script: Compact Declarations"
+			},
+			{
+				"command": "ebo-script.expand_declarations",
+				"title": "ebo-script: Expand Declarations"
 			}
 		],
 		"languages": [
