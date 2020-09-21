@@ -2,24 +2,24 @@ import * as vscode from 'vscode';
 import { clean_declarations, compact_declarations, expand_declarations } from './ebo-declares';
 import { EboCodeActionProvider } from './ebo-code-actions';
 import { EboDeclarationConverter } from './ebo-declaration-converter';
-import { EboDiagnostics } from './ebo-diagnostics';
 import { EboScriptDocumentFormatter } from './ebo-script-document-formatter';
 import { EboSignatureHelpProvider } from './ebo-signature-help-provider';
 import { EBO_SCRIPT } from './extension-types';
+import { EboExt } from './EboExt';
 
 export function deactivate() { }
 
 export function activate(context: vscode.ExtensionContext) {
 
-    const diagnostics = new EboDiagnostics();
+    const eboExt = new EboExt();
 
     if (vscode.window.activeTextEditor) {
-        diagnostics.update(vscode.window.activeTextEditor.document);
+        eboExt.update(vscode.window.activeTextEditor.document);
     }
 
     context.subscriptions.push(
         vscode.commands.registerCommand("ebo-script.clean-declarations", () => {
-            clean_declarations(diagnostics);
+            clean_declarations(eboExt);
         })
     );
 
@@ -33,26 +33,26 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
-            fileDeleteEvent.files.forEach(file => diagnostics.delete(file));
+            fileDeleteEvent.files.forEach(file => eboExt.delete(file));
         })
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument(document => {
-            diagnostics.update(document);
+            eboExt.update(document);
         })
     );
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(e => {
-            diagnostics.update(e.document);
+            eboExt.update(e.document);
         })
     );
 
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(editor => {
             if (editor) {
-                diagnostics.update(editor.document);
+                eboExt.update(editor.document);
             }
         })
     );
@@ -80,4 +80,3 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 }
-

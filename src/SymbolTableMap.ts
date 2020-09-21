@@ -14,6 +14,10 @@ export class SymbolTableCollection {
         this.#symbols[uri.path] = table;
     }
 
+    clear() {
+        this.#symbols = {};
+    }
+
     get(uri: vscode.Uri) {
         return this.#symbols[uri.path];
     }

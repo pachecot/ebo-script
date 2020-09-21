@@ -3,14 +3,14 @@ import * as ebo from './ebo-check';
 import { EBO_SCRIPT } from './extension-types';
 import { SymbolTableCollection } from './SymbolTableMap';
 
-export class EboDiagnostics {
-
+export class EboExt {
+    
     readonly symbols: SymbolTableCollection = new SymbolTableCollection();
     readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
 
     clear(uri: vscode.Uri): void {
         this.symbols.delete(uri);
-        this.collection.delete(uri);
+        this.collection.clear();
     }
 
     delete(uri: vscode.Uri): void {
@@ -40,4 +40,5 @@ export class EboDiagnostics {
             this.collection.set(document.uri, issues);
         }
     }
+
 }

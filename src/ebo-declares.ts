@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { EboDiagnostics } from './ebo-diagnostics';
 import { get_var_dec_string } from './SymbolTable';
 import { EboErrors } from "./EboErrors";
+import { EboExt } from './EboExt';
 
 const DEC_MAX_LEN = 95;
 const EXTENDED = true;
@@ -189,7 +189,7 @@ export function expand_declarations() {
  * reset all declarations
  * 
  */
-export function clean_declarations(diagnostics: EboDiagnostics) {
+export function clean_declarations(eboExt: EboExt) {
 
     const editor = vscode.window.activeTextEditor;
 
@@ -201,7 +201,7 @@ export function clean_declarations(diagnostics: EboDiagnostics) {
         const decLines: vscode.TextLine[] = [];
         const dec: { [name: string]: string[] } = {};
 
-        const sym = diagnostics.symbols.get(document.uri);
+        const sym = eboExt.symbols.get(document.uri);
 
         // add declarations for missing types
         sym.errors
