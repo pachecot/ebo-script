@@ -157,10 +157,12 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         if (lastTk.type === TokenKind.WhitespaceToken) {
             edits.push(vscode.TextEdit.delete(toRange(lastTk.range)));
+            lastTk.range.end = lastTk.range.begin;
         } else if (lastTk.type === TokenKind.CommentToken) {
             const we = reTrailingSpaces.exec(lastTk.value);
             if (we) {
                 edits.push(vscode.TextEdit.delete(range_back(lastTk.range.begin + we.index, lastTk.range)));
+                lastTk.range.end = lastTk.range.begin + we.index;
             }
         }
 
@@ -190,6 +192,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     edits.push(vscode.TextEdit.insert(pos_start(first.range), ' '.repeat(cnt)));
                 } else if (line_tks.length > 2 && cnt < 0 && ws) {
                     edits.push(vscode.TextEdit.delete(range_back(ws.range.begin + x_depth, ws.range)));
+                    ws.range.end = ws.range.begin + x_depth;
                 }
             }
         }
@@ -218,9 +221,16 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         }
                         const n = line_tks[i + 1];
                         if (n && n.type === TokenKind.WhitespaceToken) {
-                            if (n.range.end - n.range.begin > 1) {
-                                edits.push(vscode.TextEdit.delete(range1(n.range)));
-                                n.range.end = n.range.begin + 1;
+                            if (line_tks[i + 2] && line_tks[i + 2].type === TokenKind.EndOfLineToken) {
+                                if (n.range.end - n.range.begin > 1) {
+                                    edits.push(vscode.TextEdit.delete(toRange(n.range)));
+                                    n.range.end = n.range.begin;
+                                }
+                            } else {
+                                if (n.range.end - n.range.begin > 1) {
+                                    edits.push(vscode.TextEdit.delete(range1(n.range)));
+                                    n.range.end = n.range.begin + 1;
+                                }
                             }
                         }
                         i += 1;
