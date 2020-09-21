@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
-            fileDeleteEvent.files.forEach(file => diagnostics.clear(file));
+            fileDeleteEvent.files.forEach(file => diagnostics.delete(file));
         })
     );
 

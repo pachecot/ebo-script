@@ -1,12 +1,20 @@
 import * as vscode from 'vscode';
 import * as ebo from './ebo-check';
 import { EBO_SCRIPT } from './extension-types';
+import { SymbolTableCollection } from './SymbolTableMap';
 
 export class EboDiagnostics {
 
+    readonly symbols: SymbolTableCollection = new SymbolTableCollection();
     readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
 
     clear(uri: vscode.Uri): void {
+        this.symbols.delete(uri);
+        this.collection.delete(uri);
+    }
+
+    delete(uri: vscode.Uri): void {
+        this.symbols.delete(uri);
         this.collection.delete(uri);
     }
 
@@ -28,6 +36,7 @@ export class EboDiagnostics {
                 }
             ));
 
+            this.symbols.set(document.uri, ast);
             this.collection.set(document.uri, issues);
         }
     }
