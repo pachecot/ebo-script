@@ -2,7 +2,15 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
-## [0.x.x]
+## [0.8.1] 2020-09-21
+
+### Fixed 
+
+- formatting error on trailing spaces after then
+- add missing null keyword 
+- inserted declarations are inserted after header comments
+
+## [0.8.0] 2020-09-20
 
 ### Added
 

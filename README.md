@@ -53,6 +53,10 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.8.1
+
+- minor fixes 
+
 ### 0.8.0
 
 - added new commands
