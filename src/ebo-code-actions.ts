@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { declarations } from './ebo-declaration';
 import { EboErrors } from "./EboErrors";
 import { EboExt } from './EboExt';
+import { first_non_comment_line } from './document-util';
 
 
 /**
@@ -61,7 +62,7 @@ function createAddDeclarations(document: vscode.TextDocument, diagnostic: vscode
             const action = new vscode.CodeAction(`Add ${dec} Declaration`, vscode.CodeActionKind.QuickFix);
             action.diagnostics = [diagnostic];
             action.edit = new vscode.WorkspaceEdit();
-            const line = document.lineAt(0);
+            const line = first_non_comment_line(document);
             action.edit.insert(document.uri, line.range.start, `${dec} ${name}\n`);
             return action;
         });
@@ -72,7 +73,7 @@ function createAddFunctionDeclaration(document: vscode.TextDocument, diagnostic:
     action.diagnostics = [diagnostic];
     action.isPreferred = true;
     action.edit = new vscode.WorkspaceEdit();
-    const line = document.lineAt(0);
+    const line = first_non_comment_line(document);
 
     action.edit.insert(document.uri, line.range.start, `Function ${name}\n`);
     return action;

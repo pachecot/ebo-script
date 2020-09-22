@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { get_var_dec_string } from './SymbolTable';
 import { EboErrors } from "./EboErrors";
 import { EboExt } from './EboExt';
+import { first_non_comment_line } from './document-util';
 
 const DEC_MAX_LEN = 95;
 const EXTENDED = true;
@@ -314,7 +315,8 @@ export function clean_declarations(eboExt: EboExt) {
                     }
                 }
             }
-            editBuilder.insert(new vscode.Position(0, 0), text);
+            const line = first_non_comment_line(document);
+            editBuilder.insert(line.range.start, text);
         });
     }
 }
