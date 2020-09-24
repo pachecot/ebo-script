@@ -4,7 +4,7 @@ import { EBO_SCRIPT } from './extension-types';
 import { SymbolTableCollection } from './SymbolTableMap';
 
 export class EboExt {
-    
+    static readonly languageId = EBO_SCRIPT;
     readonly symbols: SymbolTableCollection = new SymbolTableCollection();
     readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
 
@@ -39,6 +39,29 @@ export class EboExt {
             this.symbols.set(document.uri, ast);
             this.collection.set(document.uri, issues);
         }
+    }
+
+
+    subscribe(context: vscode.ExtensionContext) {
+
+        const subscriptions = [
+            
+            vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
+                fileDeleteEvent.files.forEach(file => this.delete(file));
+            }),
+            
+            vscode.workspace.onDidSaveTextDocument(document => { this.update(document); }),
+
+            vscode.workspace.onDidChangeTextDocument(e => { this.update(e.document); }),
+
+            vscode.window.onDidChangeActiveTextEditor(editor => {
+                if (editor) {
+                    this.update(editor.document);
+                }
+            })
+        ];
+
+        context.subscriptions.splice(context.subscriptions.length, 0, ...subscriptions);
     }
 
 }
