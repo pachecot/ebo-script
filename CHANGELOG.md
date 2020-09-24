@@ -2,6 +2,16 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.8.2] 2020-09-23
+
+### Added
+
+- settings for reformatting declarations
+
+### Fixed 
+
+- update code reformatting to use editor tab size and not fixed 2 spaces - (uses spaces only though!).
+
 ## [0.8.1] 2020-09-21
 
 ### Fixed 
