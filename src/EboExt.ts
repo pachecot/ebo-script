@@ -7,6 +7,7 @@ export class EboExt {
     static readonly languageId = EBO_SCRIPT;
     readonly symbols: SymbolTableCollection = new SymbolTableCollection();
     readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
+    readonly configuration = vscode.workspace.getConfiguration(EBO_SCRIPT);
 
     clear(uri: vscode.Uri): void {
         this.symbols.delete(uri);
