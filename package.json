@@ -57,7 +57,22 @@
 				"language": "ebo-script",
 				"path": "./snippets/ebo-script.code-snippets"
 			}
-		]
+		],
+		"configuration": {
+			"title": "ebo-script",
+			"properties": {
+				"ebo-script.declarationMaxLineLength": {
+					"type": "integer",
+					"default": 85,
+					"description": "Specifies the max line length of declarataions when conbined on a single line."
+				},
+				"ebo-script.cleanDeclarationsCompact": {
+					"type": "boolean",
+					"default": false,
+					"description": "Specifies to compact declarataions when cleaning."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

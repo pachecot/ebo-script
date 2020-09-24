@@ -3,9 +3,7 @@ import { get_var_dec_string } from './SymbolTable';
 import { EboErrors } from "./EboErrors";
 import { EboExt } from './EboExt';
 import { first_non_comment_line } from './document-util';
-
-const DEC_MAX_LEN = 95;
-const EXTENDED = true;
+import { EBO_SCRIPT } from './extension-types';
 
 const re_comma = /\s*,\s*/g;
 const re_declaration = /^\s*((Numeric|String|DateTime)(\s+(Public|Input|Output|Buffered|Triggered))?|Function)\s+/i;
@@ -57,6 +55,9 @@ function is_line_declaration(line: vscode.TextLine) {
 export function compact_declarations() {
 
     const editor = vscode.window.activeTextEditor;
+    const config = vscode.workspace.getConfiguration(EBO_SCRIPT);
+    const max_line_length = config.get('declarationMaxLineLength', 95);
+
 
     if (editor) {
         const document = editor.document;
@@ -78,7 +79,7 @@ export function compact_declarations() {
                 // join like declarations
                 const id = get_declaration_id(m[0]);
                 const decl_type = declarations[id];
-                if (last_line && current_decl_type === decl_type && width < DEC_MAX_LEN) {
+                if (last_line && current_decl_type === decl_type && width < max_line_length) {
                     edits.push(new vscode.Range(
                         last_line.range.end,
                         line.range.start.translate(0, m[0].length)
@@ -193,6 +194,9 @@ export function expand_declarations() {
 export function clean_declarations(eboExt: EboExt) {
 
     const editor = vscode.window.activeTextEditor;
+    const config = vscode.workspace.getConfiguration(EBO_SCRIPT);
+    const max_line_length = config.get('declarationMaxLineLength', 95);
+    const compact = config.get('cleanDeclarationsCompact', false);
 
     if (editor) {
         const document = editor.document;
@@ -299,19 +303,19 @@ export function clean_declarations(eboExt: EboExt) {
                         text += "\n";
                     }
                     list.sort();
-                    if (EXTENDED) {
-                        text += `${name} ${list.join(`\n${name} `)}\n`;
-                    } else {
+                    if (compact) {
                         let d = `${name} ${list.join(', ')}\n`;
-                        if (d.length > DEC_MAX_LEN) {
-                            while (d.length > DEC_MAX_LEN) {
-                                let i = d.indexOf(',', DEC_MAX_LEN);
+                        if (d.length > max_line_length) {
+                            while (d.length > max_line_length) {
+                                let i = d.indexOf(',', max_line_length);
                                 if (i === -1) { break; }
                                 text = text + d.substr(0, i) + '\n';
                                 d = `${name} ${d.substr(i + 2)}`;
                             }
                         }
                         text = text + d;
+                    } else {
+                        text += `${name} ${list.join(`\n${name} `)}\n`;
                     }
                 }
             }
