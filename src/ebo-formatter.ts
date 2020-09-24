@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 import { ebo_scan_text, LexToken, TextRange } from './ebo-scanner';
 import { TokenKind, isFunctionKind, isOperatorKind, isVariableKind, isValueKind, isSymbolKind } from './ebo-types';
 
-const size = 2;
-
 function test_if_then_open(line: LexToken[]) {
 
     let s = 0;
@@ -127,6 +125,10 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
     let depth = 0;
     let line_continue = false;
 
+    const editor = vscode.window.activeTextEditor;
+    const tabSize = Number(editor?.options.tabSize || 2);
+
+    
     let tokensByLine = tokens.reduce((ar, tk) => {
         ar[ar.length - 1].push(tk);
         if (tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.ContinueLineToken) {
@@ -172,7 +174,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         const first = ws ? line_tks[1] : line_tks[0];
 
         if (close_tags.includes(first.type)) {
-            depth -= size;
+            depth -= tabSize;
         }
 
         if (first.type === TokenKind.EndOfLineToken && ws && range_size(ws.range)) {
@@ -181,9 +183,9 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         if (test_is_line(line_tks)) {
             // reset on starting new line
-            depth = size;
+            depth = tabSize;
         } else {
-            const x_depth = line_continue ? depth + size * 2 : depth;
+            const x_depth = line_continue ? depth + tabSize * 2 : depth;
             const cnt = x_depth - first.range.begin;
             if (line_tks.length > 2 && x_depth && ws && /\t/.test(ws.value)) { // remove tabs 
                 edits.push(vscode.TextEdit.replace(toRange(ws.range), ' '.repeat(Math.abs(x_depth))));
@@ -198,7 +200,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         }
 
         if (open_tags.includes(first.type) || test_if_then_open(line_tks)) {
-            depth += size;
+            depth += tabSize;
         }
 
         // formatting for operators
