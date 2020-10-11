@@ -24,15 +24,23 @@
 		"commands": [
 			{
 				"command": "ebo-script.clean-declarations",
-				"title": "ebo-script: Clean Declarations"
+				"title": "ebo-script: Clean Declarations",
+				"enablement": "editorLangId == ebo-script"
 			},
 			{
 				"command": "ebo-script.compact_declarations",
-				"title": "ebo-script: Compact Declarations"
+				"title": "ebo-script: Compact Declarations",
+				"enablement": "editorLangId == ebo-script"
 			},
 			{
 				"command": "ebo-script.expand_declarations",
-				"title": "ebo-script: Expand Declarations"
+				"title": "ebo-script: Expand Declarations",
+				"enablement": "editorLangId == ebo-script"
+			},
+			{
+				"command": "ebo-script.show_files",
+				"title": "ebo-script: List Files",
+				"enablement": "editorLangId == ebo-script"
 			}
 		],
 		"languages": [
