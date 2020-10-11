@@ -1,5 +1,7 @@
+import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { ebo_parse_file } from './ebo-check';
+import { editor_active_dirname } from './ebo-files';
 import { EBO_SCRIPT } from './extension-types';
 import { SymbolTable } from './SymbolTable';
 import { SymbolTableCollection } from './SymbolTableMap';
@@ -13,6 +15,7 @@ export class EboExt {
     constructor(context: vscode.ExtensionContext) {
         if (vscode.window.activeTextEditor) {
             this.update(vscode.window.activeTextEditor.document);
+            this.check_active_dir_files();
         }
         this.subscribe(context);
     }
@@ -57,6 +60,22 @@ export class EboExt {
         this.symbols.set(uri, ast);
         this.collection.set(uri, issues);
     }
+
+    check_active_dir_files() {
+
+        const dir_name = editor_active_dirname() || '.';
+
+        vscode.workspace.findFiles(`${dir_name}/*.ebos?`)
+            .then(uri_list => {
+                const decoder = new TextDecoder("utf-8");
+                uri_list
+                    .filter(uri => !this.collection.has(uri))
+                    .forEach(uri => {
+                        vscode.workspace.fs.readFile(uri)
+                            .then(fileBytes => decoder.decode(fileBytes))
+                            .then(fileText => this.update_file(uri, fileText));
+                    });
+            });
     }
 
 
@@ -76,6 +95,7 @@ export class EboExt {
     window_onDidChangeActiveTextEditor(editor: vscode.TextEditor | undefined) {
         if (editor) {
             this.update(editor.document);
+            this.check_active_dir_files();
         }
     }
 
