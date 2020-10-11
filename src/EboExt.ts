@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as ebo from './ebo-check';
+import { ebo_parse_file } from './ebo-check';
 import { EBO_SCRIPT } from './extension-types';
 import { SymbolTable } from './SymbolTable';
 import { SymbolTableCollection } from './SymbolTableMap';
@@ -9,6 +9,13 @@ export class EboExt {
     readonly symbols: SymbolTableCollection = new SymbolTableCollection();
     readonly collection = vscode.languages.createDiagnosticCollection(EBO_SCRIPT);
     readonly configuration = vscode.workspace.getConfiguration(EBO_SCRIPT);
+
+    constructor(context: vscode.ExtensionContext) {
+        if (vscode.window.activeTextEditor) {
+            this.update(vscode.window.activeTextEditor.document);
+        }
+        this.subscribe(context);
+    }
 
     clear(uri: vscode.Uri): void {
         this.symbols.delete(uri);

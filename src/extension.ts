@@ -11,13 +11,7 @@ export function deactivate() { }
 
 export function activate(context: vscode.ExtensionContext) {
 
-    const eboExt = new EboExt();
-
-    if (vscode.window.activeTextEditor) {
-        eboExt.update(vscode.window.activeTextEditor.document);
-    }
-
-    eboExt.subscribe(context);
+    const eboExt = new EboExt(context);
 
     context.subscriptions.push(
         vscode.commands.registerCommand("ebo-script.clean-declarations", () => {
