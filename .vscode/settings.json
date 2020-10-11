@@ -87,6 +87,8 @@
         "WEBSERVICE",
         "WRITEPROPERTY",
         "cond",
+        "ebosf",
+        "ebosp",
         "fallthru"
     ]
 }
