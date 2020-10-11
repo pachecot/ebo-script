@@ -61,6 +61,9 @@ export function compact_declarations() {
 
     if (editor) {
         const document = editor.document;
+
+        if (document.languageId !== EBO_SCRIPT) { return; }
+
         const count = document.lineCount;
         let width = 0;
 
@@ -131,6 +134,9 @@ export function expand_declarations() {
 
     if (editor) {
         const document = editor.document;
+
+        if (document.languageId !== EBO_SCRIPT) { return; }
+
         const count = document.lineCount;
 
         const edits: [vscode.Range, string][] = [];
@@ -200,6 +206,8 @@ export function clean_declarations(eboExt: EboExt) {
 
     if (editor) {
         const document = editor.document;
+
+        if (document.languageId !== EBO_SCRIPT) { return; }
 
         // Get the word within the selection
         const count = document.lineCount;
