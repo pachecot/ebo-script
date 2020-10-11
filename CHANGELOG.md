@@ -2,6 +2,18 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.9.0] 2020-10-11
+
+### Added
+
+- command to list all scripts in folder
+- command to list all variables 
+- error checking for all files in folder 
+
+### Fixed 
+
+- misc
+
 ## [0.8.2] 2020-09-23
 
 ### Added
