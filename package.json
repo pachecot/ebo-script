@@ -41,6 +41,11 @@
 				"command": "ebo-script.show_files",
 				"title": "ebo-script: List Files",
 				"enablement": "editorLangId == ebo-script"
+			},
+			{
+				"command": "ebo-script.show_variables",
+				"title": "ebo-script: List Variables",
+				"enablement": "editorLangId == ebo-script"
 			}
 		],
 		"languages": [

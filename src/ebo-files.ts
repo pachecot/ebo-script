@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 /**
  * get the dirname of the document in the active editor 
  */
-function editor_active_doc_uri() {
+export function editor_active_doc_uri() {
 
     const editor = vscode.window.activeTextEditor;
 
@@ -24,6 +24,14 @@ function parent_uri(uri: vscode.Uri | undefined) {
 /**
  * get the dirname of the document in the active editor 
  */
+export function editor_active_fsDirname() {
+    const doc_uri = editor_active_doc_uri();
+    return doc_uri ? path.dirname(doc_uri.fsPath) : "";
+}
+
+/**
+ * get the dirname of the document in the active editor 
+ */
 export function editor_active_dirname() {
 
     const doc_uri = editor_active_doc_uri();
@@ -32,6 +40,7 @@ export function editor_active_dirname() {
     }
     return "";
 }
+
 /**
  * open list of ebo-script files as new text document
  */
