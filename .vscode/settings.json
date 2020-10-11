@@ -75,6 +75,8 @@
         "STRTODATE",
         "STRTONUM",
         "STRTOTIME",
+        "Setpoint",
+        "Setpoints",
         "TIMEOFDAY",
         "TMTO",
         "TOUCHEDCELL",
@@ -87,6 +89,7 @@
         "WEBSERVICE",
         "WRITEPROPERTY",
         "cond",
+        "ebos",
         "ebosf",
         "ebosp",
         "fallthru"
