@@ -298,7 +298,7 @@ export function clean_declarations(eboExt: EboExt) {
             let text = "";
             let insert_newline = false;
             for (let name of declarations) {
-                if (name === "Numeric") {
+                if (name === "DateTime") {
                     insert_newline = true;
                 }
                 const list = dec[name];
