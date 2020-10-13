@@ -8,6 +8,77 @@ import { SymbolTable, VarModifier } from './SymbolTable';
 import { SymbolTableCollection } from './SymbolTableMap';
 import path = require('path');
 
+
+interface EConfig {
+    "binding-rules": [string, string][]
+    "io": string,
+    "consumers": string,
+}
+
+
+class EboConfig {
+    readonly file_name = 'ebo-script.json';
+
+    config: EConfig | undefined;
+    path: string = '';
+
+    constructor() {
+        const rules: [RegExp, string][] = [];
+        this.path = editor_active_fsDirname();
+
+        if (this.path) {
+            const eboFile = path.join(this.path, this.file_name);
+            if (existsSync(eboFile)) {
+                const s = readFileSync(eboFile).toString();
+                this.config = JSON.parse(s) as EConfig;
+            }
+        }
+    }
+
+    binding_rules() {
+        if (!this.config) { return []; }
+        const rules: [RegExp, string][] = [];
+        if (this.config["binding-rules"]) {
+            for (let br of this.config["binding-rules"]) {
+                const r = new RegExp(br[0]);
+                const s = br[1];
+                rules.push([r, s]);
+            }
+        }
+        return rules;
+    }
+
+    io_points() {
+        if (!this.config || !this.config["io"]) { return []; }
+        const io_file = path.join(this.path, this.config.io);
+        const io_text = readFileSync(io_file).toString();
+        const io_list = io_text.split('\n')
+            .map(x => x.replace(/#.*/, ''))
+            .map(x => x.trim())
+            .filter(x => x);
+        io_list.sort()
+        return io_list;
+    }
+
+    consumers() {
+        if (!this.config || !this.config.consumers) { return []; }
+        const consumer_file = path.join(this.path, this.config.consumers);
+        const consumer_text = readFileSync(consumer_file).toString();
+        const consumer_list = consumer_text.split('\n')
+            .map(x => x.replace(/#.*/, ''))
+            .map(x => x.trim())
+            .filter(x => x);
+        consumer_list.sort();
+        return consumer_list;
+    }
+
+
+
+
+}
+
+
+
 export class EboExt {
     static readonly languageId = EBO_SCRIPT;
     readonly symbols: SymbolTableCollection = new SymbolTableCollection();
@@ -82,22 +153,10 @@ export class EboExt {
 
     show_variables() {
 
-        const rules: [RegExp, string][] = [];
-        const doc_dir = editor_active_fsDirname();
-        if (doc_dir) {
-            const eboFile = path.join(doc_dir, 'ebo.json');
-            if (existsSync(eboFile)) {
-                const s = readFileSync(eboFile).toString();
-                const ebo_config = JSON.parse(s);
-                if (ebo_config["binding-rules"]) {
-                    for (let br of ebo_config["binding-rules"]) {
-                        const r = new RegExp(br[0]);
-                        const s = br[1];
-                        rules.push([r, s]);
-                    }
-                }
-            }
-        }
+        const cfg = new EboConfig();
+        const rules = cfg.binding_rules();
+        const io_points = cfg.io_points();
+        const consumers = cfg.consumers();
 
         const dir_name = editor_active_dirname() || '.';
         vscode.workspace.findFiles(`${dir_name}/*.ebosp`)
@@ -111,8 +170,8 @@ export class EboExt {
                         Object.keys(vs)
                             .map(k => vs[k])
                             .filter(var_dec => {
-                                const m = var_dec.modifier;
-                                return m === VarModifier.Output || m === VarModifier.Input;
+                                const modifier = var_dec.modifier;
+                                return modifier === VarModifier.Output || modifier === VarModifier.Input;
                             })
                             .forEach(var_dec => {
                                 let name = var_dec.name;
@@ -123,7 +182,9 @@ export class EboExt {
                                         break;
                                     }
                                 };
-                                vars[name] = vars[name] || var_dec.modifier === VarModifier.Output;
+                                if (!io_points.includes(name) && !consumers.includes(name)) {
+                                    vars[name] = vars[name] || var_dec.modifier === VarModifier.Output;
+                                }
                             });
                     });
 
