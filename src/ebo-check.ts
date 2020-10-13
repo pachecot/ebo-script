@@ -875,10 +875,10 @@ const states: ParseMap = {
         _: ParseState.FUNCTION_CALL,
         [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
     },
-    // [ParseState.SYS_FUNCTION]: {
-    //     _: ParseState.FUNCTION_CALL,
-    //     [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
-    // },
+    [ParseState.SYS_FUNCTION]: {
+        _: ParseState.FUNCTION_CALL,
+        [TokenKind.ParenthesesRightSymbol]: ParseState.FUNCTION_CALL_END,
+    },
     [ParseState.FOR_EXP]: {
         _: ParseState.FOR_EXP,
         [TokenKind.EndOfLineToken]: ParseState.FOR_EXP_END
