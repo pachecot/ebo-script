@@ -2,6 +2,16 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.9.1] 2020-10-12
+
+### Added
+
+- command to list all variables can now exclude io and consumer points through config files.
+
+### Fixed 
+
+- system functions were generating parse errors
+
 ## [0.9.0] 2020-10-11
 
 ### Added

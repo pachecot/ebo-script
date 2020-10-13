@@ -53,6 +53,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.9.1
+
+- improve variable list command  
+- fix system function parse error
+
 ### 0.9.0
 
 - added commands for file list and variable list 
