@@ -1,0 +1,224 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "JSON schema for ebo-script ebo.json files",
+    "definitions": {
+        "name_pattern": {
+            "pattern": "^[\\w\\d_](\\s*[\\w\\d_.^#])*$"
+        },
+        "value_properties": {
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "Analog",
+                        "Binary",
+                        "Multistate",
+                        "String",
+                        "DateTime"
+                    ]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "units": {
+                    "type": "string"
+                }
+            }
+        },
+        "external_value_properties": {
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "Analog",
+                        "Binary",
+                        "Multistate"
+                    ]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "units": {
+                    "type": "string"
+                },
+                "binding": {
+                    "type": "string"
+                }
+            }
+        },
+        "io_point": {
+            "properties": {
+                "name": {
+                    "description": "Name of the IO point",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "Counter Input",
+                        "Current Input",
+                        "Current Output",
+                        "Digital Input",
+                        "Digital Output",
+                        "Digital Pulsed Output",
+                        "Resistive Input",
+                        "RTD Resistive Input 2-Wire",
+                        "RTD Resistive Input 3-Wire",
+                        "RTD Temperature Input 2-Wire",
+                        "RTD Temperature Input 3-Wire",
+                        "Supervised Input",
+                        "Temperature Input",
+                        "Tristate Output",
+                        "Tristate Pulsed Output",
+                        "Voltage Input",
+                        "Voltage Output"
+                    ]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "terminal": {
+                    "type": "string"
+                },
+                "units": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "io_point_properties": {
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "Counter Input",
+                        "Current Input",
+                        "Current Output",
+                        "Digital Input",
+                        "Digital Output",
+                        "Digital Pulsed Output",
+                        "Resistive Input",
+                        "RTD Resistive Input 2-Wire",
+                        "RTD Resistive Input 3-Wire",
+                        "RTD Temperature Input 2-Wire",
+                        "RTD Temperature Input 3-Wire",
+                        "Supervised Input",
+                        "Temperature Input",
+                        "Tristate Output",
+                        "Tristate Pulsed Output",
+                        "Velocity Pressure",
+                        "Voltage Input",
+                        "Voltage Output"
+                    ]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "terminal": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "properties": {
+        "binding-rules": {
+            "description": "The name of the binding rules for the points names.",
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": [
+                    {
+                        "description": "The source expression.",
+                        "type": "string",
+                        "format": "regex"
+                    },
+                    {
+                        "description": "The name replacement.",
+                        "type": "string"
+                    }
+                ],
+                "minItems": 2,
+                "maxItems": 2
+            }
+        },
+        "controller-type": {
+            "type": "string",
+            "enum": [
+                "mpx",
+                "server",
+                "b3"
+            ]
+        },
+        "io-points": {
+            "description": "IO points",
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "$ref": "#/definitions/io_point_properties"
+            },
+            "propertyNames": {
+                "$ref": "#/definitions/name_pattern"
+            }
+        },
+        "consumer-values": {
+            "description": "Consumer Values",
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "$ref": "#/definitions/external_value_properties"
+            },
+            "propertyNames": {
+                "$ref": "#/definitions/name_pattern"
+            }
+        },
+        "producer-values": {
+            "description": "Producer Values",
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "$ref": "#/definitions/external_value_properties"
+            },
+            "propertyNames": {
+                "$ref": "#/definitions/name_pattern"
+            }
+        },
+        "values": {
+            "description": "Value Objects",
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "$ref": "#/definitions/value_properties"
+            },
+            "propertyNames": {
+                "$ref": "#/definitions/name_pattern"
+            }
+        },
+        "consumer-file": {
+            "description": "consumer values file",
+            "type": "string",
+            "default": "_consumers.txt"
+        },
+        "io-file": {
+            "description": "io points file",
+            "type": "string",
+            "default": "_io.txt"
+        }
+    },
+    "dependencies": {
+        "consumer-values": {
+            "properties": {
+                "controller-type": {
+                    "enum": [
+                        "mpx"
+                    ]
+                }
+            }
+        }
+    },
+    "additionalProperties": false
+}
