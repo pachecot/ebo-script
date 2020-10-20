@@ -48,6 +48,12 @@
 				"enablement": "editorLangId == ebo-script"
 			}
 		],
+		"jsonValidation": [
+			{
+				"fileMatch": "ebo.json",
+				"url": "./schemas/ebo-schema.json"
+			}
+		],
 		"languages": [
 			{
 				"id": "ebo-script",
