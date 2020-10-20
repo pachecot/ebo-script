@@ -5,6 +5,7 @@ import { EboErrors } from './EboErrors';
 
 export class ParseContext {
     parens_depth = 0;
+    bracket_depth = 0;
     for_next_state: LexToken[] = [];
     if_then_state: LexToken[] = [];
     select_state: LexToken[] = [];

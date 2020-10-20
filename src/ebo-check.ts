@@ -43,8 +43,9 @@ function parse_variable_list_item(cur: Cursor): VariableInst {
 
     const tk = cur.current();
     cur.advance();
-
+    let depth = 0;
     if (cur.remain() > 0 && cur.current().type === TokenKind.BracketLeftSymbol) {
+        ++depth;
         cur.advance();
         const id = cur.current();
         let index = -1;
@@ -52,7 +53,11 @@ function parse_variable_list_item(cur: Cursor): VariableInst {
             cur.advance();
             index = Number(id.value);
         }
-        cur.advance();
+        while (cur.remain() > 0 && depth) {
+            if (cur.current().type === TokenKind.BracketLeftSymbol) { ++depth; }
+            if (cur.current().type === TokenKind.BracketRightSymbol) { --depth; }
+            cur.advance();
+        }
         return {
             name: tk.value,
             token: tk,
@@ -904,11 +909,14 @@ const states: ParseMap = {
         _: ParseState.IDENT_ID_END
     },
     [ParseState.ASSIGN_ARRAY]: {
-        [TokenKind.IdentifierToken]: ParseState.ASSIGN_ARRAY_CL,
-        [TokenKind.NumberToken]: ParseState.ASSIGN_ARRAY_CL,
+        _: ParseState.ASSIGN_ARRAY,
+        [TokenKind.BracketRightSymbol]: ParseState.ASSIGN_ARRAY_CL,
     },
     [ParseState.ASSIGN_ARRAY_CL]: {
-        [TokenKind.BracketRightSymbol]: ParseState.ASSIGN,
+        [TokenKind.EqualsSymbol]: ParseState.ASSIGN_END,
+        [TokenKind.AmpersandSymbol]: ParseState.ASSIGN_MORE,
+        [TokenKind.AndOperator]: ParseState.ASSIGN_MORE,
+        [TokenKind.CommaSymbol]: ParseState.ASSIGN_MORE,
     },
     [ParseState.ASSIGN]: {
         [TokenKind.EqualsSymbol]: ParseState.ASSIGN_END,
@@ -1052,6 +1060,18 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
         } else {
             ast.lookup_variable(tk);
         }
+    },
+    [ParseState.ASSIGN_ARRAY_CL](ast: SymbolTable, cur: Cursor) {
+        const array_exp = [];
+        while (cur.current().type !== TokenKind.BracketLeftSymbol) {
+            cur.advance();
+        }
+        cur.advance();
+        while (cur.remain() > 1) {
+            array_exp.push(cur.current());
+            cur.advance();
+        }
+        parse_expression(array_exp, ast);
     },
     [ParseState.FUNCTION_CALL_END](ast: SymbolTable, cur: Cursor) {
         parse_function(ast, cur);
@@ -1314,6 +1334,15 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
                 next = ParseState.FUNCTION_CALL;
             }
         }
+        if (tk.type === TokenKind.BracketLeftSymbol) {
+            ++symTable.context.bracket_depth;
+        }
+        if (tk.type === TokenKind.BracketRightSymbol) {
+            --symTable.context.bracket_depth;
+            if (symTable.context.bracket_depth && next === ParseState.ASSIGN_ARRAY_CL) {
+                next = ParseState.ASSIGN_ARRAY;
+            }
+        }
         if (!next && isFunctionKind(tk.type)) {
             next = ParseState.FUNCTION_CALL;
         }
@@ -1377,6 +1406,15 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                 break;
             case TokenKind.EndWhileStatement:
                 symTable.context.while_state.pop();
+                break;
+            case TokenKind.BracketLeftSymbol:
+                ++symTable.context.bracket_depth;
+                break;
+            case TokenKind.BracketRightSymbol:
+                --symTable.context.bracket_depth;
+                if (symTable.context.bracket_depth) {
+                    if (next === ParseState.ASSIGN_ARRAY_CL) { next = ParseState.ASSIGN_ARRAY; }
+                }
                 break;
             case TokenKind.ParenthesesLeftSymbol:
                 ++symTable.context.parens_depth;
