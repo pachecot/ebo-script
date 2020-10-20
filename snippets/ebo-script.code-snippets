@@ -58,5 +58,89 @@
 			"While ${1:condition}"
 		],
 		"description": "Do-While Statement"
+	},
+	"Numeric Input": {
+		"prefix": "numin",
+		"body": [
+			"Numeric Input $0"
+		],
+		"description": "Numeric Input"
+	},
+	"Numeric Output": {
+		"prefix": "numout",
+		"body": [
+			"Numeric Output $0"
+		],
+		"description": "Numeric Output"
+	},
+	"Numeric Public": {
+		"prefix": "numpub",
+		"body": [
+			"Numeric Public $0"
+		],
+		"description": "Numeric Public"
+	},
+	"Numeric": {
+		"prefix": "num",
+		"body": [
+			"Numeric $0"
+		],
+		"description": "Numeric"
+	},
+	"DateTime Input": {
+		"prefix": "datein",
+		"body": [
+			"DateTime Input $0"
+		],
+		"description": "DateTime Input"
+	},
+	"DateTime Output": {
+		"prefix": "dateout",
+		"body": [
+			"DateTime Output $0"
+		],
+		"description": "DateTime Output"
+	},
+	"DateTime Public": {
+		"prefix": "datepub",
+		"body": [
+			"DateTime Public $0"
+		],
+		"description": "DateTime Public"
+	},
+	"DateTime": {
+		"prefix": "datet",
+		"body": [
+			"DateTime $0"
+		],
+		"description": "DateTime"
+	},
+	"String Input": {
+		"prefix": "strin",
+		"body": [
+			"String Input $0"
+		],
+		"description": "String Input"
+	},
+	"String Output": {
+		"prefix": "strout",
+		"body": [
+			"String Output $0"
+		],
+		"description": "String Output"
+	},
+	"String Public": {
+		"prefix": "strpub",
+		"body": [
+			"String Public $0"
+		],
+		"description": "String Public"
+	},
+	"String": {
+		"prefix": "str",
+		"body": [
+			"String $0"
+		],
+		"description": "String"
 	}
 }
