@@ -11,13 +11,16 @@ import path = require('path');
 
 interface EConfig {
     "binding-rules": [string, string][]
-    "io": string,
-    "consumers": string,
+    "io-file": string,
+    "consumer-file": string,
+    "io-points": { [name: string]: object },
+    "consumer-values": { [name: string]: object },
 }
 
 
 class EboConfig {
-    readonly file_name = 'ebo-script.json';
+
+    readonly file_name = 'ebo.json';
 
     config: EConfig | undefined;
     path: string = '';
@@ -40,7 +43,7 @@ class EboConfig {
         const rules: [RegExp, string][] = [];
         if (this.config["binding-rules"]) {
             for (let br of this.config["binding-rules"]) {
-                const r = new RegExp(br[0]);
+                const r = new RegExp(`(?:.*\/)?${br[0]}`);
                 const s = br[1];
                 rules.push([r, s]);
             }
@@ -49,31 +52,53 @@ class EboConfig {
     }
 
     io_points() {
-        if (!this.config || !this.config["io"]) { return []; }
-        const io_file = path.join(this.path, this.config.io);
-        const io_text = readFileSync(io_file).toString();
-        const io_list = io_text.split('\n')
-            .map(x => x.replace(/#.*/, ''))
-            .map(x => x.trim())
-            .filter(x => x);
-        io_list.sort()
+        let io_list: string[] = [];
+
+        if (!this.config) {
+            return [];
+        }
+        if (this.config["io-file"]) {
+            const io_file = path.join(this.path, this.config["io-file"]);
+            if (existsSync(io_file)) {
+                const io_text = readFileSync(io_file).toString();
+                io_list = io_text.split('\n')
+                    .map(x => x.replace(/#.*/, ''))
+                    .map(x => x.trim())
+                    .filter(x => x);
+            }
+        }
+        if (this.config["io-points"]) {
+            io_list = io_list.concat(
+                Object.keys(this.config["io-points"])
+            );
+        }
+        io_list.sort();
         return io_list;
     }
 
     consumers() {
-        if (!this.config || !this.config.consumers) { return []; }
-        const consumer_file = path.join(this.path, this.config.consumers);
-        const consumer_text = readFileSync(consumer_file).toString();
-        const consumer_list = consumer_text.split('\n')
-            .map(x => x.replace(/#.*/, ''))
-            .map(x => x.trim())
-            .filter(x => x);
+        if (!this.config) {
+            return [];
+        }
+        let consumer_list: string[] = []
+        if (this.config["consumer-file"]) {
+            const consumer_file = path.join(this.path, this.config["consumer-file"]);
+            if (existsSync(consumer_file)) {
+                const consumer_text = readFileSync(consumer_file).toString();
+                consumer_list = consumer_text.split('\n')
+                    .map(x => x.replace(/#.*/, ''))
+                    .map(x => x.trim())
+                    .filter(x => x);
+            }
+        }
+        if (this.config["consumer-values"]) {
+            consumer_list = consumer_list.concat(
+                Object.keys(this.config["consumer-values"])
+            );
+        }
         consumer_list.sort();
         return consumer_list;
     }
-
-
-
 
 }
 
@@ -156,6 +181,7 @@ export class EboExt {
         const cfg = new EboConfig();
         const rules = cfg.binding_rules();
         const io_points = cfg.io_points();
+        console.log(io_points);
         const consumers = cfg.consumers();
 
         const dir_name = editor_active_dirname() || '.';
