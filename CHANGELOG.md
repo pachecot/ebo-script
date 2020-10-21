@@ -6,6 +6,30 @@ All notable changes to the "ebo-script" extension will be documented in this fil
 
 ### Added
 
+- snippets for declarations.
+    - **numin** Numeric Input
+    - **numout** Numeric Output
+    - **numpub** Numeric Public
+    - **num** Numeric
+    - **datein** DateTime Input
+    - **dateout** DateTime Output
+    - **datepub** DateTime Public
+    - **datet** DateTime
+    - **strin** String Input
+    - **strout** String Output
+    - **strpub** String Public
+    - **str** String
+- created initial ebo.json config file support
+
+### Fixed 
+
+- select case snippet fixed for trailing colon on the case statement
+- fix issues in assignment to arrays to support expressions
+
+## [0.9.1] 2020-10-12
+
+### Added
+
 - command to list all variables can now exclude io and consumer points through config files.
 
 ### Fixed 

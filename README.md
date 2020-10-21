@@ -53,6 +53,12 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.9.2
+
+- added ebo.json config file support  
+- fix snippet for case
+- added snippets for declarations
+
 ### 0.9.1
 
 - improve variable list command  
