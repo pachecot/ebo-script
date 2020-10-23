@@ -26,9 +26,9 @@ export class EboCodeActionProvider implements vscode.CodeActionProvider {
             .reduce((actions: vscode.CodeAction[], diagnostic) => {
                 const name = document.getText(diagnostic.range);
                 switch (diagnostic.code) {
-                    case EboErrors.DuplicateDeclaration:
-                    case EboErrors.RedeclaredFunction:
-                    case EboErrors.UnreferencedDeclaration:
+                    case EboErrors.DuplicateDeclaration:    // fallthru
+                    case EboErrors.RedeclaredFunction:      // fallthru
+                    case EboErrors.UnreferencedDeclaration: // fallthru
                     case EboErrors.UnreferencedFunction:
                         actions.push(createRemoveDeclaration(document, diagnostic));
                         break;
@@ -40,7 +40,14 @@ export class EboCodeActionProvider implements vscode.CodeActionProvider {
                     case EboErrors.UndeclaredVariable:
                         const id = document.getText(diagnostic.range);
                         const st = this.eboExt.symbols.get(document.uri);
-                        actions = actions.concat(createAddDeclarations(document, diagnostic, name, id in st.assigned_refs));
+
+                        const sym_name = Object.keys(st.symbols).find(s => s.toLowerCase() === id.toLowerCase());
+                        if (sym_name) {
+                            actions.push(createFixVariableCase(document, diagnostic, name, sym_name));
+                        } else {
+                            actions = actions.concat(createAddDeclarations(document, diagnostic, name, id in st.assigned_refs));
+                        }
+
                         break;
                 };
                 return actions;
@@ -51,6 +58,16 @@ export class EboCodeActionProvider implements vscode.CodeActionProvider {
 }
 
 export const reReadOnlyDeclaration = /(Input|Triggered)$/i;
+
+function createFixVariableCase(document: vscode.TextDocument, diagnostic: vscode.Diagnostic, name: string, fix_name: string): vscode.CodeAction {
+    const action = new vscode.CodeAction(`Change case to match declaration '${fix_name}'`, vscode.CodeActionKind.QuickFix);
+    action.diagnostics = [diagnostic];
+    action.isPreferred = true;
+    action.edit = new vscode.WorkspaceEdit();
+    action.edit.replace(document.uri, diagnostic.range, fix_name);
+    return action;
+}
+
 
 function createAddDeclarations(document: vscode.TextDocument, diagnostic: vscode.Diagnostic, name: string, writeable: boolean): vscode.CodeAction[] {
 
