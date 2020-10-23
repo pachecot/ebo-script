@@ -80,7 +80,7 @@ class EboConfig {
         if (!this.config) {
             return [];
         }
-        let consumer_list: string[] = []
+        let consumer_list: string[] = [];
         if (this.config["consumer-file"]) {
             const consumer_file = path.join(this.path, this.config["consumer-file"]);
             if (existsSync(consumer_file)) {
