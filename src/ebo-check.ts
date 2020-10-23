@@ -1349,6 +1349,14 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
                 }
                 break;
 
+            case TokenKind.ColonSymbol:
+                symTable.errors.push({
+                    severity: Severity.Error,
+                    id: EboErrors.IllegalExpression,
+                    message: "Illegal Expression, unexpected colon.",
+                    range: tk.range
+                });
+                break;
         }
 
         if (!next && isFunctionKind(tk.type)) {

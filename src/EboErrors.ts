@@ -15,6 +15,7 @@ export enum EboErrors {
     FunctionUsedAsVariable,
     IfThenStatementMissingEndIf,
     IllegalAssignment,
+    IllegalExpression,
     LineUsedAsVariable,
     MissingCloseParentheses,
     ParseError,
