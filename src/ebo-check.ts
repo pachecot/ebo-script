@@ -1325,24 +1325,32 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
 
     for (const tk of line) {
         let next = state[tk.type] || state._;
-        if (tk.type === TokenKind.ParenthesesLeftSymbol) {
-            ++symTable.context.parens_depth;
+
+        switch (tk.type) {
+            case TokenKind.ParenthesesLeftSymbol:
+                ++symTable.context.parens_depth;
+                break;
+
+            case TokenKind.ParenthesesRightSymbol:
+                --symTable.context.parens_depth;
+                if (symTable.context.parens_depth && next === ParseState.FUNCTION_CALL_END) {
+                    next = ParseState.FUNCTION_CALL;
+                }
+                break;
+
+            case TokenKind.BracketLeftSymbol:
+                ++symTable.context.bracket_depth;
+                break;
+
+            case TokenKind.BracketRightSymbol:
+                --symTable.context.bracket_depth;
+                if (symTable.context.bracket_depth && next === ParseState.ASSIGN_ARRAY_CL) {
+                    next = ParseState.ASSIGN_ARRAY;
+                }
+                break;
+
         }
-        if (tk.type === TokenKind.ParenthesesRightSymbol) {
-            --symTable.context.parens_depth;
-            if (symTable.context.parens_depth && next === ParseState.FUNCTION_CALL_END) {
-                next = ParseState.FUNCTION_CALL;
-            }
-        }
-        if (tk.type === TokenKind.BracketLeftSymbol) {
-            ++symTable.context.bracket_depth;
-        }
-        if (tk.type === TokenKind.BracketRightSymbol) {
-            --symTable.context.bracket_depth;
-            if (symTable.context.bracket_depth && next === ParseState.ASSIGN_ARRAY_CL) {
-                next = ParseState.ASSIGN_ARRAY;
-            }
-        }
+
         if (!next && isFunctionKind(tk.type)) {
             next = ParseState.FUNCTION_CALL;
         }
@@ -1369,7 +1377,7 @@ function parse_expression(line: LexToken[], symTable: SymbolTable) {
         }
     }
 
-    let next = state && (state[TokenKind.EndOfLineToken] || state._);
+    const next = state && (state[TokenKind.EndOfLineToken] || state._);
     if (next) {
         state = states[next];
         let fn = state_actions[next];
