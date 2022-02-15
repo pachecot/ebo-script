@@ -2,7 +2,28 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
-## [0.9.1] 2020-10-12
+## [0.9.4] 2022-02-14
+
+### Added
+
+- Added checks mismatched control statements
+
+### Fixed 
+
+- Added fix for public variable in for statement 
+
+## [0.9.3] 2020-10-xx
+
+### Added
+
+- Added fix for mismatched variable case 
+- Added check for misc colon (case statements) 
+
+### Fixed 
+
+- 
+
+## [0.9.2] 2020-10-12
 
 ### Added
 
