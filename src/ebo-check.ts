@@ -369,7 +369,7 @@ function parse_for_exp(st: SymbolTable, cur: Cursor): ForExpression {
         || numeric_name.type !== TokenKind.IdentifierToken
         || numeric_exp.length > 1
         || !vn
-        || vn.modifier !== VarModifier.Local
+        || (vn.modifier !== VarModifier.Local && vn.modifier !== VarModifier.Public)
     ) {
         st.errors.push({
             severity: Severity.Error,
@@ -378,7 +378,6 @@ function parse_for_exp(st: SymbolTable, cur: Cursor): ForExpression {
             range: numeric_name.range
         });
     }
-
 
     if (!res.begin || res.begin.length === 0) {
         st.errors.push({
