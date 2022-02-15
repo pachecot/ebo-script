@@ -786,6 +786,8 @@ const states: ParseMap = {
         [TokenKind.ModifyAction]: ParseState.SET,
         [TokenKind.ChangeAction]: ParseState.SET,
         [TokenKind.TurnAction]: ParseState.TURN,
+
+        [TokenKind.ThenStatement]: ParseState.ERROR,
     },
     [ParseState.EXPR]: {
         [TokenKind.IdentifierToken]: ParseState.EXPR_IDENT,
@@ -1410,16 +1412,43 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
             case TokenKind.RepeatStatement:
                 symTable.context.repeat_state.push(tk);
                 break;
+            case TokenKind.ElseStatement:
+                const ifThen = symTable.context.if_then_state;
+                if (ifThen.length > 0) {
+                    if (ifThen[ifThen.length - 1].type === TokenKind.ElseStatement) {
+                        emit_parse_error(symTable, tk);
+                    } else {
+                        ifThen.pop();
+                        ifThen.push(tk);
+                    }
+                } else {
+                    if (state !== states[ParseState.IF_THEN_EXP]) {
+                        emit_parse_error(symTable, tk);
+                    }
+                }
+                break;
             case TokenKind.EndIfStatement:
+                if (symTable.context.if_then_state.length === 0) {
+                    emit_parse_error(symTable, tk);
+                }
                 symTable.context.if_then_state.pop();
                 break;
             case TokenKind.NextStatement:
+                if (symTable.context.for_next_state.length === 0) {
+                    emit_parse_error(symTable, tk);
+                }
                 symTable.context.for_next_state.pop();
                 break;
             case TokenKind.EndSelectStatement:
+                if (symTable.context.select_state.length === 0) {
+                    emit_parse_error(symTable, tk);
+                }
                 symTable.context.select_state.pop();
                 break;
             case TokenKind.EndWhileStatement:
+                if (symTable.context.select_state.length === 0) {
+                    emit_parse_error(symTable, tk);
+                }
                 symTable.context.while_state.pop();
                 break;
             case TokenKind.BracketLeftSymbol:
