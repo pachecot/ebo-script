@@ -14,7 +14,10 @@
 		"Other"
 	],
 	"activationEvents": [
-		"*"
+		"onLanguage:ebo-script",
+		"workspaceContains:**/*.ebosp",
+		"workspaceContains:**/*.ebosf",
+		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
