@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.9.8] 2022-02-15
+
+- updated dependencies
+- update to vscode 1.64 
+
 ## [0.9.4] 2022-02-14
 
 ### Added
