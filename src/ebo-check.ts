@@ -1421,6 +1421,10 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                         ifThen.pop();
                         ifThen.push(tk);
                     }
+                } else if (symTable.context.select_state.length > 0) {
+                    if (state !== states[ParseState.SELECT_CASE]) {
+                        emit_parse_error(symTable, tk);
+                    }
                 } else {
                     if (state !== states[ParseState.IF_THEN_EXP]) {
                         emit_parse_error(symTable, tk);
