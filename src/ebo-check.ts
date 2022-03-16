@@ -719,6 +719,7 @@ const enum ParseState {
     , UNTIL_EXP
     , UNTIL_EXP_END
     , SELECT_CASE
+    , SELECT_CASE_ELSE
     , SELECT_CASE_END
     , SELECT_EXP
     , SELECT_EXP_END
@@ -895,6 +896,10 @@ const states: ParseMap = {
     },
     [ParseState.SELECT_CASE]: {
         _: ParseState.SELECT_CASE,
+        [TokenKind.EndOfLineToken]: ParseState.SELECT_CASE_END,
+        [TokenKind.ElseStatement]: ParseState.SELECT_CASE_ELSE
+    },
+    [ParseState.SELECT_CASE_ELSE]: {
         [TokenKind.EndOfLineToken]: ParseState.SELECT_CASE_END
     },
     [ParseState.EXPR_IDENT]: {
