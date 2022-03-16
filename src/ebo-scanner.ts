@@ -495,8 +495,8 @@ const scannerRe = new RegExp(`(${[
     , reWhiteSpace.source    // 3
     , reComment.source       // 4
     , reQuotedString.source  // 5
-    , reNumber.source        // 6
-    , reTime.source          // 7
+    , reTime.source          // 6
+    , reNumber.source        // 7
     , reSymbol.source        // 8
     , reKWords.source        // 9
     , reFnCall.source        // 10
@@ -511,8 +511,8 @@ const scannerFns: ((m: string) => TokenKind)[] = [
 /* 2 */    () => TokenKind.WhitespaceToken,
 /* 3 */    () => TokenKind.CommentToken,
 /* 4 */    () => TokenKind.StringToken,
-/* 5 */    () => TokenKind.NumberToken,
-/* 6 */    () => TokenKind.TimeToken,
+/* 5 */    () => TokenKind.TimeToken,
+/* 6 */    () => TokenKind.NumberToken,
 /* 7 */    (m: string) => SymbolMap[m] || TokenKind.OperatorToken,
 /* 8 */    (m: string): TokenKind => getTokenKind(m) || TokenKind.KeywordToken,
 /* 9 */    () => TokenKind.FunctionCallToken,
