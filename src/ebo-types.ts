@@ -384,7 +384,7 @@ export const enum TokenKind {
     , EndRestoreKeyword
     , FailedKeyword
     , FaultKeyword
-    , MissingRequiredParamterKeyword
+    , MissingRequiredParameterKeyword
     , NoVTSessionsAvailableKeyword
     , ObjectKeyword
     , ObjectClassKeyword

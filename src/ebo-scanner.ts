@@ -389,7 +389,7 @@ const TokenMap: TokenDictionary = {
     , ENDRESTORE: TokenKind.EndRestoreKeyword
     , FAILED: TokenKind.FailedKeyword
     , FAULT: TokenKind.FaultKeyword
-    , MISSINGREQUIREDPARAMETER: TokenKind.MissingRequiredParamterKeyword
+    , MISSINGREQUIREDPARAMETER: TokenKind.MissingRequiredParameterKeyword
     , NOVTSESSIONS_AVAILABLE: TokenKind.NoVTSessionsAvailableKeyword
     , OBJECT: TokenKind.ObjectKeyword
     , OBJECTCLASS: TokenKind.ObjectClassKeyword
