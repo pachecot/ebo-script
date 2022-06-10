@@ -1423,11 +1423,26 @@ function parse_statements(line: LexToken[], symTable: SymbolTable) {
                     if (ifThen[ifThen.length - 1].type === TokenKind.ElseStatement) {
                         emit_parse_error(symTable, tk);
                     } else {
-                        ifThen.pop();
-                        ifThen.push(tk);
+                        if (stack.length === 0) {
+                            ifThen.pop();
+                            ifThen.push(tk);
+                        }
+                        for (let i = stack.length - 1; i >= 0; i--) {
+                            if (stack[i].type === TokenKind.ThenStatement) {
+                                break;
+                            }
+                            if (stack[i].type === TokenKind.ElseStatement) {
+                                emit_parse_error(symTable, tk);
+                                break;
+                            }
+                            if (stack[i].type === TokenKind.EndOfLineToken) {
+                                ifThen.pop();
+                                ifThen.push(tk);
+                            }
+                        }
                     }
                 } else if (symTable.context.select_state.length > 0) {
-                    if (state !== states[ParseState.SELECT_CASE]) {
+                    if (state !== states[ParseState.SELECT_CASE] && state !== states[ParseState.IF_THEN_EXP]) {
                         emit_parse_error(symTable, tk);
                     }
                 } else {
