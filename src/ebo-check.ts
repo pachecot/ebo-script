@@ -266,7 +266,7 @@ function parse_if_exp(st: SymbolTable, cur: Cursor): IfExpression {
     cur.advance();
     let depth = 1;
 
-    while (state && state !== IfState.IF_END) {
+    while (state && state !== IfState.IF_END && cur.remain()) {
         const tk = cur.current();
         switch (tk.type) {
             case TokenKind.IfStatement:
@@ -1147,7 +1147,7 @@ const state_actions: { [id: number]: (ast: SymbolTable, cur: Cursor) => void } =
 /**
  * check for lines that are not used and calls to lines that do not exist. 
  * 
- * @param symbol_table
+ * @param st
  */
 function check_lines_valid_and_used(st: SymbolTable) {
 
@@ -1270,7 +1270,7 @@ function check_parens(symTable: SymbolTable, tk: LexToken) {
 /**
  * check for unused declarations 
  * 
- * @param symbol_table 
+ * @param st 
  */
 function check_declarations_used(st: SymbolTable) {
 
