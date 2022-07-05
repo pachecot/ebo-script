@@ -945,7 +945,6 @@ export function cases_statement(cur: FileCursor, st: SymbolTable): ExpressionLis
             continue;
         }
 
-        console.log('case error');
         /// error(s)
         st.add_error({
             id: EboErrors.ParseError,
@@ -953,9 +952,7 @@ export function cases_statement(cur: FileCursor, st: SymbolTable): ExpressionLis
             message: "bad case statement",
             severity: Severity.Error
         });
-        console.log(cur.current());
         consumeUntilEOL(cur);
-        console.log(cur.current());
         break;
     }
     consumeEOL(cur);
@@ -1137,12 +1134,27 @@ export function declaration_list(cur: FileCursor, local: boolean): VariableInst[
             //// error try to recover!!!
             while (cur.remain() && !isEOL(cur)) {
                 if (cur.matchAny(TokenKind.CommaSymbol)) {
-                    cur.advance();
                     break;
                 }
                 cur.advance();
             }
         }
+    }
+    if (!isEOL(cur)) {
+        let range = { ...cur.current().range };
+        // while (!cur.matchAny(TokenKind.EndOfLineToken, TokenKind.CommaSymbol)) {
+        while (!cur.matchAny(TokenKind.EndOfLineToken)) {
+            cur.advance();
+        }
+        range.end = cur.current().range.end;
+        range.lines = cur.current().range.line - range.line;
+
+        cur.addError({
+            id: EboErrors.IllegalExpression,
+            severity: Severity.Error,
+            message: "expected comma or end of line",
+            range: range
+        });
     }
     return tks;
 }
@@ -1165,6 +1177,10 @@ export function declaration_list_item(cur: FileCursor, local: boolean): Variable
         if (!cur.expect(TokenKind.NumberToken,
             "expected number for size of array.",
             EboErrors.ArraySizeInvalid)) {
+            if (cur.match(TokenKind.BracketRightSymbol)) {
+                cur.advance();
+                return null;
+            }
             return null;
         }
         let id = cur.current();
