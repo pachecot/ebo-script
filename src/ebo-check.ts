@@ -905,14 +905,20 @@ export function cases_statement(cur: FileCursor, st: SymbolTable): ExpressionLis
 
     while (!isEOL(cur)) {
         const tk = cur.current();
-        console.log(cur.current());
         if (isValueKind(tk.type) ||
             cur.matchAny(TokenKind.NumberToken, TokenKind.StringToken, TokenKind.TimeToken)
         ) {
             cases.push(tk);
             cur.advance();
+        } else {
+            if (cur.match(TokenKind.MinusSymbol) && cur.item(1).type === TokenKind.NumberToken) {
+                cur.advance();
+                const t = cur.current();
+                cur.advance();
+                t.value = '-' + t.value;
+                cases.push(t);
+            }
         }
-        console.log(cur.current());
 
         if (cur.match(TokenKind.EndOfLineToken)) {
             cur.advance();
