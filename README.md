@@ -53,6 +53,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.10.0
+
+- rewrite checker for better errors  
+- formatting fixes for unary +/- and Error line E: 
+
 ### 0.9.2
 
 - added ebo.json config file support  

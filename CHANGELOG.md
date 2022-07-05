@@ -2,6 +2,12 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.0] 2022-07-05
+
+- improve error checking, rewrote the checker/parser.
+- fix formatting of unary operators +/- 
+- fix formatting of error line E:
+
 ## [0.9.9] 2022-03-03
 
 - fix bad error for case else in select statement
