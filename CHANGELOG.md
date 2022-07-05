@@ -2,6 +2,10 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.1] 2022-07-05
+
+- minor updates 
+
 ## [0.10.0] 2022-07-05
 
 - improve error checking, rewrote the checker/parser.

@@ -53,6 +53,10 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.10.1
+
+- minor updates  
+
 ### 0.10.0
 
 - rewrite checker for better errors  
