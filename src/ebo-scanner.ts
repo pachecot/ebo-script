@@ -1,4 +1,4 @@
-import { TokenKind } from './ebo-types';
+import { TokenKind, VariableKind } from './ebo-types';
 
 type TokenDictionary = { [name: string]: TokenKind };
 
@@ -149,7 +149,6 @@ const TokenMap: TokenDictionary = {
     , ISBOUND: TokenKind.IsBoundVariable
 
     // Operators
-
     , ABOVE: TokenKind.AboveOperator
     , AND: TokenKind.AndOperator
     , BELOW: TokenKind.BelowOperator
@@ -176,7 +175,7 @@ const TokenMap: TokenDictionary = {
     , TO: TokenKind.ToKeyWord
 
     , DIVIDED: TokenKind.DivideOperator
-    , BY: TokenKind.DivideOperator
+    , BY: TokenKind.OperatorToken
     , DIV: TokenKind.DivideOperator
     , MINUS: TokenKind.MinusOperator
     , MOD: TokenKind.ModulusOperator
@@ -362,12 +361,13 @@ const TokenMap: TokenDictionary = {
     , MOVE: TokenKind.MoveAction
     , MODULATE: TokenKind.ModulateAction
 
-    , ENABLE: TokenKind.EnableKeyword
+    , ENABLE: TokenKind.EnableAction
     , DISABLE: TokenKind.DisableAction
     , EN: TokenKind.EnAction
     , DIS: TokenKind.DisAction
     , OPEN: TokenKind.OpenAction
     , SHUT: TokenKind.ShutAction
+    , CLOSE: TokenKind.CloseAction
     , START: TokenKind.StartAction
 
     , E: TokenKind.ErrorLine  /// error line
@@ -462,13 +462,14 @@ const reContLine = /~\r?\n/;
 const reWhiteSpace = /[ \t]+/;
 const reComment = /'.*/;
 const reQuotedString = /"(?:\|"|[^"|]*)*"/;
-const reNumber = /\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?/;
+const reNumber = /[-+]?\d+(?:\.\d+)?(?:[eE][-+]?[0-9]+)?/;
 const reTime = /\d{1,2}:\d{2}(?:\s*(?:am|pm))?/;
 const reSymbol = /(?:>=|<=|<>|[-,;!*&%^+<>=:~/\\()[\]])/;
 const reKWords = new RegExp("(?:" + EboKeyWordNames.join('|') + ")\\b");
 const reFnCall = /[\w_][\w\d_]*(?=\s*\()/;
 const reToken = /[\w_][\w\d_]*\b/;
 const reErr = /./;
+const reLine = /(Line\s+([1-9]|\d\d+|[\w_][\w\d_]*))|([1-9]|\d\d+|[\w_][\w\d_]*):/;
 
 // export type Token = LxToken | TokenKind;
 
@@ -476,10 +477,17 @@ export interface TextRange {
     line: number
     begin: number
     end: number
+    lines?: number
 }
 
 export interface LexToken {
     type: TokenKind
+    value: string
+    range: TextRange
+}
+
+export interface VarToken extends LexToken {
+    type: TokenKind.IdentifierToken | VariableKind
     value: string
     range: TextRange
 }

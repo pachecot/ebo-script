@@ -103,6 +103,8 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
+		"preunittest": "npm run compile && npm run lint",
+		"unittest": "mocha ./out/unittest",
 		"package": "vsce package"
 	},
 	"devDependencies": {

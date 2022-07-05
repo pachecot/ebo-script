@@ -33,9 +33,7 @@ export const enum TokenKind {
     , DoubleQuoteSymbol       //   '"'
     , EqualsSymbol            //   '='
     , ExclamationSymbol       //   '!'
-    , GreaterThanSymbol       //   '>'
     , GreaterThanEqualSymbol  //   '>='
-    , LessThanSymbol          //   '<'
     , LessThanEqualSymbol     //   '<='
     , MinusSymbol             //   '-'
     , NotEqualSymbol          //   '<>'
@@ -112,7 +110,7 @@ export const enum TokenKind {
 
     // Value Range Markers
     // -------------------
-    , FirstValue = MinusOnValue
+    , FirstValue = NullValue
     , LastValue = MonthsValue
 
     //#endregion
@@ -155,35 +153,36 @@ export const enum TokenKind {
     //#region Operators
     // ----------------
 
-    , AboveOperator
-    , AndOperator
-    , BelowOperator
-    , BetweenOperator
-    , BitandOperator
-    , BitnotOperator
-    , BitorOperator
-    , BitxorOperator
-    , DoesOperator
-    , EitherOperator
-    , EqualOperator
-    , EqualsOperator
-    , GreaterOperator
-    , InOperator
-    , IsOperator
-    , LessOperator
-    , NeitherOperator
-    , NotOperator
-    , OrOperator
-    , ThanOperator
-    , TheOperator
-    , ThruOperator
-    , ToKeyWord
+    , IsOperator         /// a IS ....
+    , InOperator         /// a IS IN ....
+    , BetweenOperator    /// a IS BETWEEN b AND c
+    , AboveOperator      /// a IS ABOVE b
+    , BelowOperator      /// a IS BELOW b
+    , GreaterOperator    /// a IS GREATER b, a IS GREATER THAN b
+    , LessOperator       /// a IS LESS b, a IS LESS THAN b
+    , EitherOperator     /// a IS EITHER b, c, d 
+    , NeitherOperator    /// a IS NEITHER b, c, d
+    , DoesOperator       /// a DOES NOT EQUAL b
+    , EqualOperator      /// a IS EQUAL b, a IS EQUAL TO b, a IS NOT EQUAL TO b
+    , ThanOperator       /// a IS LESS THAN b
+    , ThruOperator       /// a THRU b, a IS b THRU c
 
-    , DivideOperator
-    , MinusOperator
-    , ModulusOperator
-    , PlusOperator
-    , TimesOperator
+    , NotOperator        /// NOT a
+    , TheOperator        /// THE a
+
+    , AndOperator        /// a AND b
+    , BitandOperator     /// a BITAND b
+    , BitnotOperator     /// a BITNOT b
+    , BitorOperator      /// a BITOR b
+    , BitxorOperator     /// a BITXOR b
+    , EqualsOperator     /// a EQUALS b
+    , OrOperator         /// a OR b
+    , MinusOperator      /// a MINUS b, MINUS a
+    , ToKeyWord          /// a TO b
+    , DivideOperator     /// a DIV b, a DIVIDED BY b, 
+    , ModulusOperator    /// a MOD b, a REMAINDER b
+    , PlusOperator       /// a PLUS b,
+    , TimesOperator      /// a TIMES b, a MULT b, a MULTIPLIED BY b  
 
     // Operator Range Markers
     // ----------------------
@@ -353,14 +352,16 @@ export const enum TokenKind {
     , MoveAction
     , ModulateAction
 
-    , EnableKeyword
+    , EnableAction
     , DisableAction
     , EnAction
     , DisAction
     , OpenAction
+    , CloseAction
     , ShutAction
     , StartAction
-
+    , StopAction
+    
     , ErrorLine  /// error line
 
     //#endregion
@@ -452,7 +453,7 @@ export const enum TokenKind {
     //#endregion
 };
 
-type FunctionKind =
+export type FunctionKind =
     TokenKind.GetBufferedValueFunction
     | TokenKind.GetBufferSizeFunction
     | TokenKind.NumToStrFunction
@@ -512,7 +513,43 @@ type FunctionKind =
     | TokenKind.GetNameFunction
     ;
 
-type OperatorKind = TokenKind.AboveOperator
+export type UnaryOperatorKind =
+    | TokenKind.NotOperator
+    | TokenKind.BitnotOperator
+    | TokenKind.PercentSymbol           //   '%'
+    | TokenKind.MinusSymbol             //   '-'
+    | TokenKind.PlusSymbol              //   '+'
+    ;
+
+export type BinaryOperatorKind =
+    | TokenKind.AmpersandSymbol         //   '&'  AND
+    | TokenKind.ExclamationSymbol       //   '!'  OR
+    | TokenKind.AsteriskSymbol          //   '*'
+    | TokenKind.EqualsSymbol            //   '='
+    | TokenKind.NotEqualSymbol          //   '<>'
+    | TokenKind.AngleLeftSymbol         //   '<'
+    | TokenKind.LessThanEqualSymbol     //   '<='
+    | TokenKind.AngleRightSymbol        //   '>'
+    | TokenKind.GreaterThanEqualSymbol  //   '>='
+    | TokenKind.MinusSymbol             //   '-'
+    | TokenKind.PlusSymbol              //   '+'
+    | TokenKind.SemicolonSymbol         //   ';'
+    | TokenKind.SlashSymbol             //   '/'
+    // | TokenKind.ExponentiationSymbol    //   '^^'
+    | TokenKind.AndOperator
+    | TokenKind.OrOperator
+    | TokenKind.BitandOperator
+    | TokenKind.BitorOperator
+    | TokenKind.BitxorOperator
+    | TokenKind.EqualsOperator
+    | TokenKind.DivideOperator
+    | TokenKind.ModulusOperator
+    | TokenKind.PlusOperator
+    | TokenKind.TimesOperator
+    | TokenKind.MinusOperator;
+
+export type OperatorKind =
+    | TokenKind.AboveOperator
     | TokenKind.AndOperator
     | TokenKind.BelowOperator
     | TokenKind.BetweenOperator
@@ -544,7 +581,8 @@ type OperatorKind = TokenKind.AboveOperator
     ;
 
 
-type ValueKind = TokenKind.NullValue
+export type ValueKind =
+    | TokenKind.NullValue
     | TokenKind.MinusOnValue
     | TokenKind.OffValue
     | TokenKind.OnValue
@@ -587,7 +625,8 @@ type ValueKind = TokenKind.NullValue
     ;
 
 
-type VariableKind = TokenKind.TsVariable
+export type VariableKind =
+    | TokenKind.TsVariable
     | TokenKind.TmVariable
     | TokenKind.ThVariable
     | TokenKind.TdVariable
@@ -610,7 +649,8 @@ type VariableKind = TokenKind.TsVariable
     ;
 
 
-type SymbolKind = TokenKind.AmpersandSymbol
+export type SymbolKind =
+    | TokenKind.AmpersandSymbol
     | TokenKind.AngleLeftSymbol
     | TokenKind.AngleRightSymbol
     | TokenKind.ApostropheSymbol
@@ -624,9 +664,7 @@ type SymbolKind = TokenKind.AmpersandSymbol
     | TokenKind.DoubleQuoteSymbol
     | TokenKind.EqualsSymbol
     | TokenKind.ExclamationSymbol
-    | TokenKind.GreaterThanSymbol
     | TokenKind.GreaterThanEqualSymbol
-    | TokenKind.LessThanSymbol
     | TokenKind.LessThanEqualSymbol
     | TokenKind.MinusSymbol
     | TokenKind.NotEqualSymbol
@@ -656,5 +694,48 @@ export function isSymbolKind(s: TokenKind): s is SymbolKind {
     return TokenKind.FirstSymbol <= s && s <= TokenKind.LastSymbol;
 }
 
+export function isUnaryOperator(s: TokenKind): s is UnaryOperatorKind {
+    switch (s) {
+        case TokenKind.NotOperator:
+        case TokenKind.BitnotOperator:
+        case TokenKind.PercentSymbol:
+        case TokenKind.MinusSymbol:
+        case TokenKind.PlusSymbol:
+            return true;
+        }
+    return false;
+}
+
+export function isBinaryOperator(s: TokenKind): s is BinaryOperatorKind {
+    switch (s) {
+        case TokenKind.AmpersandSymbol:
+        case TokenKind.ExclamationSymbol:
+        case TokenKind.AsteriskSymbol:
+        case TokenKind.EqualsSymbol:
+        case TokenKind.NotEqualSymbol:
+        case TokenKind.AngleLeftSymbol:
+        case TokenKind.LessThanEqualSymbol:
+        case TokenKind.AngleRightSymbol:
+        case TokenKind.GreaterThanEqualSymbol:
+        case TokenKind.MinusSymbol:
+        case TokenKind.PlusSymbol:
+        case TokenKind.SemicolonSymbol:
+        case TokenKind.SlashSymbol:
+        // case TokenKind.ExponentiationSymbol:
+        case TokenKind.AndOperator:
+        case TokenKind.OrOperator:
+        case TokenKind.BitandOperator:
+        case TokenKind.BitorOperator:
+        case TokenKind.BitxorOperator:
+        case TokenKind.EqualsOperator:
+        case TokenKind.DivideOperator:
+        case TokenKind.ModulusOperator:
+        case TokenKind.PlusOperator:
+        case TokenKind.TimesOperator:
+        case TokenKind.MinusOperator:
+            return true;
+    }
+    return false;
+}
 
 

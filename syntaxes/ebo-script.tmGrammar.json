@@ -82,7 +82,7 @@
             "patterns": [
                 {
                     "name": "keyword.statement.ebo-script",
-                    "match": "(?i:\\b(NUMERIC(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?|STRING(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?|DATETIME(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?)\\b)"
+                    "match": "(?i:\\b(NUMERIC|NUMBER(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?|STRING(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?|DATETIME(\\s+((?:(?:BUFFERED|TRIGGERED)\\s+)?INPUT|OUTPUT|PUBLIC))?)\\b)"
                 },
                 {
                     "match": "(?i:\\b(BASEDON)\\b\\s+\\b([a-zA-Z_\\d]+)\\b\\s+\\b(GO(?:\\s*TO)?)\\b\\s+\\b([a-zA-Z_\\d]+)\\b(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?(?:\\s*,\\s*\\b([a-zA-Z_\\d]+)\\b)?)",
@@ -144,7 +144,7 @@
                 {
                     "comment": "Operators",
                     "name": "keyword.operator.logical.ebo-script",
-                    "match": "\\b(?i:NOT|AND|OR|LESS|GREATER|IN|IS|BETWEEN|EQUAL|EQUALS|THROUGH|THRU)\\b"
+                    "match": "\\b(?i:NOT|AND|OR|LESS|GREATER|IN|IS|BETWEEN|EQUAL|EQUALS|THE|THAN)\\b"
                 },
                 {
                     "comment": "Operators",
@@ -157,8 +157,18 @@
                     "match": "(?i:MOD|DIV|DIVIDED|MULT|TIMES|MULTIPLIED|MINUS|PLUS)"
                 },
                 {
+                    "comment": "Operators",
+                    "name": "keyword.operator.other.ebo-script",
+                    "match": "(?i:TO|STEP|THROUGH|THRU)"
+                },
+                {
+                    "comment": "Commands",
+                    "name": "keyword.operator.command.ebo-script",
+                    "match": "(?i:SET|TURN|ADJUST|CHANGE|LET|MOVE|MODULATE|CLOSE|SHUT|START|OPEN)"
+                },
+                {
                     "name": "keyword.control.ebo-script",
-                    "match": "(?i:\\b(BASEDON|BREAK|CONTINUE|FOR|TO|NEXT|IF|THEN|ELSE|REPEAT|UNTIL|RETURN|RUN|STOP|SELECT\\s+CASE|CASE|WHILE|ENDIF|ENDSELECT|ENDWHILE)\\b)"
+                    "match": "(?i:\\b(BASEDON|BREAK|CONTINUE|FOR|NEXT|IF|THEN|ELSE|REPEAT|UNTIL|RETURN|RUN|STOP|SELECT\\s+CASE|CASE|WHILE|ENDIF|ENDSELECT|ENDWHILE|WAIT)\\b)"
                 },
                 {
                     "name": "support.function.ebo-script",
@@ -166,7 +176,7 @@
                 },
                 {
                     "name": "keyword.reserved.ebo-script",
-                    "match": "(?i:\\b(ABOVE|ACCESSLOG|ACCESSSERVER|ACKALARM|ADJUST|ALL|AM|APPEND|ARG|ASK|BELOW|BREAKPOINT|BY|C|CD|CHANGE|CURVEFIT|DEL|DIS|DISABLE|DOES|E|EITHER|EN|ENABLE|ENCRYPT|ENCRYPTED|END|ERASE|ERRORS|EXECUTE|EXISTS|EXP|FACT|FIRST|FROM|LAST|LEN|LET|LOOKUP|MESSAGEWINDOW|MODIFY|MOVE|NEITHER|NUMBER|NUMERIC|OBJECT|OPEN|OUTPUT|P|PARAM|PASSED|PID|PM|PR|PRINT|RND|SC|SD|SET|SHUT|SITE|STANDARD-DEVIATION|START|STATUS|STATUSLINE|STEP|STRING|STRTOTIME|TANGENT|THAN|THE|TIMEOFDAY|TMTO|TOUCHEDCELL|TRACE|TRUNC|TURN|UNADVISE|UNIQUEPIN|UPDATE|UPDATEALARMS|UPDATEEVENTS|UPDATEEXITLOG|VAL|VERSION|WHEN|WHERE|WITH|WAIT|DELAY)\\b)"
+                    "match": "(?i:\\b(ABOVE|ACCESSLOG|ACCESSSERVER|ACKALARM|ALL|AM|APPEND|ARG|ASK|BELOW|BREAKPOINT|BY|C|CD|CURVEFIT|DEL|DIS|DISABLE|DOES|E|EITHER|EN|ENABLE|ENCRYPT|ENCRYPTED|END|ERASE|ERRORS|EXECUTE|EXISTS|EXP|FACT|FIRST|FROM|LAST|LEN|LOOKUP|MESSAGEWINDOW|MODIFY|NEITHER|NUMERIC|OBJECT|OUTPUT|P|PARAM|PASSED|PID|PM|PR|PRINT|RND|SC|SD|SITE|STANDARD-DEVIATION|STATUS|STATUSLINE|STRING|STRTOTIME|TANGENT|TIMEOFDAY|TMTO|TOUCHEDCELL|TRACE|TRUNC|UNADVISE|UNIQUEPIN|UPDATE|UPDATEALARMS|UPDATEEVENTS|UPDATEEXITLOG|VAL|VERSION|WHEN|WHERE|WITH|DELAY|STATE)\\b)"
                 },
                 {
                     "name": "variable.language.ebo-script",

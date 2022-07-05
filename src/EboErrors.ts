@@ -12,6 +12,7 @@ export enum EboErrors {
     ForIdentifierInvalid,
     ForStatementInvalidRange,
     ForStatementMissingNext,
+    ForStatementNextVariableInvalid,
     FunctionUsedAsVariable,
     IfThenStatementMissingEndIf,
     IllegalAssignment,

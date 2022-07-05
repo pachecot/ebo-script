@@ -27,6 +27,7 @@ function test_is_line(line: LexToken[]) {
     if (line.length > 2) {
         let tk = line[0];
         switch (tk.type) {
+            case TokenKind.ErrorLine:
             case TokenKind.IdentifierToken:
                 if (line[1].type === TokenKind.ColonSymbol) {
                     return tk;
@@ -128,7 +129,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
     const editor = vscode.window.activeTextEditor;
     const tabSize = Number(editor?.options.tabSize || 2);
 
-    
+
     let tokensByLine = tokens.reduce((ar, tk) => {
         ar[ar.length - 1].push(tk);
         if (tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.ContinueLineToken) {
@@ -311,7 +312,20 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         || isOperatorKind(p.type);
                     const is_not_unary2 = TokenKind.NumberToken === p.type || TokenKind.IdentifierToken === p.type;
                     const is_not_unary3 = TokenKind.ParenthesesRightSymbol === p.type || TokenKind.BracketRightSymbol === p.type;
-                    const is_unary = !(is_not_unary1 || is_not_unary2 || is_not_unary3) && isSymbolKind(p.type);
+                    const is_unary = (!(is_not_unary1 || is_not_unary2 || is_not_unary3) && isSymbolKind(p.type))
+                        || (TokenKind.InOperator === p.type
+                            || TokenKind.BetweenOperator === p.type
+                            || TokenKind.IsOperator === p.type
+                            || TokenKind.ToKeyWord === p.type
+                            || TokenKind.StepStatement === p.type
+                            || TokenKind.WhileStatement === p.type
+                            || TokenKind.UntilStatement === p.type
+                            || TokenKind.WaitStatement === p.type
+                            || TokenKind.IfStatement === p.type
+                            || TokenKind.CaseStatement === p.type
+                            // || TokenKind.ThenStatement === p.type
+                            || TokenKind.NotOperator === p.type
+                        );
 
                     const n = line_tks[i + 1];
                     const nn = n.type === TokenKind.WhitespaceToken ? line_tks[i + 2] : n;
@@ -400,8 +414,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.AsteriskSymbol:          //  '*'
                 case TokenKind.CaretSymbol:             //  '^'
                 case TokenKind.EqualsSymbol:            //  '='
-                case TokenKind.GreaterThanSymbol:       //  '>'
-                case TokenKind.LessThanSymbol:          //  '<'
+                case TokenKind.AngleRightSymbol:        //  '>'
+                case TokenKind.AngleLeftSymbol:         //  '<'
                 case TokenKind.PlusSymbol:              //  '+'
                 case TokenKind.SlashSymbol:             //  '/'
                     {

@@ -148,7 +148,7 @@ export class EboExt {
                 message: issue.message,
                 range: new vscode.Range(
                     issue.range.line, issue.range.begin,
-                    issue.range.line, issue.range.end
+                    issue.range.line + (issue.range.lines || 0), issue.range.end
                 ),
                 severity: issue.severity as unknown as vscode.DiagnosticSeverity,
                 source: ''

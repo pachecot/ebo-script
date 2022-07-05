@@ -1,4 +1,4 @@
-import { TextRange, LexToken, ebo_scan_text } from './ebo-scanner';
+import { TextRange, LexToken } from './ebo-scanner';
 import { EboErrors } from './EboErrors';
 
 // import { ParseContext, ErrorInfo, SymbolDecl, FunctionDecl, VariableDecl, ParameterDecl, EboErrors, Severity, VarModifier, SymbolType } from './ebo-check';
