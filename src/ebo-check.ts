@@ -543,7 +543,9 @@ export function parse_assigned(cur: FileCursor, st: SymbolTable, tokens: Variabl
         if (!cur.expect(TokenKind.IdentifierToken, "expected identifier")) {
             continue;
         }
-        tokens.push(parse_identifier(cur, st));
+        const id = parse_identifier(cur, st);
+        tokens.push(id);
+        st.lookup_variable(id.token, true);
     }
     return parse_assignment(cur, st, tokens);
 }
@@ -572,24 +574,80 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
 }
 
 function parse_set_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
-
     const stmt: AssignStatement = {
         assigned: [],
         expression: null_statement
     };
-    let tk = cur.current();
-    while (tk.type !== TokenKind.EqualsSymbol && tk.type !== TokenKind.ToKeyWord) {
-        if (tk.type === TokenKind.IdentifierToken) {
-            stmt.assigned.push(parse_identifier(cur, st));
-        } else {
-            cur.advance();
-        }
-        tk = cur.current();
+    if (!cur.matchAny(TokenKind.SetAction, TokenKind.ChangeAction, TokenKind.AdjustAction, TokenKind.LetAction)) {
+        cur.addError({
+            message: "expected assignment",
+            id: EboErrors.ParseError,
+            range: cur.current().range,
+            severity: Severity.Error
+        });
+        return stmt;
+    }
+    cur.advance();
+    stmt.assigned = parse_assigned_vars(cur, st);
+    if (!cur.matchAny(TokenKind.EqualsSymbol, TokenKind.ToKeyWord)) {
+        cur.addError({
+            id: EboErrors.ParseError,
+            severity: Severity.Error,
+            message: "expected  = or to",
+            range: cur.current().range
+        });
+        consumeUntilEOL(cur);
+        return stmt;
     }
     cur.advance();
     stmt.expression = expression(cur, st);
-    stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
+    return stmt;
+}
 
+
+function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
+    const assigned: VariableInst[] = [];
+    while (cur.remain() && !isEOL(cur)) {
+        if (cur.match(TokenKind.TheOperator)) {
+            cur.advance();
+        }
+        if (!cur.expect(TokenKind.IdentifierToken, "expected identifier")) {
+            while (!cur.matchAny(TokenKind.EndOfLineToken, TokenKind.CommaSymbol, TokenKind.AndOperator)) {
+                cur.advance();
+            }
+            if (cur.match(TokenKind.EndOfLineToken)) {
+                return assigned;
+            }
+            cur.advance();
+            continue;
+        }
+        const id = parse_identifier(cur, st);
+        assigned.push(id);
+        st.lookup_variable(id.token, true);
+        if (!cur.matchAny(TokenKind.CommaSymbol, TokenKind.AndOperator)) {
+            break;
+        }
+        cur.advance();
+    }
+    return assigned;
+}
+
+
+function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | CommandExpr {
+
+    const tk = cur.current();
+    if (!cur.expect(TokenKind.StopStatement, "expected stop")) {
+        cur.advance();
+    }
+    if (cur.match(TokenKind.EndOfLineToken)) {
+        return tk;
+    }
+    const stmt: AssignStatement = {
+        assigned: [],
+        expression: null_statement
+    };
+    stmt.assigned = parse_assigned_vars(cur, st);
+    stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
     return stmt;
 }
 
@@ -599,19 +657,13 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
         assigned: [],
         expression: null_statement
     };
-    while (!isEOL(cur)) {
-        let tk = cur.current();
-        if (tk.type === TokenKind.IdentifierToken) {
-            stmt.assigned.push(parse_identifier(cur, st));
-        } else {
-            cur.advance();
-        }
-        tk = cur.current();
-    }
+    stmt.assigned = parse_assigned_vars(cur, st);
     stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
     stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
     return stmt;
 }
+
+
 
 function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
 
@@ -619,20 +671,10 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
         assigned: [],
         expression: null_statement
     };
-    while (!isEOL(cur)) {
-        let tk = cur.current();
-        if (tk.type === TokenKind.IdentifierToken) {
-            stmt.assigned.push(parse_identifier(cur, st));
-        } else {
-            cur.advance();
-        }
-        tk = cur.current();
-    }
+    stmt.assigned = parse_assigned_vars(cur, st);
     stmt.expression = { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } } as LexToken;
-    stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
     return stmt;
 }
-
 
 function parse_turn_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
     const stmt: AssignStatement = {
@@ -647,27 +689,14 @@ function parse_turn_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
         stmt.expression = cur.current();
         cur.advance();
     }
-    while (cur.remain() && !isEOL(cur)) {
-        if (cur.matchAny(TokenKind.TheOperator)) {
-            cur.advance();
-        }
-        if (!cur.expect(TokenKind.IdentifierToken, "expected identifier")) {
+    stmt.assigned = parse_assigned_vars(cur, st);
+    if (cur.matchAny(TokenKind.OnValue, TokenKind.OffValue)) {
+        if (stmt.expression) {
+            cur.error("already assigned on or off");
             return stmt;
         }
-        stmt.assigned.push(parse_identifier(cur, st));
-        if (cur.matchAny(TokenKind.CommaSymbol, TokenKind.AndOperator)) {
-            cur.advance();
-            continue;
-        }
-        if (cur.matchAny(TokenKind.OnValue, TokenKind.OffValue)) {
-            if (stmt.expression) {
-                cur.error("already assigned on or off");
-                return stmt;
-            }
-            stmt.expression = cur.current();
-            cur.advance();
-            break;
-        }
+        stmt.expression = cur.current();
+        cur.advance();
     }
     if (stmt.assigned.length === 0) {
         cur.error("expected variable(s) for assignment");
@@ -1355,7 +1384,7 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.GoStatement]: parse_goto,
     [TokenKind.GotoStatement]: parse_goto,
     [TokenKind.BasedonStatement]: parse_basedon,
-    [TokenKind.StopStatement]: parse_command,
+    [TokenKind.StopStatement]: parse_stop,
     [TokenKind.ReturnStatement]: parse_command,
     [TokenKind.BreakStatement]: parse_command,
     [TokenKind.ContinueStatement]: parse_command,
