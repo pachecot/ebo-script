@@ -160,7 +160,13 @@ export interface LineStatement {
     statements: Statements
 }
 
+export enum ProgramType {
+    Program,
+    Function
+}
+
 export interface Program {
+    type: ProgramType
     declarations: Declarations
     lines: LineStatement[]
 }
@@ -178,10 +184,18 @@ export type Statement =
     | BasedonExpr
     | CommandExpr
     | FunctionExpression
+    | CommandStatement
     ;
 
 export type Statements = Statement[];
+
 export type CommandExpr = LexToken;
+
+export interface CommandStatement {
+    tk: LexToken
+    expression: ExpressionStatement;
+}
+
 
 export interface BasedonExpr {
     variable: LexToken
@@ -283,6 +297,18 @@ export function parse_command(cur: Cursor, st: SymbolTable): CommandExpr {
     const cmd: CommandExpr = cur.current();
     cur.advance();
     return cmd;
+}
+
+
+export function parse_return_command(cur: FileCursor, st: SymbolTable): CommandStatement {
+    const cmd: CommandExpr = cur.current();
+    const stmt: CommandStatement = {
+        tk: cur.current(),
+        expression: null_statement
+    };
+    cur.advance();
+    stmt.expression = expression(cur, st);
+    return stmt;
 }
 
 export function parse_command_1(cur: Cursor, st: SymbolTable): CommandExpr {
@@ -570,7 +596,6 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
     }
     cur.advance();
     stmt.expression = expression(cur, st);
-    stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
     return stmt;
 }
 
@@ -1405,14 +1430,13 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.CloseAction]: parse_stop_assignment,
     [TokenKind.ShutAction]: parse_stop_assignment,
     [TokenKind.TurnAction]: parse_turn_assignment,
-
     [TokenKind.AndOperator]: parse_assigned,
     [TokenKind.CommaSymbol]: parse_assigned,
     [TokenKind.GoStatement]: parse_goto,
     [TokenKind.GotoStatement]: parse_goto,
     [TokenKind.BasedonStatement]: parse_basedon,
     [TokenKind.StopStatement]: parse_stop,
-    [TokenKind.ReturnStatement]: parse_command,
+    [TokenKind.ReturnStatement]: parse_return_command,
     [TokenKind.BreakStatement]: parse_command,
     [TokenKind.ContinueStatement]: parse_command,
     [TokenKind.WaitStatement]: parse_command_1,
@@ -1702,18 +1726,34 @@ export function parse_line(cursor: FileCursor, symTable: SymbolTable) {
 
 export function parse_program(cursor: FileCursor, symTable: SymbolTable): Program {
     const pgm: Program = {
+        type: ProgramType.Program,
         declarations: [],
         lines: []
     };
     pgm.declarations = parse_declarations(cursor, symTable);
-
+    if (symTable.parameter_ids.length) {
+        pgm.type = ProgramType.Function;
+    }
+    const initial_line: LineStatement = {
+        name: "",
+        statements: parse_statements(cursor, symTable)
+    };
+    if (initial_line.statements.length) {
+        pgm.lines.push(initial_line);
+    }
+    if (pgm.type === ProgramType.Function && cursor.remain()) {
+        symTable.add_error({
+            id: EboErrors.ParseError,
+            message: "expected end of function",
+            severity: Severity.Error,
+            range: cursor.current().range,
+        });
+    }
     while (cursor.remain()) {
         if (cursor.match(TokenKind.EndOfLineToken)) {
             cursor.advance();
             continue;
         }
-
-
         if (cursor.match(TokenKind.EndOfFileToken)) {
             break;
         }

@@ -11,7 +11,7 @@ import {
 	ExpressionList, for_exp, parse_goto,
 	function_expression, IfStatement, IsOp, Op2Code, parse_declarations,
 	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_exp,
-	parse_statement, removeWhiteSpace, VariableInst
+	parse_statement, removeWhiteSpace, VariableInst, ProgramType
 } from '../ebo-check';
 import { TokenKind } from '../ebo-types';
 
@@ -725,6 +725,41 @@ Extra:
 			assert.equal(2, st.errors.length);
 		});
 	});
+	describe('Program Parsing', () => {
+		it('functions with line statements should have errors', () => {
+			const text = `Arg 1 x
+SomeLine:
+  Return x+1
+			`;
+			const tkn_lists = ebo_scan_text(text);
+			const tks = removeWhiteSpace(tkn_lists);
+			const st = new SymbolTable();
+			const fc = new FileCursor(tks, st);
+			const pgm = parse_program(fc, st);
 
+			assert.equal(ProgramType.Function, pgm.type);
+			assert.equal(2, st.parameter_ids.length);
+			assert.equal('x', st.parameter_ids[1]);
+			assert.equal(1, st.errors.length);
+		});
+		it('should parse functions', () => {
+			const text = `Arg 1 x
+Arg 2 y
+
+Return x*y
+`;
+			const tkn_lists = ebo_scan_text(text);
+			const tks = removeWhiteSpace(tkn_lists);
+			const st = new SymbolTable();
+			const fc = new FileCursor(tks, st);
+			const pgm = parse_program(fc, st);
+
+			assert.equal(ProgramType.Function, pgm.type);
+			assert.equal(3, st.parameter_ids.length);
+			assert.equal('x', st.parameter_ids[1]);
+			assert.equal('y', st.parameter_ids[2]);
+			assert.equal(0, st.errors.length);
+		});
+	});
 });
 
