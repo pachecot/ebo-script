@@ -177,6 +177,7 @@ export type Statement =
     | GotoExpr
     | BasedonExpr
     | CommandExpr
+    | FunctionExpression
     ;
 
 export type Statements = Statement[];
@@ -635,17 +636,18 @@ function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
 
 function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | CommandExpr {
 
-    const tk = cur.current();
-    if (!cur.expect(TokenKind.StopStatement, "expected stop")) {
-        cur.advance();
-    }
-    if (cur.match(TokenKind.EndOfLineToken)) {
-        return tk;
-    }
     const stmt: AssignStatement = {
         assigned: [],
         expression: null_statement
     };
+    const tk = cur.current();
+    if (!cur.expect(TokenKind.StopStatement, "expected stop")) {
+        return stmt;
+    }
+    cur.advance();
+    if (cur.match(TokenKind.EndOfLineToken)) {
+        return tk;
+    }
     stmt.assigned = parse_assigned_vars(cur, st);
     stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
     return stmt;
@@ -657,6 +659,16 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
         assigned: [],
         expression: null_statement
     };
+    if (!cur.matchAny(TokenKind.CloseAction, TokenKind.ShutAction)) {
+        cur.addError({
+            id: EboErrors.ParseError,
+            severity: Severity.Error,
+            message: "expected close or shut command",
+            range: cur.current().range
+        });
+        return stmt;
+    }
+    cur.advance();
     stmt.assigned = parse_assigned_vars(cur, st);
     stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
     stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
@@ -671,6 +683,17 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
         assigned: [],
         expression: null_statement
     };
+    if (!cur.matchAny(TokenKind.StartAction, TokenKind.OpenAction)) {
+        cur.addError({
+            id: EboErrors.ParseError,
+            severity: Severity.Error,
+            message: "expected start or open command",
+            range: cur.current().range
+        });
+        return stmt;
+    }
+    cur.advance();
+    stmt.assigned = parse_assigned_vars(cur, st);
     stmt.assigned = parse_assigned_vars(cur, st);
     stmt.expression = { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } } as LexToken;
     return stmt;
@@ -1362,7 +1385,10 @@ export function parse_declarations(cursor: FileCursor, symTable: SymbolTable): D
 
 type StatementAction = (fc: FileCursor, ast: SymbolTable, tks: VariableInst[]) => Statement;
 
+
+
 const statement_actions: { [id: number]: StatementAction } = {
+    [TokenKind.FunctionCallToken]: function_expression,
     [TokenKind.ForStatement]: for_exp,
     [TokenKind.RepeatStatement]: parse_repeat_exp,
     [TokenKind.WhileStatement]: parse_while_exp,
@@ -1379,6 +1405,7 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.CloseAction]: parse_stop_assignment,
     [TokenKind.ShutAction]: parse_stop_assignment,
     [TokenKind.TurnAction]: parse_turn_assignment,
+
     [TokenKind.AndOperator]: parse_assigned,
     [TokenKind.CommaSymbol]: parse_assigned,
     [TokenKind.GoStatement]: parse_goto,
@@ -1608,6 +1635,9 @@ export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Stat
             const stmt = fn(cursor, symTable, tks);
             consumeEOL(cursor);
             return stmt;
+        }
+        if (isFunctionKind(tk.type)) {
+            return function_expression(cursor, symTable);
         }
         break;
     }
