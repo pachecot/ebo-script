@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.2] 2022-07-06
+
+- fix errors reporting on function statements 
+- fix errors on numbers with % symbol 
+
 ## [0.10.1] 2022-07-05
 
 - minor updates 
