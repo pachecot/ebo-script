@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.3] 2022-07-06
+
+- fix function programs
+- fix return statements
+
 ## [0.10.2] 2022-07-06
 
 - fix errors reporting on function statements 
