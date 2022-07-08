@@ -311,10 +311,13 @@ export function parse_return_command(cur: FileCursor, st: SymbolTable): CommandS
     return stmt;
 }
 
-export function parse_command_1(cur: Cursor, st: SymbolTable): CommandExpr {
-    const cmd: CommandExpr = cur.current();
+export function parse_command_1(cur: FileCursor, st: SymbolTable): CommandStatement {
+    const cmd: CommandStatement = {
+        tk: cur.current(),
+        expression: null_statement
+    };
     cur.advance();
-    cur.advance();
+    cmd.expression = expression(cur, st);
     return cmd;
 }
 
@@ -323,7 +326,7 @@ function errorExpr(tk: LexToken): ErrorExpression {
     return { loc: tk };
 }
 
-export function bracket_expression(cursor: FileCursor, st: SymbolTable): ExpressionStatement {
+export function parse_bracket_expression(cursor: FileCursor, st: SymbolTable): ExpressionStatement {
     if (!cursor.expect(TokenKind.BracketLeftSymbol, "missing open bracket")) {
         return errorExpr(cursor.current());
     }
@@ -336,7 +339,7 @@ export function bracket_expression(cursor: FileCursor, st: SymbolTable): Express
     return exp;
 }
 
-export function parentheses_expression(cursor: FileCursor, st: SymbolTable): ExpressionStatement {
+export function parse_parentheses_expression(cursor: FileCursor, st: SymbolTable): ExpressionStatement {
     if (!cursor.expect(TokenKind.ParenthesesLeftSymbol, "missing open parentheses")) {
         return errorExpr(cursor.current());
     }
@@ -349,7 +352,7 @@ export function parentheses_expression(cursor: FileCursor, st: SymbolTable): Exp
     return exp;
 }
 
-export function function_expression(cursor: FileCursor, st: SymbolTable): FunctionExpression {
+export function parse_function_expression(cursor: FileCursor, st: SymbolTable): FunctionExpression {
     const tk = cursor.current();
     const exp: FunctionExpression = {
         function: tk,
@@ -385,7 +388,7 @@ export function function_expression(cursor: FileCursor, st: SymbolTable): Functi
     return exp;
 }
 
-export function parse_unary_operation(cur: FileCursor, st: SymbolTable): UnaryOp {
+export function parse_operation_unary(cur: FileCursor, st: SymbolTable): UnaryOp {
     const op = cur.current();
     let code = Op1Code.NONE;
     switch (op.type) {
@@ -487,7 +490,7 @@ export type IsOp = {
 };
 
 
-export function parse_is_operation(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): IsOp {
+export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): IsOp {
     let state = IsState.INIT;
     const exp: IsOp = {
         code: Op2Code.NONE,
@@ -533,7 +536,6 @@ export function parse_is_operation(cur: FileCursor, st: SymbolTable, leftExp: Ex
     return exp;
 }
 
-
 export function parse_binary_operation(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): BinaryOp {
     const op = cur.current();
     cur.advance();
@@ -562,8 +564,6 @@ export function parse_expression_list(cur: FileCursor, st: SymbolTable): Express
     return list;
 }
 
-
-
 export function parse_assigned(cur: FileCursor, st: SymbolTable, tokens: VariableInst[]): AssignStatement {
     while (cur.matchAny(TokenKind.AndOperator, TokenKind.CommaSymbol)) {
         cur.advance();
@@ -572,7 +572,6 @@ export function parse_assigned(cur: FileCursor, st: SymbolTable, tokens: Variabl
         }
         const id = parse_identifier(cur, st);
         tokens.push(id);
-        st.lookup_variable(id.token, true);
     }
     return parse_assignment(cur, st, tokens);
 }
@@ -596,6 +595,7 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
     }
     cur.advance();
     stmt.expression = expression(cur, st);
+    stmt.assigned.forEach(vi => { st.assigned_variable(vi.token); });
     return stmt;
 }
 
@@ -649,7 +649,7 @@ function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
         }
         const id = parse_identifier(cur, st);
         assigned.push(id);
-        st.lookup_variable(id.token, true);
+        st.assigned_variable(id.token);
         if (!cur.matchAny(TokenKind.CommaSymbol, TokenKind.AndOperator)) {
             break;
         }
@@ -660,7 +660,6 @@ function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
 
 
 function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | CommandExpr {
-
     const stmt: AssignStatement = {
         assigned: [],
         expression: null_statement
@@ -674,6 +673,7 @@ function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | Command
         return tk;
     }
     stmt.assigned = parse_assigned_vars(cur, st);
+    stmt.assigned.forEach(id => { st.assigned_variable(id.token); });
     stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
     return stmt;
 }
@@ -682,7 +682,7 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
 
     const stmt: AssignStatement = {
         assigned: [],
-        expression: null_statement
+        expression: { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } }
     };
     if (!cur.matchAny(TokenKind.CloseAction, TokenKind.ShutAction)) {
         cur.addError({
@@ -695,8 +695,7 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
     }
     cur.advance();
     stmt.assigned = parse_assigned_vars(cur, st);
-    stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
-    stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
+    stmt.assigned.forEach(id => { st.assigned_variable(id.token); });
     return stmt;
 }
 
@@ -706,7 +705,7 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
 
     const stmt: AssignStatement = {
         assigned: [],
-        expression: null_statement
+        expression: { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } }
     };
     if (!cur.matchAny(TokenKind.StartAction, TokenKind.OpenAction)) {
         cur.addError({
@@ -719,8 +718,7 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
     }
     cur.advance();
     stmt.assigned = parse_assigned_vars(cur, st);
-    stmt.assigned = parse_assigned_vars(cur, st);
-    stmt.expression = { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } } as LexToken;
+    stmt.assigned.forEach(id => { st.assigned_variable(id.token); });
     return stmt;
 }
 
@@ -755,7 +753,7 @@ function parse_turn_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
         return stmt;
     }
     if (stmt && stmt.assigned) {
-        stmt.assigned.forEach(id => { st.lookup_variable(id.token, true); });
+        stmt.assigned.forEach(id => { st.assigned_variable(id.token); });
     }
     return stmt;
 }
@@ -807,7 +805,7 @@ export function parse_if_exp(cur: FileCursor, st: SymbolTable): IfStatement {
     return stmt;
 }
 
-export function for_exp(cur: FileCursor, ast: SymbolTable): ForStatement | null {
+export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForStatement | null {
 
     const for_tk = cur.current();
     cur.advance();
@@ -900,7 +898,7 @@ export function for_exp(cur: FileCursor, ast: SymbolTable): ForStatement | null 
 }
 
 
-export function parse_select_exp(cur: FileCursor, st: SymbolTable): SelectStatement {
+export function parse_select_statement(cur: FileCursor, st: SymbolTable): SelectStatement {
     const stmt: SelectStatement = {
         test: null_statement,
         cases: [],
@@ -937,7 +935,7 @@ export function parse_select_exp(cur: FileCursor, st: SymbolTable): SelectStatem
     }
 
     while (cur.matchAny(TokenKind.CaseStatement)) {
-        const cs = case_statement(cur, st);
+        const cs = parse_case_statement(cur, st);
         if (cs.cases.length === 1 && (cs.cases[0] as LexToken).type === TokenKind.ElseStatement) {
             stmt.elseStatements = cs.statements;
             break;
@@ -960,7 +958,7 @@ export function parse_select_exp(cur: FileCursor, st: SymbolTable): SelectStatem
 }
 
 
-export function cases_statement(cur: FileCursor, st: SymbolTable): ExpressionList {
+export function parse_cases_statement(cur: FileCursor, st: SymbolTable): ExpressionList {
     const cases: ExpressionList = [];
 
     if (!cur.expect(TokenKind.CaseStatement, "expected case statement")) {
@@ -1037,18 +1035,18 @@ export function cases_statement(cur: FileCursor, st: SymbolTable): ExpressionLis
 }
 
 
-export function case_statement(cur: FileCursor, st: SymbolTable): CaseStatement {
+export function parse_case_statement(cur: FileCursor, st: SymbolTable): CaseStatement {
     const stmt: CaseStatement = {
         cases: [],
         statements: [],
     };
-    stmt.cases = cases_statement(cur, st);
+    stmt.cases = parse_cases_statement(cur, st);
     stmt.statements = parse_statements(cur, st);
     return stmt;
 }
 
 
-export function parse_repeat_exp(cur: FileCursor, st: SymbolTable): RepeatStatement {
+export function parse_repeat_statement(cur: FileCursor, st: SymbolTable): RepeatStatement {
 
     const stmt: RepeatStatement = {
         condition: errorExpr(cur.current()),
@@ -1083,7 +1081,7 @@ export function parse_repeat_exp(cur: FileCursor, st: SymbolTable): RepeatStatem
 }
 
 
-export function parse_while_exp(cur: FileCursor, st: SymbolTable): WhileStatement {
+export function parse_while_statement(cur: FileCursor, st: SymbolTable): WhileStatement {
     let stmt: WhileStatement = {
         condition: null_statement,
         statements: [],
@@ -1313,35 +1311,7 @@ export function declare_argument(cur: FileCursor, ast: SymbolTable): ParameterDe
 }
 
 
-export function parse_basedon(cur: Cursor, st: SymbolTable): BasedonExpr {
-    const res: BasedonExpr = {
-        variable: cur.current(),
-        lines: [],
-    };
-
-    if (!cur.expect(TokenKind.BasedonStatement, "expected BasedOn")) {
-        return res;
-    }
-    cur.advance();
-    if (!cur.expect(TokenKind.IdentifierToken, "expected numeric identifier")) {
-        return res;
-    }
-    res.variable = cur.current();
-    cur.advance();
-    if (!parse_goto_statement(cur, st)) {
-        return res;
-    }
-    while (cur.remain() > 0 && !isEOL(cur)) {
-        res.lines.push(cur.current());
-        cur.advance();
-        if (cur.matchAny(TokenKind.CommaSymbol)) {
-            cur.advance();
-        }
-    }
-    return res;
-}
-
-export function basedon_exp(cur: FileCursor, st: SymbolTable): BasedonExpr {
+export function parse_basedon_statement(cur: Cursor, st: SymbolTable): BasedonExpr {
     const res: BasedonExpr = {
         variable: cur.current(),
         lines: [],
@@ -1413,11 +1383,11 @@ type StatementAction = (fc: FileCursor, ast: SymbolTable, tks: VariableInst[]) =
 
 
 const statement_actions: { [id: number]: StatementAction } = {
-    [TokenKind.FunctionCallToken]: function_expression,
-    [TokenKind.ForStatement]: for_exp,
-    [TokenKind.RepeatStatement]: parse_repeat_exp,
-    [TokenKind.WhileStatement]: parse_while_exp,
-    [TokenKind.SelectStatement]: parse_select_exp,
+    [TokenKind.FunctionCallToken]: parse_function_expression,
+    [TokenKind.ForStatement]: parse_for_statement,
+    [TokenKind.RepeatStatement]: parse_repeat_statement,
+    [TokenKind.WhileStatement]: parse_while_statement,
+    [TokenKind.SelectStatement]: parse_select_statement,
     [TokenKind.IfStatement]: parse_if_exp,
     [TokenKind.EqualsSymbol]: parse_assignment,
     [TokenKind.SetAction]: parse_set_assignment,
@@ -1434,7 +1404,7 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.CommaSymbol]: parse_assigned,
     [TokenKind.GoStatement]: parse_goto,
     [TokenKind.GotoStatement]: parse_goto,
-    [TokenKind.BasedonStatement]: parse_basedon,
+    [TokenKind.BasedonStatement]: parse_basedon_statement,
     [TokenKind.StopStatement]: parse_stop,
     [TokenKind.ReturnStatement]: parse_return_command,
     [TokenKind.BreakStatement]: parse_command,
@@ -1539,26 +1509,22 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
     let exp: ExpressionStatement = null_statement;
     while (cursor.remain()) {
         let tk = cursor.current();
+
         if (isFunctionKind(tk.type)) {
-            exp = function_expression(cursor, st);
+            exp = parse_function_expression(cursor, st);
             continue;
         }
+
         if (isValueKind(tk.type) || isVariableKind(tk.type)) {
             exp = tk;
             cursor.advance();
             continue;
         }
+
         switch (tk.type) {
-            case TokenKind.CommaSymbol:
-            case TokenKind.ThenStatement:
-            case TokenKind.ParenthesesRightSymbol:
-            case TokenKind.BracketRightSymbol:
-            case TokenKind.EndOfFileToken:
-            case TokenKind.EndOfLineToken:
-                return exp;
 
             case TokenKind.NotOperator:
-                exp = parse_unary_operation(cursor, st);
+                exp = parse_operation_unary(cursor, st);
                 break;
 
             case TokenKind.MinusSymbol:
@@ -1566,9 +1532,10 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
                 if (exp) {
                     exp = parse_binary_operation(cursor, st, exp);
                 } else {
-                    exp = parse_unary_operation(cursor, st);
+                    exp = parse_operation_unary(cursor, st);
                 }
                 break;
+
             case TokenKind.AngleLeftSymbol:
             case TokenKind.CaretSymbol:
             case TokenKind.AngleRightSymbol:
@@ -1592,16 +1559,20 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
             case TokenKind.TimesOperator:
                 exp = parse_binary_operation(cursor, st, exp);
                 break;
+
             case TokenKind.IsOperator:
             case TokenKind.DoesOperator:
-                exp = parse_is_operation(cursor, st, exp);
+                exp = parse_is_statement(cursor, st, exp);
                 break;
+
             case TokenKind.FunctionCallToken:
-                exp = function_expression(cursor, st);
+                exp = parse_function_expression(cursor, st);
                 break;
+
             case TokenKind.ParenthesesLeftSymbol:
-                exp = parentheses_expression(cursor, st);
+                exp = parse_parentheses_expression(cursor, st);
                 break;
+
             case TokenKind.ColonSymbol:
                 cursor.advance();
                 cursor.addError({
@@ -1611,15 +1582,24 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
                     range: tk.range
                 });
                 return errorExpr(tk);
+
             case TokenKind.IdentifierToken:
                 exp = parse_identifier(cursor, st);
                 break;
+
             case TokenKind.TimeToken:
             case TokenKind.StringToken:
             case TokenKind.NumberToken:
                 exp = tk;
                 cursor.advance();
                 break;
+
+            case TokenKind.CommaSymbol:
+            case TokenKind.ThenStatement:
+            case TokenKind.ParenthesesRightSymbol:
+            case TokenKind.BracketRightSymbol:
+            case TokenKind.EndOfFileToken:
+            case TokenKind.EndOfLineToken:
             default:
                 return exp;
         }
@@ -1636,7 +1616,7 @@ export function parse_identifier(cursor: FileCursor, symTable: SymbolTable): Var
         token: tk,
     };
     if (cursor.matchAny(TokenKind.BracketLeftSymbol)) {
-        vi.index = bracket_expression(cursor, symTable);
+        vi.index = parse_bracket_expression(cursor, symTable);
     }
     symTable.lookup_variable(tk);
     return vi;
@@ -1661,7 +1641,7 @@ export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Stat
             return stmt;
         }
         if (isFunctionKind(tk.type)) {
-            return function_expression(cursor, symTable);
+            return parse_function_expression(cursor, symTable);
         }
         break;
     }

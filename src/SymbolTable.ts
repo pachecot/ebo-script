@@ -156,15 +156,30 @@ export class SymbolTable {
     variable_refs: { [name: string]: LexToken[]; } = {};
     function_refs: { [name: string]: LexToken[]; } = {};
 
-    lookup_variable(tk: LexToken, assign?: boolean) {
+
+    assigned_variable(tk: LexToken) {
+        const name = tk.value;
+        const sets = this.assigned_refs[name] || (this.assigned_refs[name] = []);
+        sets.push(tk);
+        if (name in this.symbols) {
+            const vd = this.variables[name];
+            if (vd && (vd.modifier === VarModifier.Input)) {
+                this.add_error({
+                    severity: Severity.Error,
+                    id: EboErrors.IllegalAssignment,
+                    message: "assignment not allowed",
+                    range: tk.range
+                });
+            }
+        }
+        return this.variables[name];
+    }
+
+
+    lookup_variable(tk: LexToken) {
         const name = tk.value;
         const refs = this.variable_refs[name] || (this.variable_refs[name] = []);
         refs.push(tk);
-        if (assign) {
-            const sets = this.assigned_refs[name] || (this.assigned_refs[name] = []);
-            sets.push(tk);
-        }
-
         if (name in this.symbols) {
             if (name in this.functions) {
                 this.add_error({
@@ -182,17 +197,6 @@ export class SymbolTable {
                     range: tk.range
                 });
             }
-            if (assign) {
-                const vd = this.variables[name];
-                if (vd && (vd.modifier === VarModifier.Input)) {
-                    this.add_error({
-                        severity: Severity.Error,
-                        id: EboErrors.IllegalAssignment,
-                        message: "assignment not allowed",
-                        range: tk.range
-                    });
-                }
-            }
         } else {
             this.add_error({
                 id: EboErrors.UndeclaredVariable,
@@ -201,7 +205,6 @@ export class SymbolTable {
                 range: tk.range
             });
         }
-
         return this.variables[name];
     }
 

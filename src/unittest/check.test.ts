@@ -7,10 +7,10 @@ import { FileCursor } from '../file-cursor';
 import { SymbolTable, VariableDecl } from '../SymbolTable';
 import { ebo_scan_text, LexToken } from '../ebo-scanner';
 import {
-	AssignStatement, BinaryOp, bracket_expression, expression,
-	ExpressionList, for_exp, parse_goto,
-	function_expression, IfStatement, IsOp, Op2Code, parse_declarations,
-	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_exp,
+	AssignStatement, BinaryOp, parse_bracket_expression, expression,
+	ExpressionList, parse_for_statement, parse_goto,
+	parse_function_expression, IfStatement, IsOp, Op2Code, parse_declarations,
+	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_statement,
 	parse_statement, removeWhiteSpace, VariableInst, ProgramType
 } from '../ebo-check';
 import { TokenKind } from '../ebo-types';
@@ -98,7 +98,7 @@ describe('Check Tests', () => {
 		it('should read numbers array indexing', () => {
 			const exp = parseWith(
 				"[2] + x\n",
-				bracket_expression,
+				parse_bracket_expression,
 			) as LexToken;
 			assert.notEqual(null, exp);
 			assert.equal(2, exp.value);
@@ -107,7 +107,7 @@ describe('Check Tests', () => {
 		it('should read variable array indexing', () => {
 			const exp = parseWith(
 				"[x] + x\n",
-				bracket_expression,
+				parse_bracket_expression,
 			) as VariableInst;
 			assert.notEqual(null, exp);
 			assert.equal('x', exp.name);
@@ -118,7 +118,7 @@ describe('Check Tests', () => {
 		it('should parse system functions with arguments', () => {
 			const exp = parseWith(
 				"Sum(1,2,3)\n",
-				function_expression,
+				parse_function_expression,
 			);
 			assert.notEqual(null, exp);
 			assert.equal('Sum', exp.function.value);
@@ -127,7 +127,7 @@ describe('Check Tests', () => {
 		it('should parse system functions with expression arguments', () => {
 			const exp = parseWith(
 				"Sum(x + 1, y - 2, n * 3)\n",
-				function_expression,
+				parse_function_expression,
 			);
 			assert.notEqual(null, exp);
 			assert.equal('Sum', exp.function.value);
@@ -136,7 +136,7 @@ describe('Check Tests', () => {
 		it('should parse defined functions with arguments', () => {
 			const exp = parseWith(
 				"Reset(1,2,3)\n",
-				function_expression,
+				parse_function_expression,
 			);
 			assert.notEqual(null, exp);
 			assert.equal('Reset', exp.function.value);
@@ -145,7 +145,7 @@ describe('Check Tests', () => {
 		it('should parse defined functions with no arguments', () => {
 			const exp = parseWith(
 				"Reset()\n",
-				function_expression,
+				parse_function_expression,
 			);
 			assert.notEqual(null, exp);
 			assert.equal('Reset', exp.function.value);
@@ -358,7 +358,7 @@ describe('Check Tests', () => {
 						y = 2
 					EndSelect
 					`,
-					parse_select_exp,
+					parse_select_statement,
 				);
 				if (!stmt) {
 					assert.fail("expected return value");
@@ -381,7 +381,7 @@ describe('Check Tests', () => {
 						y = 2
 					EndSelect
 					`,
-					parse_select_exp,
+					parse_select_statement,
 					st
 				);
 				if (!stmt) {
@@ -403,7 +403,7 @@ describe('Check Tests', () => {
 						a[x] = x
 					Next x
 					`,
-					for_exp,
+					parse_for_statement,
 				);
 				if (!stmt) {
 					assert.fail("expected return value");
