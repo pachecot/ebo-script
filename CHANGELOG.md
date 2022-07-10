@@ -2,6 +2,12 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.5] 2022-07-09
+
+- added precedence checking to parsing.
+- error check for files ending on line statement.
+- cursor prevent overrun.
+
 ## [0.10.4] 2022-07-07
 
 - syntaxes updated. added words.
