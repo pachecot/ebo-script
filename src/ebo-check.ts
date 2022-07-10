@@ -26,92 +26,75 @@ export interface FunctionExpression {
     arguments: ExpressionStatement[];
 }
 
-export enum Op2Code {
-    NONE,
+export enum OpCode {
+    // ops in order of precedence
+    NOP, 
+
+    GRP,        // () or []
+
+    // unary ops
+    NEG,        // - n
+    NOT,        // NOT n
+    BITNOT,     // BITNOT n
+    PCT,        // n %
+
+    // binary ops
+    EXP,        // a ^ b
+
+    MLT,        // 
+    DIV,
+    MOD,
+
     ADD,
     SUB,
-    MLT,
-    DIV,
-    EXP,
-    MOD,
+
     LT,
     LE,
     GT,
     GE,
+
     EQ,
     NE,
-    CAT,
-    AND,
-    OR,
+    SET,        // IS IN 1,2,3; IS NOT IN 1,2,3
+    RANGE,      // IS BETWEEN 1 AND 3, IS 1 THRU 3
+
     BITAND,
     BITOR,
     BITXOR,
-    RANGE,
-    SET,
+
+    AND,
+    OR,
+
+    CAT,        // CONCAT, string joining
 };
 
-export enum Op1Code {
-    NONE,
-    NEG,
-    NOT,
-};
-
-
-const UnOpMap = {
-    [TokenKind.MinusSymbol]: Op1Code.NEG,
-    [TokenKind.NotOperator]: Op1Code.NOT,
-};
-
-const BinOpMap = {
-    [TokenKind.MinusOperator]: Op2Code.SUB,
-    [TokenKind.PlusOperator]: Op2Code.ADD,
-    [TokenKind.MinusSymbol]: Op2Code.SUB,
-    [TokenKind.PlusSymbol]: Op2Code.ADD,
-    [TokenKind.AsteriskSymbol]: Op2Code.MLT,
-    [TokenKind.TimesOperator]: Op2Code.MLT,
-    [TokenKind.SlashSymbol]: Op2Code.DIV,
-    [TokenKind.DivideOperator]: Op2Code.DIV,
-    [TokenKind.ModulusOperator]: Op2Code.MOD,
-    [TokenKind.GreaterThanEqualSymbol]: Op2Code.GE,
-    [TokenKind.LessThanEqualSymbol]: Op2Code.LE,
-    [TokenKind.AngleLeftSymbol]: Op2Code.LT,
-    [TokenKind.AngleRightSymbol]: Op2Code.GT,
-    [TokenKind.EqualsSymbol]: Op2Code.EQ,
-    [TokenKind.EqualsOperator]: Op2Code.EQ,
-    [TokenKind.NotEqualSymbol]: Op2Code.NE,
-    [TokenKind.SemicolonSymbol]: Op2Code.CAT,
-    [TokenKind.AndOperator]: Op2Code.AND,
-    [TokenKind.BitandOperator]: Op2Code.BITAND,
-    [TokenKind.BitorOperator]: Op2Code.BITOR,
-    [TokenKind.BitxorOperator]: Op2Code.BITXOR,
-    [TokenKind.OrOperator]: Op2Code.OR,
-};
-
-function Op2CodeLookup(tk: LexToken): Op2Code {
+function BinOpCodeLookup(tk: LexToken): OpCode {
     switch (tk.type) {
-        case TokenKind.AngleLeftSymbol: return Op2Code.LT;
-        case TokenKind.AngleRightSymbol: return Op2Code.GT;
-        case TokenKind.AsteriskSymbol: return Op2Code.MLT;
-        case TokenKind.EqualsSymbol: return Op2Code.EQ;
-        case TokenKind.SlashSymbol: return Op2Code.DIV;
-        case TokenKind.CaretSymbol: return Op2Code.EXP;
-        case TokenKind.GreaterThanEqualSymbol: return Op2Code.GE;
-        case TokenKind.LessThanEqualSymbol: return Op2Code.LE;
-        case TokenKind.NotEqualSymbol: return Op2Code.NE;
-        case TokenKind.SemicolonSymbol: return Op2Code.CAT;
-        case TokenKind.AndOperator: return Op2Code.AND;
-        case TokenKind.BitandOperator: return Op2Code.BITAND;
-        case TokenKind.BitorOperator: return Op2Code.BITOR;
-        case TokenKind.BitxorOperator: return Op2Code.BITXOR;
-        case TokenKind.DivideOperator: return Op2Code.DIV;
-        case TokenKind.EqualsOperator: return Op2Code.EQ;
-        case TokenKind.MinusOperator: return Op2Code.SUB;
-        case TokenKind.ModulusOperator: return Op2Code.MOD;
-        case TokenKind.OrOperator: return Op2Code.OR;
-        case TokenKind.PlusOperator: return Op2Code.ADD;
-        case TokenKind.TimesOperator: return Op2Code.MLT;
+        case TokenKind.AngleLeftSymbol: return OpCode.LT;
+        case TokenKind.AngleRightSymbol: return OpCode.GT;
+        case TokenKind.AsteriskSymbol: return OpCode.MLT;
+        case TokenKind.EqualsSymbol: return OpCode.EQ;
+        case TokenKind.SlashSymbol: return OpCode.DIV;
+        case TokenKind.CaretSymbol: return OpCode.EXP;
+        case TokenKind.GreaterThanEqualSymbol: return OpCode.GE;
+        case TokenKind.LessThanEqualSymbol: return OpCode.LE;
+        case TokenKind.NotEqualSymbol: return OpCode.NE;
+        case TokenKind.SemicolonSymbol: return OpCode.CAT;
+        case TokenKind.AndOperator: return OpCode.AND;
+        case TokenKind.BitandOperator: return OpCode.BITAND;
+        case TokenKind.BitorOperator: return OpCode.BITOR;
+        case TokenKind.BitxorOperator: return OpCode.BITXOR;
+        case TokenKind.DivideOperator: return OpCode.DIV;
+        case TokenKind.EqualsOperator: return OpCode.EQ;
+        case TokenKind.MinusSymbol: return OpCode.SUB;
+        case TokenKind.MinusOperator: return OpCode.SUB;
+        case TokenKind.ModulusOperator: return OpCode.MOD;
+        case TokenKind.OrOperator: return OpCode.OR;
+        case TokenKind.PlusSymbol: return OpCode.ADD;
+        case TokenKind.PlusOperator: return OpCode.ADD;
+        case TokenKind.TimesOperator: return OpCode.MLT;
     }
-    return Op2Code.NONE;
+    return OpCode.NOP;
 }
 
 export interface AssignStatement {
@@ -207,13 +190,13 @@ export interface GotoExpr {
 }
 
 export type UnaryOp = {
-    code: Op1Code,
+    code: OpCode,
     op: LexToken,
     exp: ExpressionStatement,
 };
 
 export type BinaryOp = {
-    code: Op2Code,
+    code: OpCode,
     op: LexToken,
     exp1: ExpressionStatement,
     exp2: ExpressionStatement,
@@ -311,7 +294,7 @@ export function parse_return_command(cur: FileCursor, st: SymbolTable): CommandS
     return stmt;
 }
 
-export function parse_command_1(cur: FileCursor, st: SymbolTable): CommandStatement {
+export function parse_wait_command(cur: FileCursor, st: SymbolTable): CommandStatement {
     const cmd: CommandStatement = {
         tk: cur.current(),
         expression: null_statement
@@ -374,7 +357,7 @@ export function parse_function_expression(cursor: FileCursor, st: SymbolTable): 
         return exp;
     }
     while (cursor.remain() && !isEOL(cursor)) {
-        exp.arguments.push(expression(cursor, st));
+        exp.arguments.push(expression(cursor, st, OpCode.NOP));
         if (cursor.matchAny(TokenKind.ParenthesesRightSymbol)) {
             cursor.advance();
             return exp;
@@ -390,20 +373,20 @@ export function parse_function_expression(cursor: FileCursor, st: SymbolTable): 
 
 export function parse_operation_unary(cur: FileCursor, st: SymbolTable): UnaryOp {
     const op = cur.current();
-    let code = Op1Code.NONE;
+    let code = OpCode.NOP;
     switch (op.type) {
         case TokenKind.MinusSymbol:
-            code = Op1Code.NEG;
+            code = OpCode.NEG;
             break;
         case TokenKind.NotOperator:
-            code = Op1Code.NOT;
+            code = OpCode.NOT;
             break;
     }
     cur.advance();
     const exp: UnaryOp = {
         code: code,
         op: op,
-        exp: expression(cur, st),
+        exp: expression(cur, st, code),
     };
     return exp;
 }
@@ -427,7 +410,7 @@ const enum IsState {
 };
 const is_states: {
     [id: string]: {
-        [t: number]: [IsState, { [name: string]: number | boolean | Op2Code }]
+        [t: number]: [IsState, { [name: string]: number | boolean | OpCode }]
     }
 } = {
     [IsState.INIT]: {
@@ -435,22 +418,22 @@ const is_states: {
         [TokenKind.DoesOperator]: [IsState.IS, {}],
     },
     [IsState.DOES]: {
-        [TokenKind.NotOperator]: [IsState.NOT, { "code": Op2Code.EQ, "not": true }],
+        [TokenKind.NotOperator]: [IsState.NOT, { "code": OpCode.EQ, "not": true }],
     },
     [IsState.NOT]: {
-        [TokenKind.EqualOperator]: [IsState.NOT, { "code": Op2Code.EQ, "not": true }],
+        [TokenKind.EqualOperator]: [IsState.NOT, { "code": OpCode.EQ, "not": true }],
     },
     [IsState.IS]: {
         [TokenKind.NotOperator]: [IsState.IS, { "not": true }],
-        [TokenKind.GreaterOperator]: [IsState.GT, { "code": Op2Code.GT }],
-        [TokenKind.AboveOperator]: [IsState.GT, { "code": Op2Code.GT }],
-        [TokenKind.LessOperator]: [IsState.LT, { "code": Op2Code.LT }],
-        [TokenKind.BelowOperator]: [IsState.LT, { "code": Op2Code.LT }],
-        [TokenKind.EqualOperator]: [IsState.EQ, { "code": Op2Code.EQ }],
-        [TokenKind.InOperator]: [IsState.SET, { "code": Op2Code.SET }],
-        [TokenKind.EitherOperator]: [IsState.SET, { "code": Op2Code.SET }],
-        [TokenKind.NeitherOperator]: [IsState.SET, { "code": Op2Code.SET }],
-        [TokenKind.BetweenOperator]: [IsState.RANGE, { "code": Op2Code.RANGE }],
+        [TokenKind.GreaterOperator]: [IsState.GT, { "code": OpCode.GT }],
+        [TokenKind.AboveOperator]: [IsState.GT, { "code": OpCode.GT }],
+        [TokenKind.LessOperator]: [IsState.LT, { "code": OpCode.LT }],
+        [TokenKind.BelowOperator]: [IsState.LT, { "code": OpCode.LT }],
+        [TokenKind.EqualOperator]: [IsState.EQ, { "code": OpCode.EQ }],
+        [TokenKind.InOperator]: [IsState.SET, { "code": OpCode.SET }],
+        [TokenKind.EitherOperator]: [IsState.SET, { "code": OpCode.SET }],
+        [TokenKind.NeitherOperator]: [IsState.SET, { "code": OpCode.SET }],
+        [TokenKind.BetweenOperator]: [IsState.RANGE, { "code": OpCode.RANGE }],
     },
     [IsState.EQ]: {
         [TokenKind.ToKeyWord]: [IsState.EXP2, {}],
@@ -467,10 +450,10 @@ const is_states: {
         [TokenKind.OrOperator]: [IsState.LTE, {}],
     },
     [IsState.GTE]: {
-        [TokenKind.EqualOperator]: [IsState.TO, { "code": Op2Code.GE }],
+        [TokenKind.EqualOperator]: [IsState.TO, { "code": OpCode.GE }],
     },
     [IsState.LTE]: {
-        [TokenKind.EqualOperator]: [IsState.TO, { "code": Op2Code.LE }],
+        [TokenKind.EqualOperator]: [IsState.TO, { "code": OpCode.LE }],
     },
     [IsState.SET]: {
     },
@@ -481,7 +464,7 @@ const is_states: {
 };
 
 export type IsOp = {
-    code: Op2Code,
+    code: OpCode,
     op: LexToken,
     tks: LexToken[],
     not: boolean,
@@ -493,7 +476,7 @@ export type IsOp = {
 export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): IsOp {
     let state = IsState.INIT;
     const exp: IsOp = {
-        code: Op2Code.NONE,
+        code: OpCode.NOP,
         op: cur.current(),
         tks: [],
         not: false,
@@ -503,7 +486,7 @@ export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: Ex
 
     while (cur.remain()) {
         const tk = cur.current();
-        const next: [IsState, { [name: string]: number | boolean | Op2Code }] | undefined =
+        const next: [IsState, { [name: string]: number | boolean | OpCode }] | undefined =
             is_states[state] && is_states[state][tk.type];
         if (!next) {
             break;
@@ -527,7 +510,7 @@ export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: Ex
             }
             break;
         case IsState.RANGE:
-            exp.exp2 = expression(cur, st);
+            exp.exp2 = expression(cur, st, OpCode.RANGE);
             break;
         default:
             exp.exp2 = expression(cur, st);
@@ -538,14 +521,14 @@ export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: Ex
 
 export function parse_binary_operation(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): BinaryOp {
     const op = cur.current();
+    const code = BinOpCodeLookup(op);
     cur.advance();
-    const exp: BinaryOp = {
-        code: Op2CodeLookup(op),
+    return {
+        code: code,
         op: op,
         exp1: leftExp,
-        exp2: expression(cur, st)
+        exp2: expression(cur, st, code)
     };
-    return exp;
 }
 
 export function parse_expression_list(cur: FileCursor, st: SymbolTable): ExpressionList {
@@ -594,7 +577,7 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
         tk = cur.current();
     }
     cur.advance();
-    stmt.expression = expression(cur, st);
+    stmt.expression = expression(cur, st, OpCode.NOP);
     stmt.assigned.forEach(vi => { st.assigned_variable(vi.token); });
     return stmt;
 }
@@ -1010,7 +993,7 @@ export function parse_cases_statement(cur: FileCursor, st: SymbolTable): Express
             const op = cur.current();
             cur.advance();
             const epr: BinaryOp = {
-                code: Op2Code.RANGE,
+                code: OpCode.RANGE,
                 op: op,
                 exp1: start as ExpressionStatement,
                 exp2: cur.current(),
@@ -1409,7 +1392,7 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.ReturnStatement]: parse_return_command,
     [TokenKind.BreakStatement]: parse_command,
     [TokenKind.ContinueStatement]: parse_command,
-    [TokenKind.WaitStatement]: parse_command_1,
+    [TokenKind.WaitStatement]: parse_wait_command,
 };
 
 
@@ -1505,7 +1488,7 @@ function emit_parse_error(ast: SymbolTable, tk: LexToken) {
     });
 }
 
-export function expression(cursor: FileCursor, st: SymbolTable): ExpressionStatement {
+export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpCode.NOP): ExpressionStatement {
     let exp: ExpressionStatement = null_statement;
     while (cursor.remain()) {
         let tk = cursor.current();
@@ -1522,7 +1505,18 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
         }
 
         switch (tk.type) {
+            case TokenKind.IdentifierToken:
+                exp = parse_identifier(cursor, st);
+                break;
 
+            case TokenKind.TimeToken:
+            case TokenKind.StringToken:
+            case TokenKind.NumberToken:
+                exp = tk;
+                cursor.advance();
+                break;
+
+            case TokenKind.BitnotOperator:
             case TokenKind.NotOperator:
                 exp = parse_operation_unary(cursor, st);
                 break;
@@ -1530,6 +1524,9 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
             case TokenKind.MinusSymbol:
             case TokenKind.PlusSymbol:
                 if (exp) {
+                    if (op !== OpCode.NOP && BinOpCodeLookup(tk) >= op) {
+                        return exp;
+                    }
                     exp = parse_binary_operation(cursor, st, exp);
                 } else {
                     exp = parse_operation_unary(cursor, st);
@@ -1557,11 +1554,17 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
             case TokenKind.OrOperator:
             case TokenKind.PlusOperator:
             case TokenKind.TimesOperator:
+                if (op !== OpCode.NOP && BinOpCodeLookup(tk) >= op) {
+                    return exp;
+                }
                 exp = parse_binary_operation(cursor, st, exp);
                 break;
 
             case TokenKind.IsOperator:
             case TokenKind.DoesOperator:
+                if (op !== OpCode.NOP && BinOpCodeLookup(tk) >= op) {
+                    return exp;
+                }
                 exp = parse_is_statement(cursor, st, exp);
                 break;
 
@@ -1582,17 +1585,6 @@ export function expression(cursor: FileCursor, st: SymbolTable): ExpressionState
                     range: tk.range
                 });
                 return errorExpr(tk);
-
-            case TokenKind.IdentifierToken:
-                exp = parse_identifier(cursor, st);
-                break;
-
-            case TokenKind.TimeToken:
-            case TokenKind.StringToken:
-            case TokenKind.NumberToken:
-                exp = tk;
-                cursor.advance();
-                break;
 
             case TokenKind.CommaSymbol:
             case TokenKind.ThenStatement:

@@ -9,7 +9,7 @@ import { ebo_scan_text, LexToken } from '../ebo-scanner';
 import {
 	AssignStatement, BinaryOp, parse_bracket_expression, expression,
 	ExpressionList, parse_for_statement, parse_goto,
-	parse_function_expression, IfStatement, IsOp, Op2Code, parse_declarations,
+	parse_function_expression, IfStatement, IsOp, OpCode, parse_declarations,
 	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_statement,
 	parse_statement, removeWhiteSpace, VariableInst, ProgramType
 } from '../ebo-check';
@@ -212,6 +212,33 @@ describe('Check Tests', () => {
 			assert.equal("+", exp.op.value);
 			assert.equal("X", (exp.exp1 as VariableInst).name);
 			assert.equal("1", (exp.exp2 as LexToken).value);
+		});
+		it('process equations precedence 1', () => {
+			const eq = 'X + y * 2\n';
+			const exp = parseWith(
+				eq,
+				expression,
+			) as BinaryOp;
+			assert.notEqual(null, exp);
+			assert.equal("+", exp.op.value);
+			assert.equal(OpCode.ADD, exp.code);
+			assert.equal("X", (exp.exp1 as VariableInst).name);
+			assert.equal(OpCode.MLT, (exp.exp2 as BinaryOp).code);
+			assert.equal("y", ((exp.exp2 as BinaryOp).exp1 as VariableInst).name);
+			assert.equal("2", ((exp.exp2 as BinaryOp).exp2 as LexToken).value);
+		});
+		it('process equations precedence 2', () => {
+			const eq = 'y * 2 + X\n';
+			const exp = parseWith(
+				eq,
+				expression,
+			) as BinaryOp;
+			assert.notEqual(null, exp);
+			assert.equal("+", exp.op.value);
+			assert.equal("X", (exp.exp2 as VariableInst).name);
+			assert.equal(OpCode.MLT, (exp.exp1 as BinaryOp).code);
+			assert.equal("y", ((exp.exp1 as BinaryOp).exp1 as VariableInst).name);
+			assert.equal("2", ((exp.exp1 as BinaryOp).exp2 as LexToken).value);
 		});
 		it('process equations', () => {
 			const exp = parseWith(
@@ -653,33 +680,33 @@ Extra:
 	});
 	describe('Is Expression Parsing', () => {
 		it('should parse is comparison expressions', () => {
-			const tests: { line: string, code: Op2Code, not: boolean, expect: string | number }[] =
+			const tests: { line: string, code: OpCode, not: boolean, expect: string | number }[] =
 				[
-					{ line: "x Is Greater 10\n", code: Op2Code.GT, not: false, expect: "10" },
-					{ line: "x Is Greater Than 10\n", code: Op2Code.GT, not: false, expect: "10" },
-					{ line: "x Is Above 10\n", code: Op2Code.GT, not: false, expect: "10" },
-					{ line: "x Is Less 10\n", code: Op2Code.LT, not: false, expect: "10" },
-					{ line: "x Is Less Than 10\n", code: Op2Code.LT, not: false, expect: "10" },
-					{ line: "x Is Below 10\n", code: Op2Code.LT, not: false, expect: "10" },
-					{ line: "x Is Greater Than Or Equal To 10\n", code: Op2Code.GE, not: false, expect: "10" },
-					{ line: "x Is Less Than Or Equal To 10\n", code: Op2Code.LE, not: false, expect: "10" },
-					{ line: "x Is Greater Or Equal To 10\n", code: Op2Code.GE, not: false, expect: "10" },
-					{ line: "x Is Less Or Equal To 10\n", code: Op2Code.LE, not: false, expect: "10" },
-					{ line: "x Is Equal To 10\n", code: Op2Code.EQ, not: false, expect: "10" },
-					{ line: "x Is Equal 10\n", code: Op2Code.EQ, not: false, expect: "10" },
-					{ line: "x Is Not Greater 10\n", code: Op2Code.GT, not: true, expect: "10" },
-					{ line: "x Is Not Greater Than 10\n", code: Op2Code.GT, not: true, expect: "10" },
-					{ line: "x Is Not Above 10\n", code: Op2Code.GT, not: true, expect: "10" },
-					{ line: "x Is Not Less 10\n", code: Op2Code.LT, not: true, expect: "10" },
-					{ line: "x Is Not Less Than 10\n", code: Op2Code.LT, not: true, expect: "10" },
-					{ line: "x Is Not Below 10\n", code: Op2Code.LT, not: true, expect: "10" },
-					{ line: "x Is Not Greater Than Or Equal To 10\n", code: Op2Code.GE, not: true, expect: "10" },
-					{ line: "x Is Not Less Than Or Equal To 10\n", code: Op2Code.LE, not: true, expect: "10" },
-					{ line: "x Is Not Greater Or Equal To 10\n", code: Op2Code.GE, not: true, expect: "10" },
-					{ line: "x Is Not Less Or Equal To 10\n", code: Op2Code.LE, not: true, expect: "10" },
-					{ line: "x Is Not Equal To 10\n", code: Op2Code.EQ, not: true, expect: "10" },
-					{ line: "x Is Not Equal 10\n", code: Op2Code.EQ, not: true, expect: "10" },
-					{ line: "x Does Not Equal 10\n", code: Op2Code.EQ, not: true, expect: "10" },
+					{ line: "x Is Greater 10\n", code: OpCode.GT, not: false, expect: "10" },
+					{ line: "x Is Greater Than 10\n", code: OpCode.GT, not: false, expect: "10" },
+					{ line: "x Is Above 10\n", code: OpCode.GT, not: false, expect: "10" },
+					{ line: "x Is Less 10\n", code: OpCode.LT, not: false, expect: "10" },
+					{ line: "x Is Less Than 10\n", code: OpCode.LT, not: false, expect: "10" },
+					{ line: "x Is Below 10\n", code: OpCode.LT, not: false, expect: "10" },
+					{ line: "x Is Greater Than Or Equal To 10\n", code: OpCode.GE, not: false, expect: "10" },
+					{ line: "x Is Less Than Or Equal To 10\n", code: OpCode.LE, not: false, expect: "10" },
+					{ line: "x Is Greater Or Equal To 10\n", code: OpCode.GE, not: false, expect: "10" },
+					{ line: "x Is Less Or Equal To 10\n", code: OpCode.LE, not: false, expect: "10" },
+					{ line: "x Is Equal To 10\n", code: OpCode.EQ, not: false, expect: "10" },
+					{ line: "x Is Equal 10\n", code: OpCode.EQ, not: false, expect: "10" },
+					{ line: "x Is Not Greater 10\n", code: OpCode.GT, not: true, expect: "10" },
+					{ line: "x Is Not Greater Than 10\n", code: OpCode.GT, not: true, expect: "10" },
+					{ line: "x Is Not Above 10\n", code: OpCode.GT, not: true, expect: "10" },
+					{ line: "x Is Not Less 10\n", code: OpCode.LT, not: true, expect: "10" },
+					{ line: "x Is Not Less Than 10\n", code: OpCode.LT, not: true, expect: "10" },
+					{ line: "x Is Not Below 10\n", code: OpCode.LT, not: true, expect: "10" },
+					{ line: "x Is Not Greater Than Or Equal To 10\n", code: OpCode.GE, not: true, expect: "10" },
+					{ line: "x Is Not Less Than Or Equal To 10\n", code: OpCode.LE, not: true, expect: "10" },
+					{ line: "x Is Not Greater Or Equal To 10\n", code: OpCode.GE, not: true, expect: "10" },
+					{ line: "x Is Not Less Or Equal To 10\n", code: OpCode.LE, not: true, expect: "10" },
+					{ line: "x Is Not Equal To 10\n", code: OpCode.EQ, not: true, expect: "10" },
+					{ line: "x Is Not Equal 10\n", code: OpCode.EQ, not: true, expect: "10" },
+					{ line: "x Does Not Equal 10\n", code: OpCode.EQ, not: true, expect: "10" },
 				];
 			tests.forEach((test, i) => {
 				const st = new SymbolTable();
@@ -706,7 +733,7 @@ Extra:
 			if (!stmt) {
 				assert.fail("expected return value");
 			}
-			assert.equal(Op2Code.SET, stmt.code);
+			assert.equal(OpCode.SET, stmt.code);
 			assert.equal(3, (stmt.exp2 as ExpressionList).length);
 		});
 		it('should have errors with is in statements without list of numbers', () => {
@@ -720,7 +747,7 @@ Extra:
 			if (!stmt) {
 				assert.fail("expected return value");
 			}
-			assert.equal(Op2Code.SET, stmt.code);
+			assert.equal(OpCode.SET, stmt.code);
 			assert.equal(0, (stmt.exp2 as ExpressionList).length);
 			assert.equal(2, st.errors.length);
 		});
