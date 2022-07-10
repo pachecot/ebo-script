@@ -21,6 +21,9 @@ export class FileCursor implements Cursor {
     }
     advance(amt = 1) {
         this.#pos += amt;
+        if (this.#pos > this.items.length) {
+            this.#pos = this.items.length;
+        }
     }
     SymbolTable(): SymbolTable {
         return this.symTable;

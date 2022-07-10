@@ -28,7 +28,7 @@ export interface FunctionExpression {
 
 export enum OpCode {
     // ops in order of precedence
-    NOP, 
+    NOP,
 
     GRP,        // () or []
 
@@ -1666,13 +1666,16 @@ function check_is_fallthru(tkn_lists: LexToken[]) {
 
 
 export function parse_line(cursor: FileCursor, symTable: SymbolTable) {
+    if (cursor.remain() < 2) {
+        return;
+    }
     let tk = cursor.item(0);
     switch (tk.type) {
         case TokenKind.ErrorLine:
         case TokenKind.NumberToken:
         case TokenKind.IdentifierToken:
             if (cursor.item(1).type === TokenKind.ColonSymbol) {
-                if (cursor.item(2).type === TokenKind.EndOfLineToken) {
+                if (cursor.remain() < 3 || cursor.item(2).type === TokenKind.EndOfLineToken) {
                     cursor.advance(3);
                     symTable.declare_line(tk);
                     return tk;
@@ -1685,7 +1688,7 @@ export function parse_line(cursor: FileCursor, symTable: SymbolTable) {
                 tk.type === TokenKind.NumberToken ||
                 tk.type === TokenKind.ErrorLine
             ) {
-                if (cursor.item(2).type === TokenKind.EndOfLineToken) {
+                if (cursor.remain() < 3 || cursor.item(2).type === TokenKind.EndOfLineToken) {
                     cursor.advance(3);
                     symTable.declare_line(tk);
                     return tk;
