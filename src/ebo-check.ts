@@ -20,6 +20,12 @@ export interface VariableInst {
     token: LexToken
 }
 
+export interface ArgInst {
+    name: string
+    index?: number | ExpressionStatement
+    token: LexToken
+}
+
 
 export interface FunctionExpression {
     function: LexToken
@@ -285,23 +291,20 @@ export function parse_command(cur: Cursor, st: SymbolTable): CommandExpr {
 
 export function parse_return_command(cur: FileCursor, st: SymbolTable): CommandStatement {
     const cmd: CommandExpr = cur.current();
-    const stmt: CommandStatement = {
-        tk: cur.current(),
-        expression: null_statement
-    };
     cur.advance();
-    stmt.expression = expression(cur, st);
-    return stmt;
+    return {
+        tk: cmd,
+        expression: expression(cur, st)
+    };
 }
 
 export function parse_wait_command(cur: FileCursor, st: SymbolTable): CommandStatement {
-    const cmd: CommandStatement = {
-        tk: cur.current(),
-        expression: null_statement
-    };
+    const cmd: CommandExpr = cur.current();
     cur.advance();
-    cmd.expression = expression(cur, st);
-    return cmd;
+    return {
+        tk: cmd,
+        expression: expression(cur, st)
+    };
 }
 
 
@@ -367,7 +370,6 @@ export function parse_function_expression(cursor: FileCursor, st: SymbolTable): 
         }
         cursor.advance();
     }
-
     return exp;
 }
 
@@ -408,6 +410,7 @@ const enum IsState {
     , TO
     , END
 };
+
 const is_states: {
     [id: string]: {
         [t: number]: [IsState, { [name: string]: number | boolean | OpCode }]
@@ -471,7 +474,6 @@ export type IsOp = {
     exp1: ExpressionStatement,
     exp2: ExpressionStatement | ExpressionList,
 };
-
 
 export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): IsOp {
     let state = IsState.INIT;
@@ -567,7 +569,6 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
         expression: null_statement,
     };
     let tk = cur.current();
-
     while (tk.type !== TokenKind.EqualsSymbol) {
         if (tk.type === TokenKind.IdentifierToken) {
             stmt.assigned.push(parse_identifier(cur, st));
@@ -1200,13 +1201,9 @@ export function declaration_list(cur: FileCursor, local: boolean): VariableInst[
     }
     if (!isEOL(cur)) {
         let range = { ...cur.current().range };
-        // while (!cur.matchAny(TokenKind.EndOfLineToken, TokenKind.CommaSymbol)) {
-        while (!cur.matchAny(TokenKind.EndOfLineToken)) {
-            cur.advance();
-        }
+        consumeUntilEOL(cur);
         range.end = cur.current().range.end;
         range.lines = cur.current().range.line - range.line;
-
         cur.addError({
             id: EboErrors.IllegalExpression,
             severity: Severity.Error,
@@ -1363,8 +1360,6 @@ export function parse_declarations(cursor: FileCursor, symTable: SymbolTable): D
 
 type StatementAction = (fc: FileCursor, ast: SymbolTable, tks: VariableInst[]) => Statement;
 
-
-
 const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.FunctionCallToken]: parse_function_expression,
     [TokenKind.ForStatement]: parse_for_statement,
@@ -1394,7 +1389,6 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.ContinueStatement]: parse_command,
     [TokenKind.WaitStatement]: parse_wait_command,
 };
-
 
 
 /**
@@ -1505,6 +1499,10 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
         }
 
         switch (tk.type) {
+            case TokenKind.ArgDeclaration:
+                exp = parse_arg_reference(cursor, st);
+                break;
+
             case TokenKind.IdentifierToken:
                 exp = parse_identifier(cursor, st);
                 break;
@@ -1613,6 +1611,22 @@ export function parse_identifier(cursor: FileCursor, symTable: SymbolTable): Var
     symTable.lookup_variable(tk);
     return vi;
 }
+
+export function parse_arg_reference(cursor: FileCursor, symTable: SymbolTable): ArgInst {
+    const tk = cursor.current();
+    cursor.advance();
+    const vi: ArgInst = {
+        name: tk.value,
+        token: tk,
+    };
+    if (!cursor.expect(TokenKind.BracketLeftSymbol, "Argument references require indexes")) {
+        return vi;
+    }
+    vi.index = parse_bracket_expression(cursor, symTable);
+    // symTable.lookup_variable(tk);
+    return vi;
+}
+
 
 
 export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Statement {

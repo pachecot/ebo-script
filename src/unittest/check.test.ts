@@ -177,6 +177,20 @@ describe('Check Tests', () => {
 	});
 	describe('expression', () => {
 		it('process numbers', () => {
+			let tests = [
+				{ input: "1\n", expect: '1' },
+				{ input: "4%\n", expect: '4%' },
+				{ input: "2.0\n", expect: '2.0' },
+				{ input: ".3\n", expect: '.3' },
+				{ input: "5.0%\n", expect: '5.0%' },
+			];
+			tests.forEach(test => {
+				const exp = parseWith(test.input, expression) as LexToken;
+				assert.notEqual(null, exp);
+				assert.equal(TokenKind.NumberToken, exp.type);
+				assert.equal(test.expect, exp.value);
+
+			});
 			const exp = parseWith(
 				"1\n",
 				expression,
@@ -786,6 +800,42 @@ Return x*y
 			assert.equal('x', st.parameter_ids[1]);
 			assert.equal('y', st.parameter_ids[2]);
 			assert.equal(0, st.errors.length);
+		});
+		it('should parse arg references', () => {
+			const text = `Arg 1 x
+
+Return x*Arg[2]
+`;
+			const tkn_lists = ebo_scan_text(text);
+			const tks = removeWhiteSpace(tkn_lists);
+			const st = new SymbolTable();
+			const fc = new FileCursor(tks, st);
+			const pgm = parse_program(fc, st);
+
+			assert.equal(ProgramType.Function, pgm.type);
+			assert.equal(2, st.parameter_ids.length);
+			assert.equal('x', st.parameter_ids[1]);
+			assert.equal(0, st.errors.length, "error: " + st.errors);
+		});
+		it('should parse arg references in loops', () => {
+			const text = `Arg 1 x
+Numeric n
+n = 2			
+While Passed(n)
+  x = x + Arg[n]
+  n = n + 1
+EndWhile
+`;
+			const tkn_lists = ebo_scan_text(text);
+			const tks = removeWhiteSpace(tkn_lists);
+			const st = new SymbolTable();
+			const fc = new FileCursor(tks, st);
+			const pgm = parse_program(fc, st);
+
+			assert.equal(ProgramType.Function, pgm.type);
+			assert.equal(2, st.parameter_ids.length);
+			assert.equal('x', st.parameter_ids[1]);
+			assert.equal(0, st.errors.length, "error: " + st.errors);
 		});
 	});
 });
