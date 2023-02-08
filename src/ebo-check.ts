@@ -22,6 +22,7 @@ export interface VariableInst {
 
 export interface ArgInst {
     name: string
+    id: number | ExpressionStatement
     index?: number | ExpressionStatement
     token: LexToken
 }
@@ -1618,11 +1619,15 @@ export function parse_arg_reference(cursor: FileCursor, symTable: SymbolTable): 
     const vi: ArgInst = {
         name: tk.value,
         token: tk,
+        id: -1,
     };
     if (!cursor.expect(TokenKind.BracketLeftSymbol, "Argument references require indexes")) {
         return vi;
     }
-    vi.index = parse_bracket_expression(cursor, symTable);
+    vi.id = parse_bracket_expression(cursor, symTable);
+    if (cursor.matchAny(TokenKind.BracketLeftSymbol)) {
+        vi.index = parse_bracket_expression(cursor, symTable);
+    }
     // symTable.lookup_variable(tk);
     return vi;
 }
