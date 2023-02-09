@@ -837,6 +837,26 @@ EndWhile
 			assert.equal('x', st.parameter_ids[1]);
 			assert.equal(0, st.errors.length, "error: " + st.errors);
 		});
+		it('should parse arg reference assignment', () => {
+			const text = `Arg 1 x
+Numeric n
+n = 2			
+While Passed(n)
+  Arg[n] = Arg[n] + x 
+  n = n + 1
+EndWhile
+`;
+			const tkn_lists = ebo_scan_text(text);
+			const tks = removeWhiteSpace(tkn_lists);
+			const st = new SymbolTable();
+			const fc = new FileCursor(tks, st);
+			const pgm = parse_program(fc, st);
+
+			assert.equal(ProgramType.Function, pgm.type);
+			assert.equal(2, st.parameter_ids.length);
+			assert.equal('x', st.parameter_ids[1]);
+			assert.equal(0, st.errors.length, "error: " + st.errors);
+		});
 	});
 });
 

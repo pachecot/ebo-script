@@ -1645,6 +1645,10 @@ export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Stat
             tks.push(parse_identifier(cursor, symTable));
             continue;
         }
+        if (cursor.match(TokenKind.ArgDeclaration)) {
+            tks.push(parse_arg_reference(cursor, symTable));
+            continue;
+        }
         const fn = statement_actions[tk.type];
         if (fn) {
             const stmt = fn(cursor, symTable, tks);
