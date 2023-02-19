@@ -2,6 +2,27 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.9] 2023-02-19
+
+- update formatting
+    - normalize new lines.
+    - normalize spaces.
+- fix basedon statements were not adding references.
+
+## [0.10.8] 2023-02-08
+
+- script function arguments - assignment.
+
+## [0.10.7] 2023-02-07
+
+- script function arguments - indexing arrays.
+
+## [0.10.6] 2023-02-07
+
+- better number support. 
+    - allow numbers starting with .  
+    - % with fractional numbers  
+
 ## [0.10.5] 2022-07-09
 
 - added precedence checking to parsing.

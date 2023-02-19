@@ -53,6 +53,35 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.10.9
+
+- formatting normalize newlines - remove \r\n
+- formatting normalize spaces - remove tabs
+- fix basedon goto's were not incrementing references
+
+### 0.10.8
+
+- misc fixes for arguments in script functions 
+
+### 0.10.7
+
+- misc fixes for arguments in script functions 
+### 0.10.6
+
+- fix for numbers with % 
+- fix for decimal numbers starting with . 
+### 0.10.5
+
+- error checking 
+- parsing 
+### 0.10.4
+
+- refactoring 
+### 0.10.3
+
+- function fixes 
+- fix for numbers with % 
+
 ### 0.10.1
 
 - minor updates  
