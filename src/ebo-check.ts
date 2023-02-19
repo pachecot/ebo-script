@@ -188,7 +188,7 @@ export interface CommandStatement {
 
 
 export interface BasedonExpr {
-    variable: LexToken
+    variable: ExpressionStatement
     lines: LexToken[]
 }
 
@@ -1292,26 +1292,28 @@ export function declare_argument(cur: FileCursor, ast: SymbolTable): ParameterDe
 }
 
 
-export function parse_basedon_statement(cur: Cursor, st: SymbolTable): BasedonExpr {
+export function parse_basedon_statement(cur: FileCursor, st: SymbolTable): BasedonExpr {
     const res: BasedonExpr = {
-        variable: cur.current(),
+        variable: null,
         lines: [],
     };
-
+    
     if (!cur.expect(TokenKind.BasedonStatement, "expected BasedOn")) {
         return res;
     }
     cur.advance();
-    if (!cur.expect(TokenKind.IdentifierToken, "expected numeric identifier")) {
-        return res;
-    }
-    res.variable = cur.current();
-    cur.advance();
+    res.variable = expression(cur, st);
+    // if (!cur.expect(TokenKind.IdentifierToken, "expected numeric identifier")) {
+    //     return res;
+    // }
+    // cur.advance();
     if (!parse_goto_statement(cur, st)) {
         return res;
     }
     while (cur.remain() > 0 && !isEOL(cur)) {
-        res.lines.push(cur.current());
+        const line = cur.current();
+        res.lines.push(line);
+        st.lookup_line(line);
         cur.advance();
         if (cur.matchAny(TokenKind.CommaSymbol)) {
             cur.advance();

@@ -11,7 +11,7 @@ import {
 	ExpressionList, parse_for_statement, parse_goto,
 	parse_function_expression, IfStatement, IsOp, OpCode, parse_declarations,
 	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_statement,
-	parse_statement, removeWhiteSpace, VariableInst, ProgramType
+	parse_statement, removeWhiteSpace, VariableInst, ProgramType, parse_basedon_statement
 } from '../ebo-check';
 import { TokenKind } from '../ebo-types';
 
@@ -666,7 +666,6 @@ Extra:
 			});
 		});
 	});
-
 	describe('Goto Parsing', () => {
 		it('should parse named line statements', () => {
 			const tests: { line: string, expect: string | number }[] = [
@@ -689,6 +688,35 @@ Extra:
 				assert.equal(test.expect, stmt.line.value);
 				assert.equal(1, st.line_refs['SomeLine'].length);
 				assert.equal(stmt.line, st.line_refs['SomeLine'][0]);
+			});
+		});
+	});
+	describe('Basedon Parsing', () => {
+		it('should parse named line statements', () => {
+			const tests: { line: string, expect: string | number }[] = [
+				{ line: "BasedOn x Goto SomeLine1, SomeLine2, SomeLine3\n\n", expect: "SomeLine1" },
+				{ line: "BasedOn x + 1 Goto SomeLine1, SomeLine2, SomeLine3\n\n", expect: "SomeLine1" },
+				{ line: "BasedOn x Goto Line SomeLine1, SomeLine2, SomeLine3\n\n", expect: "SomeLine1" },
+				{ line: "BasedOn x Go SomeLine1, SomeLine2, SomeLine3\n\n", expect: "SomeLine1" },
+				{ line: "BasedOn x Go To SomeLine1, SomeLine2, SomeLine3\n\n", expect: "SomeLine1" },
+				{ line: "BasedOn x Go To Line SomeLine1, SomeLine2, SomeLine3\n\n", expect: "SomeLine1" },
+			];
+			tests.forEach(test => {
+				const st = new SymbolTable();
+				const stmt = parseWith(
+					test.line,
+					parse_basedon_statement,
+					st,
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				assert.equal(3, stmt.lines.length);
+				assert.equal(test.expect, stmt.lines[0].value);
+				assert.equal(1, st.line_refs['SomeLine1'].length);
+				assert.equal(1, st.line_refs['SomeLine2'].length);
+				assert.equal(1, st.line_refs['SomeLine3'].length);
+				assert.equal(1, st.variable_refs['x'].length);
 			});
 		});
 	});
