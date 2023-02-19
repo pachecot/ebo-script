@@ -6,7 +6,7 @@
 		"url": "https://github.com/pachecot/ebo-script.git"
 	},
 	"description": "SE EBO Script Programming Support",
-	"version": "0.10.8",
+	"version": "0.10.9",
 	"engines": {
 		"vscode": "^1.64.0"
 	},
