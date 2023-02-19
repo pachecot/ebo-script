@@ -83,7 +83,7 @@ function pos_end(rng: TextRange) {
 /**
  * all but the last character in the range.
  */
-function range1(rng: TextRange) {
+function range12(rng: TextRange) {
     return new vscode.Range(pos_start(rng),
         new vscode.Position(rng.line, rng.end - 1)
     );
@@ -104,6 +104,13 @@ function range_back(start: number, rng: TextRange) {
  */
 function insertSpace(rng: TextRange) {
     return vscode.TextEdit.insert(pos_start(rng), ' ');
+}
+
+/**
+ * create a space insert before the range  
+ */
+function singleSpace(rng: TextRange) {
+    return vscode.TextEdit.replace(toRange(rng), ' ');
 }
 
 /**
@@ -210,15 +217,19 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             const tk = line_tks[i];
 
             switch (tk.type) {
-
+                case TokenKind.EndOfLineToken:
+                    if (tk.value !== '\n') {
+                        edits.push(vscode.TextEdit.replace(toRange(tk.range), '\n'));
+                    }
+                    break;
                 case TokenKind.ToKeyWord:
                 case TokenKind.ElseStatement:
                 case TokenKind.ThenStatement:
                     {
                         const p = line_tks[i - 1];
                         if (i > 1 && p && p.type === TokenKind.WhitespaceToken) {
-                            if (p.range.end - p.range.begin > 1) {
-                                edits.push(vscode.TextEdit.delete(range1(p.range)));
+                            if (range_size(p.range) > 1 || p.value === '\t') {
+                                edits.push(singleSpace(p.range));
                                 p.range.end = p.range.begin + 1;
                             }
                         }
@@ -230,8 +241,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                                     n.range.end = n.range.begin;
                                 }
                             } else {
-                                if (n.range.end - n.range.begin > 1) {
-                                    edits.push(vscode.TextEdit.delete(range1(n.range)));
+                                if (range_size(n.range) > 1 || n.value === '\t') {
+                                    edits.push(singleSpace(n.range));
                                     n.range.end = n.range.begin + 1;
                                 }
                             }
@@ -255,8 +266,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     {
                         const n = line_tks[i + 1];
                         if (n && n.type === TokenKind.WhitespaceToken) {
-                            if (n.range.end - n.range.begin > 1) {
-                                edits.push(vscode.TextEdit.delete(range1(n.range)));
+                            if (range_size(n.range) || n.value === '\t') {
+                                edits.push(singleSpace(n.range));
                                 n.range.end = n.range.begin + 1;
                             }
                         }
@@ -275,8 +286,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     {
                         const n = line_tks[i + 1];
                         if (n && n.type === TokenKind.WhitespaceToken) {
-                            if (n.range.end - n.range.begin > 1) {
-                                edits.push(vscode.TextEdit.delete(range1(n.range)));
+                            if (range_size(n.range) > 1 || n.value === '\t') {
+                                edits.push(singleSpace(n.range));
                                 n.range.end = n.range.begin + 1;
                             }
                         }
@@ -296,10 +307,10 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                             edits.push(insertSpace(tk.range));
                         }
                     } else {
-                        if (p.range.end - p.range.begin > 1) {
+                        if (range_size(p.range) > 1 || p.value === '\t') {
                             const prev_tk = line_tks[i - 2].type;
                             if (!isSymbolKind(prev_tk) || prev_tk === TokenKind.BracketRightSymbol) {
-                                edits.push(vscode.TextEdit.delete(range1(p.range)));
+                                edits.push(singleSpace(p.range));
                             }
                         }
                         p = line_tks[i - 2];
@@ -336,8 +347,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         }
                     } else if (n.type !== TokenKind.WhitespaceToken) {
                         edits.push(insertSpace(n.range));
-                    } else if (n.range.end - n.range.begin > 1) {
-                        edits.push(vscode.TextEdit.delete(range1(n.range)));
+                    } else if (range_size(n.range) > 1 || n.value === '\t') {
+                        edits.push(singleSpace(n.range));
                     }
                     break;
                 }
@@ -380,13 +391,13 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.ClosedValue:
                     {
                         const p = line_tks[i - 1];
-                        if (p.type === TokenKind.WhitespaceToken && range_size(p.range) > 1) {
-                            edits.push(vscode.TextEdit.delete(range1(p.range)));
+                        if (p.type === TokenKind.WhitespaceToken && (range_size(p.range) > 1 || p.value === '\t')) {
+                            edits.push(singleSpace(p.range));
                             p.range.end = p.range.begin + 1;
                         }
                         const n = line_tks[i + 1];
-                        if (n.type === TokenKind.WhitespaceToken && range_size(n.range) > 1) {
-                            edits.push(vscode.TextEdit.delete(range1(n.range)));
+                        if (n.type === TokenKind.WhitespaceToken && (range_size(n.range) > 1 || n.value === '\t')) {
+                            edits.push(singleSpace(n.range));
                             n.range.end = n.range.begin + 1;
                         }
                         break;
@@ -396,8 +407,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     {
                         const p = line_tks[i - 1];
                         if (p.type === TokenKind.WhitespaceToken) {
-                            if (range_size(p.range) > 1) {
-                                edits.push(vscode.TextEdit.delete(range1(p.range)));
+                            if (range_size(p.range) > 1 || p.value === '\t') {
+                                edits.push(singleSpace(p.range));
                                 p.range.end = p.range.begin + 1;
                             }
                         } else {
@@ -424,14 +435,14 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         const n = line_tks[i + 1];
                         if (p.type !== TokenKind.WhitespaceToken) {
                             edits.push(insertSpace(tk.range));
-                        } else if (range_size(p.range) > 1) {
-                            edits.push(vscode.TextEdit.delete(range1(p.range)));
+                        } else if (range_size(p.range) > 1 || p.value === '\t') {
+                            edits.push(singleSpace(p.range));
                             p.range.end = p.range.begin + 1;
                         }
                         if (n.type !== TokenKind.WhitespaceToken) {
                             edits.push(insertSpace(n.range));
-                        } else if (range_size(n.range) > 1) {
-                            edits.push(vscode.TextEdit.delete(range1(n.range)));
+                        } else if (range_size(n.range) > 1 || p.value === '\t') {
+                            edits.push(singleSpace(n.range));
                             n.range.end = n.range.begin + 1;
                         }
                         break;
@@ -445,8 +456,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     const n = line_tks[i + 1];
                     if (n.type !== TokenKind.WhitespaceToken) {
                         edits.push(insertSpace(n.range));
-                    } else if (range_size(n.range) > 1) {
-                        edits.push(vscode.TextEdit.delete(range1(n.range)));
+                    } else if (range_size(n.range) > 1 || n.value === '\t') {
+                        edits.push(singleSpace(n.range));
                         n.range.end = n.range.begin + 1;
                     }
                     break;
