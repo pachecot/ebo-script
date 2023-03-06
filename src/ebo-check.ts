@@ -88,6 +88,7 @@ function BinOpCodeLookup(tk: LexToken): OpCode {
         case TokenKind.NotEqualSymbol: return OpCode.NE;
         case TokenKind.SemicolonSymbol: return OpCode.CAT;
         case TokenKind.AndOperator: return OpCode.AND;
+        case TokenKind.AmpersandSymbol: return OpCode.AND;
         case TokenKind.BitandOperator: return OpCode.BITAND;
         case TokenKind.BitorOperator: return OpCode.BITOR;
         case TokenKind.BitxorOperator: return OpCode.BITXOR;
@@ -97,6 +98,7 @@ function BinOpCodeLookup(tk: LexToken): OpCode {
         case TokenKind.MinusOperator: return OpCode.SUB;
         case TokenKind.ModulusOperator: return OpCode.MOD;
         case TokenKind.OrOperator: return OpCode.OR;
+        case TokenKind.ExclamationSymbol: return OpCode.OR;
         case TokenKind.PlusSymbol: return OpCode.ADD;
         case TokenKind.PlusOperator: return OpCode.ADD;
         case TokenKind.TimesOperator: return OpCode.MLT;
@@ -1297,7 +1299,7 @@ export function parse_basedon_statement(cur: FileCursor, st: SymbolTable): Based
         variable: null,
         lines: [],
     };
-    
+
     if (!cur.expect(TokenKind.BasedonStatement, "expected BasedOn")) {
         return res;
     }
@@ -1545,6 +1547,7 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
             case TokenKind.NotEqualSymbol:
             case TokenKind.SemicolonSymbol:
             case TokenKind.AndOperator:
+            case TokenKind.AmpersandSymbol:
             case TokenKind.BitandOperator:
             case TokenKind.BitorOperator:
             case TokenKind.BitxorOperator:
@@ -1553,6 +1556,7 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
             case TokenKind.MinusOperator:
             case TokenKind.ModulusOperator:
             case TokenKind.OrOperator:
+            case TokenKind.ExclamationSymbol:
             case TokenKind.PlusOperator:
             case TokenKind.TimesOperator:
                 if (op !== OpCode.NOP && BinOpCodeLookup(tk) >= op) {
