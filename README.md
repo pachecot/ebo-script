@@ -53,6 +53,12 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.10.11
+- added support missing reserved values: FlashEmpty BackupNow BackupNeeded
+### 0.10.10
+
+- fix added support logical operators - & (and), ! (or)
+
 ### 0.10.9
 
 - formatting normalize newlines - remove \r\n

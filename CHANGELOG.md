@@ -2,6 +2,20 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.11] 2023-06-18
+
+- added command for generating mermaid state diagrams
+- added support missing reserved values: 
+    - FlashEmpty
+    - BackupNow
+    - BackupNeeded
+
+## [0.10.10] 2023-03-05
+
+- added support for logical operators 
+    - &: and
+    - !: or
+
 ## [0.10.9] 2023-02-19
 
 - update formatting
