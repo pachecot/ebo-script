@@ -6,7 +6,7 @@
 		"url": "https://github.com/pachecot/ebo-script.git"
 	},
 	"description": "SE EBO Script Programming Support",
-	"version": "0.10.10",
+	"version": "0.10.11",
 	"engines": {
 		"vscode": "^1.64.0"
 	},
@@ -43,6 +43,11 @@
 			{
 				"command": "ebo-script.show_files",
 				"title": "ebo-script: List Files",
+				"enablement": "editorLangId == ebo-script"
+			},
+			{
+				"command": "ebo-script.generate_state",
+				"title": "ebo-script: Generate State Diagrams",
 				"enablement": "editorLangId == ebo-script"
 			},
 			{

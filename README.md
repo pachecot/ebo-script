@@ -44,6 +44,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 - __ebo-script: Expand Declarations__ - Expand declarations onto individual lines
 
+- __ebo-script: Generate State Diagrams__ - Creates html file with all the state diagrams. 
+    - uses Mermaid diagramming tool [https://mermaid.js.org/]
+    - launches the ge
+    nerated file in the default browser
+
 ## References
 
  + [ecostruxure-building](https://ecostruxure-building-help.se.com/bms/home/index.castle?locale=en-US&productversion=3.1)
@@ -54,6 +59,8 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 ## Release Notes
 
 ### 0.10.11
+
+- added command `ebo-script: Generate State Diagrams` for generating mermaid state diagrams
 - added support missing reserved values: FlashEmpty BackupNow BackupNeeded
 ### 0.10.10
 

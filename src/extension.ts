@@ -6,6 +6,7 @@ import { EboScriptDocumentFormatter } from './ebo-script-document-formatter';
 import { EboSignatureHelpProvider } from './ebo-signature-help-provider';
 import { EboExt } from './EboExt';
 import { ebo_show_files } from './ebo-files';
+import { ebo_generate_state } from './ebo-state';
 
 export function deactivate() { }
 
@@ -29,6 +30,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand("ebo-script.show_files", ebo_show_files)
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("ebo-script.generate_state", () => { ebo_generate_state(eboExt) })
     );
 
     context.subscriptions.push(

@@ -16,7 +16,7 @@ export function editor_active_doc_uri() {
     return undefined;
 }
 
-function parent_uri(uri: vscode.Uri | undefined) {
+export function parent_uri(uri: vscode.Uri | undefined) {
     return uri && uri.with({ path: path.dirname(uri.path) });
 }
 
@@ -50,6 +50,7 @@ export function ebo_show_files() {
     if (dir_uri) {
         vscode.workspace.fs.readDirectory(dir_uri)
             .then((files) => {
+
                 const file_map = files.reduce(
                     (acc: { [ext: string]: string[] }, [file, _]) => {
                         const ext = path.extname(file).toLowerCase();

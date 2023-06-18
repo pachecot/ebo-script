@@ -5,6 +5,10 @@ All notable changes to the "ebo-script" extension will be documented in this fil
 ## [0.10.11] 2023-06-18
 
 - added command for generating mermaid state diagrams
+    - command: `ebo-script: Generate State Diagrams`
+    - creates _state_diagram.html in current folder. 
+    - opens file in browser.
+    - uses js mermaid library to generate the diagrams (requires internet). 
 - added support missing reserved values: 
     - FlashEmpty
     - BackupNow
