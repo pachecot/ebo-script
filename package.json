@@ -50,6 +50,11 @@
 				"enablement": "editorLangId == ebo-script"
 			},
 			{
+				"command": "ebo-script.ebo_create_stateDiagram",
+				"title": "ebo-script: Create State Diagram",
+				"enablement": "editorLangId == ebo-script"
+			},
+			{
 				"command": "ebo-script.show_variables",
 				"title": "ebo-script: List Variables",
 				"enablement": "editorLangId == ebo-script"
@@ -123,5 +128,7 @@
 		"mocha": "^10.2.0",
 		"vscode-test": "^1.6.1"
 	},
+	"dependencies": {
+		"mermaid": "^10.2.3"
 	}
 }
