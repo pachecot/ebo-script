@@ -2,6 +2,10 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.13] 2023-06-21
+
+- fix issue with clean declarations leaving dangling empty declarations.
+
 ## [0.10.12] 2023-06-20
 
 - added command for generating single mermaid state diagram of the current script file
