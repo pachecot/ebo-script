@@ -127,8 +127,5 @@
 		"glob": "^10.2.7",
 		"mocha": "^10.2.0",
 		"vscode-test": "^1.6.1"
-	},
-	"dependencies": {
-		"mermaid": "^10.2.3"
 	}
 }
