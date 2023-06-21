@@ -2,6 +2,14 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.10.12] 2023-06-20
+
+- added command for generating single mermaid state diagram of the current script file
+    - command: `ebo-script: Create State Diagram`
+    - creates [filename].mmd in current folder and opens 
+    in editor. 
+    - see mermaid plugins for viewing the state graph
+
 ## [0.10.11] 2023-06-18
 
 - added command for generating mermaid state diagrams
