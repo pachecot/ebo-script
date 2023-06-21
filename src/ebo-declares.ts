@@ -271,7 +271,7 @@ export function clean_declarations(eboExt: EboExt) {
                             name => {
                                 const index = name.indexOf('[');
                                 if (index !== -1) {
-                                    name = name.substr(0, index);
+                                    name = name.substring(0, index);
                                 }
                                 return name === var1.name;
                             }
@@ -302,12 +302,9 @@ export function clean_declarations(eboExt: EboExt) {
                     insert_newline = true;
                 }
                 const list = dec[name];
-                if (list) {
-                    if (insert_newline) {
+                if (list && list.length > 0) {
+                    if (insert_newline || name === "Function") {
                         insert_newline = false;
-                        text += "\n";
-                    }
-                    if (name === "Function") {
                         text += "\n";
                     }
                     list.sort();
@@ -317,8 +314,8 @@ export function clean_declarations(eboExt: EboExt) {
                             while (d.length > max_line_length) {
                                 let i = d.indexOf(',', max_line_length);
                                 if (i === -1) { break; }
-                                text = text + d.substr(0, i) + '\n';
-                                d = `${name} ${d.substr(i + 2)}`;
+                                text = text + d.substring(0, i) + '\n';
+                                d = `${name} ${d.substring(i + 2)}`;
                             }
                         }
                         text = text + d;
