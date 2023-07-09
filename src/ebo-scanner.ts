@@ -104,10 +104,36 @@ const TokenMap: TokenDictionary = {
     , ACTIVE: TokenKind.ActiveValue
     // , AVERAGE:TokenKind.AVERAGE
 
-    //
+    // TimePiece Commands
     , MINUTES: TokenKind.MinutesValue
     , DAYS: TokenKind.DaysValue
     , MONTHS: TokenKind.MonthsValue
+
+    // Blind Commands
+    , BLINDCOMMANDDOWN: TokenKind.BlindCommandDown
+    , BLINDCOMMANDDOWNSTEP: TokenKind.BlindCommandDownStep
+    , BLINDCOMMANDNOCOMMAND: TokenKind.BlindCommandNoCommand
+    , BLINDCOMMANDRESYNCHRONIZE: TokenKind.BlindCommandResynchronize
+    , BLINDCOMMANDSTOP: TokenKind.BlindCommandStop
+    , BLINDCOMMANDUP: TokenKind.BlindCommandUp
+    , BLINDCOMMANDUPSTEP: TokenKind.BlindCommandUpStep
+
+    // Light Commands
+    , LIGHTCOMMANDCOLORDOWN: TokenKind.LightCommandColorDown
+    , LIGHTCOMMANDCOLORUP: TokenKind.LightCommandColorUp
+    , LIGHTCOMMANDDOWN: TokenKind.LightCommandDown
+    , LIGHTCOMMANDNOCOMMAND: TokenKind.LightCommandNoCommand
+    , LIGHTCOMMANDOFF: TokenKind.LightCommandOff
+    , LIGHTCOMMANDON: TokenKind.LightCommandOn
+    , LIGHTCOMMANDSTOP: TokenKind.LightCommandStop
+    , LIGHTCOMMANDUP: TokenKind.LightCommandUp
+
+    // StatusFlash pe constants
+    , FLASHEMPTY: TokenKind.FlashEmptyValue
+
+    // BackupStatus pe constants
+    , BACKUPNEEDED: TokenKind.BackupNeededValue
+    , BACKUPNOW: TokenKind.BackupNowCommand
 
     // System Variables
 
@@ -121,6 +147,7 @@ const TokenMap: TokenDictionary = {
     , DATE: TokenKind.DateVariable
     , TIME: TokenKind.DateVariable
     , UTCOFFSET: TokenKind.UtcOffsetVariable
+    , DST: TokenKind.DSTVariable
 
     // Timepiece
     , DAYOFMONTH: TokenKind.DayOfMonthVariable
@@ -254,6 +281,7 @@ const TokenMap: TokenDictionary = {
     // Time Functions
     , DIFFTIME: TokenKind.DiffTimeFunction
     , TIMEPIECE: TokenKind.TimePieceFunction
+    , GETDST: TokenKind.GetDSTFunction
 
     // Trig Functions
     , ACOS: TokenKind.AcosFunction
@@ -299,6 +327,9 @@ const TokenMap: TokenDictionary = {
     , NUMBER: TokenKind.NumericDeclaration
     , DATETIME: TokenKind.DatetimeDeclaration
     , STRING: TokenKind.StringDeclaration
+    , TRENDLOG: TokenKind.TrendlogDeclaration
+    , DATAFILE: TokenKind.DatafileDeclaration
+
     // Declaration modifiers
     , INPUT: TokenKind.InputDeclaration
     , OUTPUT: TokenKind.OutputDeclaration
@@ -556,15 +587,15 @@ function ebo_scan_line(line: string): LexToken[] {
     return tks;
 }
 
-function ebo_scan_lines(lines: string[]) {
-    return lines.map(ebo_scan_line);
-}
-
 /**
  * tokenize the file text 
  * @param fileText 
  */
 export function ebo_scan_text(fileText: string) {
-    return ebo_scan_line(fileText);
+    try {
+        return ebo_scan_line(fileText);
+    } catch {
+        return [];
+    }
     // return ebo_scan_lines(fileText.split(reEndLine));
 }

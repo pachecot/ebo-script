@@ -55,6 +55,8 @@ export enum SymbolType {
     , DateTime
     , Function
     , Parameter
+    , Trendlog
+    , Datafile
     , Line
 }
 

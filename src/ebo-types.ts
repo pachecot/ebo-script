@@ -108,10 +108,33 @@ export const enum TokenKind {
     , DaysValue
     , MonthsValue
 
+
+    , BlindCommandDown
+    , BlindCommandDownStep
+    , BlindCommandNoCommand
+    , BlindCommandResynchronize
+    , BlindCommandStop
+    , BlindCommandUp
+    , BlindCommandUpStep
+
+    , LightCommandColorDown
+    , LightCommandColorUp
+    , LightCommandDown
+    , LightCommandNoCommand
+    , LightCommandOff
+    , LightCommandOn
+    , LightCommandStop
+    , LightCommandUp
+
+    // PE Command & Status
+    , BackupNeededValue      /// ACCBackupNeeded      
+    , FlashEmptyValue        /// ACCFlashEmpty
+    , BackupNowCommand       /// ACCBackupNow  
+
     // Value Range Markers
     // -------------------
     , FirstValue = NullValue
-    , LastValue = MonthsValue
+    , LastValue = BackupNowCommand
 
     //#endregion
 
@@ -126,6 +149,7 @@ export const enum TokenKind {
     , ScanVariable
     , DateVariable
     , UtcOffsetVariable
+    , DSTVariable
 
     // Timepiece
     , DayOfMonthVariable
@@ -250,6 +274,7 @@ export const enum TokenKind {
     // Time Functions
     , DiffTimeFunction
     , TimePieceFunction
+    , GetDSTFunction
 
     // Trig Functions
     , AcosFunction
@@ -301,6 +326,8 @@ export const enum TokenKind {
     , PublicDeclaration
     , BufferedDeclaration
     , TriggeredDeclaration
+    , TrendlogDeclaration
+    , DatafileDeclaration
 
     //#endregion
 
@@ -361,7 +388,7 @@ export const enum TokenKind {
     , ShutAction
     , StartAction
     , StopAction
-    
+
     , ErrorLine  /// error line
 
     //#endregion
@@ -492,6 +519,7 @@ export type FunctionKind =
     | TokenKind.TabFunction
     | TokenKind.DiffTimeFunction
     | TokenKind.TimePieceFunction
+    | TokenKind.GetDSTFunction
     | TokenKind.AcosFunction
     | TokenKind.AsinFunction
     | TokenKind.AtanFunction
@@ -622,6 +650,24 @@ export type ValueKind =
     | TokenKind.MinutesValue
     | TokenKind.DaysValue
     | TokenKind.MonthsValue
+    | TokenKind.BlindCommandDown
+    | TokenKind.BlindCommandDownStep
+    | TokenKind.BlindCommandNoCommand
+    | TokenKind.BlindCommandResynchronize
+    | TokenKind.BlindCommandStop
+    | TokenKind.BlindCommandUp
+    | TokenKind.BlindCommandUpStep
+    | TokenKind.LightCommandColorDown
+    | TokenKind.LightCommandColorUp
+    | TokenKind.LightCommandDown
+    | TokenKind.LightCommandNoCommand
+    | TokenKind.LightCommandOff
+    | TokenKind.LightCommandOn
+    | TokenKind.LightCommandStop
+    | TokenKind.LightCommandUp
+    | TokenKind.FlashEmptyValue
+    | TokenKind.BackupNeededValue
+    | TokenKind.BackupNowCommand
     ;
 
 
@@ -633,6 +679,7 @@ export type VariableKind =
     | TokenKind.ScanVariable
     | TokenKind.DateVariable
     | TokenKind.UtcOffsetVariable
+    | TokenKind.DSTVariable
     | TokenKind.DayOfMonthVariable
     | TokenKind.DayOfYearVariable
     | TokenKind.HourVariable
@@ -702,7 +749,7 @@ export function isUnaryOperator(s: TokenKind): s is UnaryOperatorKind {
         case TokenKind.MinusSymbol:
         case TokenKind.PlusSymbol:
             return true;
-        }
+    }
     return false;
 }
 

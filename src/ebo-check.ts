@@ -1125,6 +1125,8 @@ const declaration_states: {
         [TokenKind.StringDeclaration]: [DeclState.Type, { type: SymbolType.StringType }],
         [TokenKind.NumericDeclaration]: [DeclState.Type, { type: SymbolType.Numeric }],
         [TokenKind.DatetimeDeclaration]: [DeclState.Type, { type: SymbolType.DateTime }],
+        [TokenKind.DatafileDeclaration]: [DeclState.Complete, { type: SymbolType.Datafile }],
+        [TokenKind.TrendlogDeclaration]: [DeclState.Complete, { type: SymbolType.Trendlog }],
     },
     [DeclState.Type]: {
         [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
@@ -1342,6 +1344,8 @@ const declare_actions: { [id: number]: DeclarationAction } = {
     [TokenKind.DatetimeDeclaration]: declare_variable,
     [TokenKind.NumericDeclaration]: declare_variable,
     [TokenKind.StringDeclaration]: declare_variable,
+    [TokenKind.DatafileDeclaration]: declare_variable,
+    [TokenKind.TrendlogDeclaration]: declare_variable,
     [TokenKind.FunctionDeclaration]: declare_function,
 };
 

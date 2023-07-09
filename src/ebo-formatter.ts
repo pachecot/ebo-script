@@ -282,6 +282,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.NumericDeclaration:
                 case TokenKind.OutputDeclaration:
                 case TokenKind.PublicDeclaration:
+                case TokenKind.DatafileDeclaration:
+                case TokenKind.TrendlogDeclaration:
                 case TokenKind.StringDeclaration:
                     {
                         const n = line_tks[i + 1];

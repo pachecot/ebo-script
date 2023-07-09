@@ -332,6 +332,16 @@ export const Signatures: SignatureMap = {
             [VarType.Numeric, VarType.DateTime, VarType.DateTime]
         ]
     },
+    GETDST: {
+        description: 'gets the time offset in seconds of the given time. Only supported in servers.'
+        , syntaxes: [
+            'GetDST(date_time)',
+        ]
+        , returns: VarType.Numeric
+        , signatures: [
+            [VarType.DateTime]
+        ]
+    },
     TIMEPIECE: {
         description: 'retrieves the piece of time (hour, minute, second) or the piece of the date (weekday, month, day of the month, year, day of the year) from a variable or point.'
         , syntaxes: [
