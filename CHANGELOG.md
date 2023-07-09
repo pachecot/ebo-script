@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.11.0] 2023-07-09
+
+ - fix reported bug for expressions in case statements.
+ - misc initial updates for newer added language features. 
+
 ## [0.10.13] 2023-06-21
 
 - fix issue with clean declarations leaving dangling empty declarations.

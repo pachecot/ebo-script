@@ -60,6 +60,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.11.0
+
+- bug fixes.
+- initial update for added language features.
+
 ### 0.10.12
 
 - added command `ebo-script: Create State Diagram`
