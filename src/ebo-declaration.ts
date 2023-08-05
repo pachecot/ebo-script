@@ -4,21 +4,16 @@ export const declarations = [
     "Numeric Input",
     "Numeric Output",
     "Numeric Public",
-    "Numeric Triggered",
-    "Numeric Buffered",
+    "Numeric Triggered Input",
+    "Numeric Buffered Input",
     "String",
     "String Input",
     "String Output",
     "String Public",
-    "String Triggered",
-    "String Buffered",
     "DateTime",
     "DateTime Input",
     "DateTime Output",
     "DateTime Public",
-    "DateTime Triggered",
-    "DateTime Buffered"
 ];
 
-
-export const reDeclaration = /^\s*((Numeric|String|DateTime)(\s+(Public|Input|Output|Buffered|Triggered))?)/i;
+export const reDeclaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?)\s*$/i;
