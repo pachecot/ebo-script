@@ -1100,7 +1100,7 @@ export function parse_list(cur: Cursor): LexToken[] {
 }
 
 
-const enum DeclState { Init, Type, Modifier, Complete };
+const enum DeclState { Init, Type, InputType, Modifier, InputMod, Complete };
 
 const declaration_states: {
     [id: string]: {
@@ -1111,20 +1111,30 @@ const declaration_states: {
         [TokenKind.StringDeclaration]: [DeclState.Type, { type: SymbolType.StringType }],
         [TokenKind.NumericDeclaration]: [DeclState.Type, { type: SymbolType.Numeric }],
         [TokenKind.DatetimeDeclaration]: [DeclState.Type, { type: SymbolType.DateTime }],
+        //
         [TokenKind.DatafileDeclaration]: [DeclState.Complete, { type: SymbolType.Datafile }],
         [TokenKind.TrendlogDeclaration]: [DeclState.Complete, { type: SymbolType.Trendlog }],
+        [TokenKind.WebserviceDeclaration]: [DeclState.Complete, { type: SymbolType.Webservice }],
     },
     [DeclState.Type]: {
         [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
         [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
         [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
-        [TokenKind.BufferedDeclaration]: [DeclState.Modifier, { tag: VarTag.Buffered }],
-        [TokenKind.TriggeredDeclaration]: [DeclState.Modifier, { tag: VarTag.Triggered }],
+    },
+    [DeclState.InputType]: {
+        [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
+        [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
+        [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
+        [TokenKind.BufferedDeclaration]: [DeclState.InputMod, { tag: VarTag.Buffered }],
+        [TokenKind.TriggeredDeclaration]: [DeclState.InputMod, { tag: VarTag.Triggered }],
     },
     [DeclState.Modifier]: {
         [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
         [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
         [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
+    },
+    [DeclState.InputMod]: {
+        [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
     }
 };
 
