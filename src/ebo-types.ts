@@ -319,6 +319,8 @@ export const enum TokenKind {
     , NumericDeclaration
     , DatetimeDeclaration
     , StringDeclaration
+    , TrendlogDeclaration
+    , DatafileDeclaration
 
     // Declaration modifiers
     , InputDeclaration
@@ -326,8 +328,6 @@ export const enum TokenKind {
     , PublicDeclaration
     , BufferedDeclaration
     , TriggeredDeclaration
-    , TrendlogDeclaration
-    , DatafileDeclaration
 
     //#endregion
 
