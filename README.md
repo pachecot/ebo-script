@@ -49,6 +49,9 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
     - launches the generated file in the default browser
 
 - __ebo-script: Create State Diagram__ - Create Mermaid mmd file for the current script program. 
+    - uses program lines and goto statements for the state
+    generation.
+    - fall thru programs should have a comment with the word `fallthru`    
     - see Mermaid diagramming tool [https://mermaid.js.org/]
 
 ## References
