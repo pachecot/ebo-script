@@ -63,6 +63,14 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.12.0
+
+- bug fixes.
+- updated clean declarations for expanded declarations.
+    - grouped by input, output, function, locals 
+    - group sorted by name
+    - allows comments
+
 ### 0.11.0
 
 - bug fixes.
@@ -94,17 +102,21 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 ### 0.10.7
 
 - misc fixes for arguments in script functions 
+
 ### 0.10.6
 
 - fix for numbers with % 
 - fix for decimal numbers starting with . 
+
 ### 0.10.5
 
 - error checking 
 - parsing 
+
 ### 0.10.4
 
 - refactoring 
+
 ### 0.10.3
 
 - function fixes 

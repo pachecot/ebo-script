@@ -2,6 +2,15 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.12.1] 2023-08-05
+
+ - updates to declaration code actions
+ - updated clean declarations for expanded declarations
+    - group by input, output, function, locals
+    - sorted by name
+    - include lines with single declaration and comments (these were skipped before and pushed to the end)
+ - updated parsing of declarations. removed some illegal combinations that were allowed before.  
+
 ## [0.11.1] 2023-07-09
 
  - updated dependencies
