@@ -237,7 +237,7 @@ export function clean_declarations(eboExt: EboExt) {
             }
         });
 
-    const decComments: { [name: string]: string } = {};
+    const declarationComments: { [name: string]: string } = {};
     const dec_range = declarations_range(document);
 
     for (let i = dec_range.start.line; i <= dec_range.end.line; ++i) {
@@ -252,7 +252,7 @@ export function clean_declarations(eboExt: EboExt) {
                 if (compact || new_decs.length > 1) {
                     continue;
                 }
-                decComments[new_decs[0]] = get_comment(line);
+                declarationComments[new_decs[0]] = get_comment(line);
 
                 append_declarations(dec_list, new_decs);
                 decLines.push(line);
@@ -355,68 +355,42 @@ export function clean_declarations(eboExt: EboExt) {
         }
         nts.sort((a, b) => a[3].localeCompare(b[3]));
 
-        let text_local = "";
-        let text_output = "";
-        let text_function = "";
-        let text_input = "";
+        let texts: string[] = ["", "", "", "", "", "",];
+        const declaration_order: { [name: string]: number } = {
+            "numeric public": 0,
+            "datetime public": 0,
+            "string public": 0,
+
+            "trendlog": 1,
+            "datafile": 1,
+
+            "numeric input": 2,
+            "numeric buffered input": 2,
+            "numeric triggered input": 2,
+            "datetime input": 2,
+            "string input": 2,
+
+            "numeric output": 3,
+            "datetime output": 3,
+            "string output": 3,
+
+            "numeric": 4,
+            "datetime": 4,
+            "string": 4,
+
+            "webservice": 5,
+            "function": 5,
+        };
+
+        const default_order = 2;
 
         for (let nt of nts) {
-
-            let decComment = decComments[nt[0]] || "";
-            let decLine = `${nt[1]} ${nt[0]}${decComment}\n`;
-
-            switch (nt[2]) {
-                case "datetime output":
-                case "numeric output":
-                case "string output":
-                    text_output += decLine;
-                    break;
-
-                case "datetime":
-                case "numeric":
-                case "string":
-                    text_local += decLine;
-                    break;
-
-                case "webservice":
-                case "function":
-                    text_function += decLine;
-                    break;
-
-                case "datetime public":
-                case "numeric public":
-                case "string public":
-                    text_input += decLine;
-                    break;
-
-                // case "datafile":
-                // case "trendlog":
-                // case "string input":
-                // case "datetime input":
-                // case "numeric input":
-                // case "numeric buffered input":
-                // case "numeric triggered input":
-
-                default:
-                    text_input += decLine;
-                    break;
-            }
+            let declarationComment = declarationComments[nt[0]] || "";
+            let order = declaration_order.hasOwnProperty(nt[2]) ? declaration_order[nt[2]] : default_order;
+            texts[order] += `${nt[1]} ${nt[0]}${declarationComment}\n`;
         }
 
-        let text = "";
-        if (text_input.length) { text += text_input; }
-        if (text_output.length) {
-            if (text.length) { text += "\n"; }
-            text += text_output;
-        }
-        if (text_function.length) {
-            if (text.length) { text += "\n"; }
-            text += text_function;
-        }
-        if (text_local.length) {
-            if (text.length) { text += "\n"; }
-            text += text_local;
-        }
+        let text = texts.filter(t => t.length > 0).join("\n");
 
         editor.edit(editBuilder => {
             for (let line of decLines) {
