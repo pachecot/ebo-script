@@ -5,30 +5,30 @@ import { EboExt } from './EboExt';
 import { first_non_comment_line } from './document-util';
 import { EBO_SCRIPT } from './extension-types';
 
+const re_comment = /\s*'.*$/;
 const re_comma = /\s*,\s*/g;
-const re_declaration = /^\s*((Numeric|String|DateTime)(\s+(Public|Input|Output|Buffered|Triggered))?|Function)\s+/i;
+const re_declaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?|Function|Datafile|Trendlog|Webservice)(?:\s+|$)/i;
 const re_line_continuation = /~$/;
 const re_line_declaration = /(\w+:)|^line\s+(\w|\d)+/i;
 
 const declarations = [
-    "DateTime Buffered",
+    "Trendlog",
+    "Datafile",
+    "Webservice",
+    "Numeric",
+    "Numeric Input",
+    "Numeric Buffered Input",
+    "Numeric Triggered Input",
+    "Numeric Output",
+    "Numeric Public",
+    "DateTime",
     "DateTime Input",
     "DateTime Output",
     "DateTime Public",
-    "DateTime Triggered",
-    "Numeric Buffered",
-    "Numeric Input",
-    "Numeric Output",
-    "Numeric Public",
-    "Numeric Triggered",
-    "String Buffered",
+    "String",
     "String Input",
     "String Output",
     "String Public",
-    "String Triggered",
-    "DateTime",
-    "Numeric",
-    "String",
     "Function",
 ];
 
@@ -41,6 +41,11 @@ function get_declaration_id(dec: string) {
 
 function line_has_comment(line: vscode.TextLine) {
     return line.text.indexOf("'") !== -1;
+}
+
+function get_comment(line: vscode.TextLine): string {
+    const m = re_comment.exec(line.text);
+    return m ? m[0] : "";
 }
 
 function is_line_declaration(line: vscode.TextLine) {
@@ -200,129 +205,222 @@ export function expand_declarations() {
 export function clean_declarations(eboExt: EboExt) {
 
     const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        return;
+    }
+    const document = editor.document;
+    if (document.languageId !== EBO_SCRIPT) {
+        return;
+    }
+
     const config = vscode.workspace.getConfiguration(EBO_SCRIPT);
     const max_line_length = config.get('declarationMaxLineLength', 95);
     const compact = config.get('cleanDeclarationsCompact', false);
 
-    if (editor) {
-        const document = editor.document;
+    const decLines: vscode.TextLine[] = [];
+    const dec: { [name: string]: string[] } = {};
 
-        if (document.languageId !== EBO_SCRIPT) { return; }
+    const sym = eboExt.symbols.get(document.uri);
 
-        // Get the word within the selection
-        const count = document.lineCount;
-        const decLines: vscode.TextLine[] = [];
-        const dec: { [name: string]: string[] } = {};
+    // add declarations for missing types
+    sym.errors
+        .filter(e => e.id === EboErrors.UndeclaredVariable || e.id === EboErrors.UndeclaredFunction)
+        .forEach(e => {
+            const ident = document.getText(new vscode.Range(e.range.line, e.range.begin, e.range.line, e.range.end));
+            const ident_type = e.id === EboErrors.UndeclaredFunction ? 'Function' :
+                ident in sym.assigned_refs ? 'Numeric Output' : 'Numeric Input';
 
-        const sym = eboExt.symbols.get(document.uri);
+            if (!dec[ident_type]) { dec[ident_type] = []; }
+            const index = dec[ident_type].indexOf(ident);
+            if (index === -1) {
+                dec[ident_type].push(ident);
+            }
+        });
 
-        // add declarations for missing types
-        sym.errors
-            .filter(e => e.id === EboErrors.UndeclaredVariable || e.id === EboErrors.UndeclaredFunction)
-            .forEach(e => {
-                const ident = document.getText(new vscode.Range(e.range.line, e.range.begin, e.range.line, e.range.end));
-                const ident_type = e.id === EboErrors.UndeclaredFunction ? 'Function' :
-                    ident in sym.assigned_refs ? 'Numeric Output' : 'Numeric Input';
+    const decComments: { [name: string]: string } = {};
+    const dec_range = declarations_range(document);
 
-                if (!dec[ident_type]) { dec[ident_type] = []; }
-                const index = dec[ident_type].indexOf(ident);
-                if (index === -1) {
-                    dec[ident_type].push(ident);
+    for (let i = dec_range.start.line; i <= dec_range.end.line; ++i) {
+        let line = document.lineAt(i);
+        const dec_id = get_declaration_id(line.text);
+        if (dec_id !== -1) {
+            const decl_type = declarations[dec_id];
+            const dec_list = dec[decl_type] || (dec[decl_type] = []);
+
+            const new_decs = parse_declarations(line.text);
+            if (line_has_comment(line)) {
+                if (compact || new_decs.length > 1) {
+                    continue;
                 }
-            });
+                decComments[new_decs[0]] = get_comment(line);
 
-        const dec_range = declarations_range(document);
+                append_declarations(dec_list, new_decs);
+                decLines.push(line);
+                continue;
+            }
 
-        let j = -1;
-        for (let i = dec_range.start.line; i <= dec_range.end.line; ++i) {
-            let line = document.lineAt(i);
-            const dec_id = get_declaration_id(line.text);
-            if (dec_id !== -1) { j = i; }
-            if (dec_id !== -1 && !line_has_comment(line)) {
-                const decl_type = declarations[dec_id];
-                const dec_list = dec[decl_type] || (dec[decl_type] = []);
+            append_declarations(dec_list, new_decs);
+            decLines.push(line);
+            while (re_line_continuation.test(line.text)) {
+                line = document.lineAt(++i);
                 decLines.push(line);
                 parse_declaration_list(dec_list, line.text);
-                while (re_line_continuation.test(line.text)) {
-                    line = document.lineAt(++i);
-                    decLines.push(line);
-                    parse_declaration_list(dec_list, line.text);
-                }
-            } else {
-                if (j === i - 1 && line.isEmptyOrWhitespace) {
-                    j = i;
-                    decLines.push(line);
-                }
+            }
+        } else {
+            if (line.isEmptyOrWhitespace) {
+                decLines.push(line);
             }
         }
+    }
 
-        // remove unreferenced declarations
-        sym.errors
-            .filter(e => e.id === EboErrors.UnreferencedDeclaration || e.id === EboErrors.UnreferencedFunction)
-            .forEach(e => {
-                const ident = document.getText(new vscode.Range(e.range.line, e.range.begin, e.range.line, e.range.end));
-                const ident_type = e.id === EboErrors.UnreferencedFunction ? 'Function' :
-                    ident in sym.assigned_refs ? 'Numeric Output' : 'Numeric Input';
-                const var1 = sym.variables[ident];
-                if (var1) {
-                    const id_type = get_var_dec_string(var1);
-                    if (dec[id_type]) {
-                        const index = dec[id_type].findIndex(
-                            name => {
-                                const index = name.indexOf('[');
-                                if (index !== -1) {
-                                    name = name.substring(0, index);
-                                }
-                                return name === var1.name;
+    // remove unreferenced declarations
+    sym.errors
+        .filter(e => e.id === EboErrors.UnreferencedDeclaration || e.id === EboErrors.UnreferencedFunction)
+        .forEach(e => {
+            const ident = document.getText(new vscode.Range(e.range.line, e.range.begin, e.range.line, e.range.end));
+            const ident_type = e.id === EboErrors.UnreferencedFunction ? 'Function' :
+                ident in sym.assigned_refs ? 'Numeric Output' : 'Numeric Input';
+            const var1 = sym.variables[ident];
+            if (var1) {
+                const id_type = get_var_dec_string(var1);
+                if (dec[id_type]) {
+                    const index = dec[id_type].findIndex(
+                        name => {
+                            const index = name.indexOf('[');
+                            if (index !== -1) {
+                                name = name.substring(0, index);
                             }
-                        );
-                        if (index !== -1) {
-                            dec[id_type].splice(index, 1);
+                            return name === var1.name;
                         }
-                    }
-                } else {
-                    if (dec[ident_type]) {
-                        const index = dec[ident_type].indexOf(ident);
-                        if (index !== -1) {
-                            dec[ident_type].splice(index, 1);
-                        }
+                    );
+                    if (index !== -1) {
+                        dec[id_type].splice(index, 1);
                     }
                 }
-            });
+            } else {
+                if (dec[ident_type]) {
+                    const index = dec[ident_type].indexOf(ident);
+                    if (index !== -1) {
+                        dec[ident_type].splice(index, 1);
+                    }
+                }
+            }
+        });
 
+    if (compact) {
+        let text = "";
+        let insert_newline = false;
+        for (let name of declarations) {
+            if (name === "DateTime") {
+                insert_newline = true;
+            }
+            const list = dec[name];
+            if (list && list.length > 0) {
+                if (insert_newline || name === "Function") {
+                    insert_newline = false;
+                    text += "\n";
+                }
+                list.sort();
+                let d = `${name} ${list.join(', ')}\n`;
+                if (d.length > max_line_length) {
+                    while (d.length > max_line_length) {
+                        let i = d.indexOf(',', max_line_length);
+                        if (i === -1) { break; }
+                        text = text + d.substring(0, i) + '\n';
+                        d = `${name} ${d.substring(i + 2)}`;
+                    }
+                }
+                text = text + d;
+            }
+        }
 
         editor.edit(editBuilder => {
             for (let line of decLines) {
                 editBuilder.delete(line.rangeIncludingLineBreak);
             }
-            let text = "";
-            let insert_newline = false;
-            for (let name of declarations) {
-                if (name === "DateTime") {
-                    insert_newline = true;
-                }
-                const list = dec[name];
-                if (list && list.length > 0) {
-                    if (insert_newline || name === "Function") {
-                        insert_newline = false;
-                        text += "\n";
-                    }
-                    list.sort();
-                    if (compact) {
-                        let d = `${name} ${list.join(', ')}\n`;
-                        if (d.length > max_line_length) {
-                            while (d.length > max_line_length) {
-                                let i = d.indexOf(',', max_line_length);
-                                if (i === -1) { break; }
-                                text = text + d.substring(0, i) + '\n';
-                                d = `${name} ${d.substring(i + 2)}`;
-                            }
-                        }
-                        text = text + d;
-                    } else {
-                        text += `${name} ${list.join(`\n${name} `)}\n`;
-                    }
-                }
+            const line = first_non_comment_line(document);
+            editBuilder.insert(line.range.start, text);
+        });
+
+    } else {
+
+        let w = 0;
+        let nts: string[][] = [];
+        for (let dec_type in dec) {
+            let dec_type_norm = dec_type.trim().toLowerCase().replace(/\s+/, ' ');
+            if (w < dec_type.length) {
+                w = dec_type.length;
+            }
+            nts = nts.concat(dec[dec_type].map(n => [n, dec_type, dec_type_norm, n.toLocaleLowerCase()]));
+        }
+        nts.sort((a, b) => a[3].localeCompare(b[3]));
+
+        let text_local = "";
+        let text_output = "";
+        let text_function = "";
+        let text_input = "";
+
+        for (let nt of nts) {
+
+            let decComment = decComments[nt[0]] || "";
+            let decLine = `${nt[1]} ${nt[0]}${decComment}\n`;
+
+            switch (nt[2]) {
+                case "datetime output":
+                case "numeric output":
+                case "string output":
+                    text_output += decLine;
+                    break;
+
+                case "datetime":
+                case "numeric":
+                case "string":
+                    text_local += decLine;
+                    break;
+
+                case "webservice":
+                case "function":
+                    text_function += decLine;
+                    break;
+
+                case "datetime public":
+                case "numeric public":
+                case "string public":
+                    text_input += decLine;
+                    break;
+
+                // case "datafile":
+                // case "trendlog":
+                // case "string input":
+                // case "datetime input":
+                // case "numeric input":
+                // case "numeric buffered input":
+                // case "numeric triggered input":
+
+                default:
+                    text_input += decLine;
+                    break;
+            }
+        }
+
+        let text = "";
+        if (text_input.length) { text += text_input; }
+        if (text_output.length) {
+            if (text.length) { text += "\n"; }
+            text += text_output;
+        }
+        if (text_function.length) {
+            if (text.length) { text += "\n"; }
+            text += text_function;
+        }
+        if (text_local.length) {
+            if (text.length) { text += "\n"; }
+            text += text_local;
+        }
+
+        editor.edit(editBuilder => {
+            for (let line of decLines) {
+                editBuilder.delete(line.rangeIncludingLineBreak);
             }
             const line = first_non_comment_line(document);
             editBuilder.insert(line.range.start, text);
@@ -367,22 +465,26 @@ type DecMap = { [declaration_type: string]: string[]; };
 
 /**
  * split declaration text and add to declaration list.
- *  
- * @param decl_type 
- * @param dec_map 
- * @param text 
  */
-function parse_declaration_list(dec_list: string[], text: string) {
+function parse_declaration_list(dest: string[], text: string) {
+    append_declarations(dest, parse_declarations(text));
+}
 
+/**
+ * add to declaration list.
+ */
+function append_declarations(dest: string[], source: string[]) {
+    dest.push(...source.filter(d => dest.indexOf(d) === -1));
+}
+
+
+/**
+ * split declaration text.
+ */
+function parse_declarations(text: string): string[] {
     const dec_match = re_declaration.exec(text);
-    const ident_text = dec_match ? text.substr(dec_match[0].length) : text;
-    const decl_items = ident_text.split(',').map(n => n.trim());
-
-    decl_items.forEach(decl => {
-        decl = decl.replace(/\s*~/, '');
-        if (decl.length && decl !== '~' && dec_list.indexOf(decl) === -1) {
-            dec_list.push(decl);
-        }
-    });
+    const ident_text = dec_match ? text.substring(dec_match[0].length) : text;
+    const decl_items = ident_text.replace(/(\s+~\s*)|(\s*'.*)$/, '').split(',').map(n => n.trim());
+    return decl_items.filter(decl => decl.length);
 }
 
