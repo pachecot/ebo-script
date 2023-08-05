@@ -56,6 +56,7 @@ export enum SymbolType {
     , Function
     , Parameter
     , Trendlog
+    , Webservice
     , Datafile
     , Line
 }
