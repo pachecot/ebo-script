@@ -171,6 +171,9 @@ const TokenMap: TokenDictionary = {
     , YEAR: TokenKind.YearVariable
     , YR: TokenKind.YearVariable
 
+    // Continuum
+    , NOT_SET: TokenKind.NotSetValue
+
     , ERRORS: TokenKind.ErrorsVariable
     , FREEMEM: TokenKind.FreememVariable
     , ISBOUND: TokenKind.IsBoundVariable
@@ -447,6 +450,21 @@ const TokenMap: TokenDictionary = {
     , ONEYEARTONOW: TokenKind.OneYearToNowKeyword
     , TODAY: TokenKind.TodayKeyword
 
+
+    // Continuum Controller Point Properties
+    , ALARM1: TokenKind.AlarmKeyword
+    , ALARM2: TokenKind.AlarmKeyword
+    , ALARM3: TokenKind.AlarmKeyword
+    , ALARM4: TokenKind.AlarmKeyword
+    , ALARM5: TokenKind.AlarmKeyword
+    , ALARM6: TokenKind.AlarmKeyword
+    , ALARM7: TokenKind.AlarmKeyword
+    , ALARM8: TokenKind.AlarmKeyword
+    , REFRESH: TokenKind.RefreshKeyword
+
+    //  // C is reserved for a future line name
+    // , C: TokenKind.CKeyword
+
     // , ERRORS
     , ACCESSLOG: TokenKind.AccessLogKeyword
     , ACCESSSERVER: TokenKind.AccessServerKeyword
@@ -455,7 +473,6 @@ const TokenMap: TokenDictionary = {
     , APPEND: TokenKind.AppendKeyword
     , ASK: TokenKind.AskKeyword
     , BREAKPOINT: TokenKind.BreakpointKeyword
-    , C: TokenKind.CKeyword
     , CD: TokenKind.CDKeyword
     , CURVEFIT: TokenKind.CurvefitKeyword
     , DEL: TokenKind.DelKeyword

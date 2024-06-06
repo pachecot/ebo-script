@@ -126,6 +126,9 @@ export const enum TokenKind {
     , LightCommandStop
     , LightCommandUp
 
+    // Continuum Controller
+    , NotSetValue
+
     // PE Command & Status
     , BackupNeededValue      /// ACCBackupNeeded      
     , FlashEmptyValue        /// ACCFlashEmpty
@@ -438,6 +441,10 @@ export const enum TokenKind {
     , OneYearToDateKeyword
     , OneYearToNowKeyword
     , TodayKeyword
+
+    // continuum properties
+    , AlarmKeyword
+    , RefreshKeyword
 
     // , ERRORS
     , AccessLogKeyword
