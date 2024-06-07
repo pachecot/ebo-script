@@ -63,6 +63,33 @@ describe('Check Tests', () => {
 			// assert.equal("OutValue", cur.current().value);
 			assert.equal(0, st.errors.length);
 		});
+		it('should parse local string declarations with size', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"String 10 x, values[11]\n\nSomeLine:",
+				parse_declarations,
+				st,
+			);
+			assert.equal(0, st.errors.length);
+		}),
+		it('should not parse local Numeric declarations with size if not string', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"Numeric 10 x\n\nSomeLine:",
+				parse_declarations,
+				st,
+			);
+			assert.equal(1, st.errors.length);
+		}),
+		it('should not parse local DateTime declarations with size if not string', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"DateTime 10 x\n\nSomeLine:",
+				parse_declarations,
+				st,
+			);
+			assert.equal(1, st.errors.length);
+		}),
 		it('should parse local declarations with arrays', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -160,6 +187,18 @@ describe('Check Tests', () => {
 			) as VariableInst;
 			assert.notEqual(null, exp);
 			assert.equal('test', exp.name);
+			assert.equal(TokenKind.IdentifierToken, exp.token.type);
+			assert.equal(undefined, exp.index);
+		});
+		it('should read variable properties', () => {
+			const exp = parseWith(
+				"test alarm1\n",
+				parse_identifier,
+			) as VariableInst;
+			assert.notEqual(null, exp);
+			assert.equal('test', exp.name);
+			assert.notEqual(undefined, exp.property);
+			assert.equal('alarm1', exp.property?.value);
 			assert.equal(TokenKind.IdentifierToken, exp.token.type);
 			assert.equal(undefined, exp.index);
 		});
