@@ -703,6 +703,9 @@ function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | Command
     if (cur.match(TokenKind.EndOfLineToken)) {
         return tk;
     }
+    if (cur.match(TokenKind.ThenStatement)) {
+        return tk;
+    }
     stmt.assigned = parse_assigned_vars(cur, st);
     stmt.assigned.forEach(id => { st.assigned_variable(id.token); });
     stmt.expression = { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } } as LexToken;
