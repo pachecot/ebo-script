@@ -80,6 +80,7 @@
         "MONTHTODATE",
         "MONTHTONOW",
         "MULT",
+        "NOTSET",
         "NOVTSESSIONS",
         "numin",
         "numout",
