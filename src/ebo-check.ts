@@ -107,6 +107,12 @@ function BinOpCodeLookup(tk: LexToken): OpCode {
     return OpCode.NOP;
 }
 
+export interface PrintStatement {
+    format: string
+    variables: VariableInst[]
+    assigned?: VariableInst
+}
+
 export interface AssignStatement {
     assigned: VariableInst[]
     expression: ExpressionStatement;
@@ -169,6 +175,7 @@ export type Statement =
     | AssignStatement
     | CaseStatement
     | ForStatement
+    | PrintStatement
     | IfStatement
     | RepeatStatement
     | SelectStatement
@@ -644,6 +651,42 @@ function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
         cur.advance();
     }
     return assigned;
+}
+
+
+function parse_print_statement(cur: FileCursor, st: SymbolTable): PrintStatement {
+    const stmt: PrintStatement = {
+        format: "",
+        variables: [],
+    };
+    consumeUntilEOL(cur);
+
+    return stmt;
+
+    if (!cur.matchAny(TokenKind.StringToken, TokenKind.NumberToken)) {
+        cur.addError({
+            message: "expected assignment",
+            id: EboErrors.ParseError,
+            range: cur.current().range,
+            severity: Severity.Error
+        });
+        return stmt;
+    }
+    cur.advance();
+
+    if (!cur.matchAny(TokenKind.ToKeyWord)) {
+        cur.addError({
+            id: EboErrors.ParseError,
+            severity: Severity.Error,
+            message: "expected to",
+            range: cur.current().range
+        });
+        consumeUntilEOL(cur);
+        return stmt;
+    }
+
+    cur.advance();
+    return stmt;
 }
 
 
@@ -1379,6 +1422,7 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.SelectStatement]: parse_select_statement,
     [TokenKind.IfStatement]: parse_if_exp,
     [TokenKind.EqualsSymbol]: parse_assignment,
+    [TokenKind.PrintAction]: parse_print_statement,
     [TokenKind.SetAction]: parse_set_assignment,
     [TokenKind.ModifyAction]: parse_set_assignment,
     [TokenKind.LetAction]: parse_set_assignment,
