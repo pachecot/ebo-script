@@ -1118,6 +1118,7 @@ const declaration_states: {
         [TokenKind.WebserviceDeclaration]: [DeclState.Complete, { type: SymbolType.Webservice }],
     },
     [DeclState.Type]: {
+        [TokenKind.NumberToken]: [DeclState.Complete, {}],
         [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
         [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
         [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
@@ -1149,6 +1150,10 @@ export function declare_variable(cur: FileCursor, ast: SymbolTable): VariableDec
     let state = DeclState.Init;
     while (state !== DeclState.Complete) {
         let tk = cur.current();
+        if (tk.type === TokenKind.NumberToken && variable_dec.type !== SymbolType.StringType) {
+            cur.expect(TokenKind.InputDeclaration, "declaration error");
+            return [];
+        }
         let next: [DeclState, { [name: string]: number }] = declaration_states[state][tk.type];
         if (next) {
             cur.advance();
