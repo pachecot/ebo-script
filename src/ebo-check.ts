@@ -18,6 +18,7 @@ export interface VariableInst {
     name: string
     index?: number | ExpressionStatement
     token: LexToken
+    property?: LexToken
 }
 
 export interface ArgInst {
@@ -1612,6 +1613,11 @@ export function parse_identifier(cursor: FileCursor, symTable: SymbolTable): Var
         name: tk.value,
         token: tk,
     };
+    if (cursor.matchAny(TokenKind.AlarmKeyword, TokenKind.RefreshKeyword)) {
+        // continuum properties
+        vi.property = cursor.current();
+        cursor.advance();
+    }
     if (cursor.matchAny(TokenKind.BracketLeftSymbol)) {
         vi.index = parse_bracket_expression(cursor, symTable);
     }
