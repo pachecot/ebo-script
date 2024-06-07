@@ -129,6 +129,7 @@ const reTrailingSpaces = /\s+$/;
 export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit[] {
 
     let tokens = ebo_scan_text(document.getText());
+    let assignment_blocks: number[] = [];
     let edits: vscode.TextEdit[] = [];
     let depth = 0;
     let line_continue = false;
@@ -355,7 +356,22 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     break;
                 }
 
+                case TokenKind.EqualOperator:
+                case TokenKind.EqualsOperator:
+                    {
+                        const p = line_tks[i - 1];
+                        if (p.type === TokenKind.WhitespaceToken && (range_size(p.range) > 1 || p.value === '\t')) {
+                            edits.push(singleSpace(p.range));
+                            p.range.end = p.range.begin + 1;
+                        }
 
+                        const n = line_tks[i + 1];
+                        if (n.type === TokenKind.WhitespaceToken && (range_size(n.range) > 1 || n.value === '\t')) {
+                            edits.push(singleSpace(n.range));
+                            n.range.end = n.range.begin + 1;
+                        }
+                        break;
+                    }
 
                 case TokenKind.AboveOperator:
                 case TokenKind.AndOperator:
@@ -368,8 +384,6 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.DivideOperator:
                 case TokenKind.DoesOperator:
                 case TokenKind.EitherOperator:
-                case TokenKind.EqualOperator:
-                case TokenKind.EqualsOperator:
                 case TokenKind.FirstOperator:
                 case TokenKind.GreaterOperator:
                 case TokenKind.InOperator:
@@ -492,6 +506,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
         line_continue = lastTk.type === TokenKind.ContinueLineToken;
     }
+
     return edits;
 }
 
