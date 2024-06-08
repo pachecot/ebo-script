@@ -135,8 +135,12 @@ export class EboExt {
     }
 
     update_file(uri: vscode.Uri, fileText: string): void {
-        const st = ebo_parse_file(fileText);
-        this.update_ast(uri, st);
+        try {
+            const st = ebo_parse_file(fileText);
+            this.update_ast(uri, st);
+        } catch (error) {
+            console.log('error reading file:', uri, error);
+        }
     }
 
 
