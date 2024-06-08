@@ -72,39 +72,39 @@ describe('Check Tests', () => {
 			);
 			assert.equal(0, st.errors.length);
 		}),
-		it('should not parse local Numeric declarations with size if not string', () => {
-			const st = new SymbolTable();
-			const dec = parseWith(
-				"Numeric 10 x\n\nSomeLine:",
-				parse_declarations,
-				st,
-			);
-			assert.equal(1, st.errors.length);
-		}),
-		it('should not parse local DateTime declarations with size if not string', () => {
-			const st = new SymbolTable();
-			const dec = parseWith(
-				"DateTime 10 x\n\nSomeLine:",
-				parse_declarations,
-				st,
-			);
-			assert.equal(1, st.errors.length);
-		}),
-		it('should parse local declarations with arrays', () => {
-			const st = new SymbolTable();
-			const dec = parseWith(
-				"Numeric values[11], data[101], x\n\nSomeLine:",
-				parse_declarations,
-				st,
-			);
-			assert.equal(3, dec.length);
-			assert.equal("values", dec[0].name);
-			assert.equal(11, (dec[0] as VariableDecl).size);
-			assert.equal("data", dec[1].name);
-			assert.equal(101, (dec[1] as VariableDecl).size);
-			assert.equal("x", dec[2].name);
-			assert.equal(0, st.errors.length);
-		});
+			it('should not parse local Numeric declarations with size if not string', () => {
+				const st = new SymbolTable();
+				const dec = parseWith(
+					"Numeric 10 x\n\nSomeLine:",
+					parse_declarations,
+					st,
+				);
+				assert.equal(1, st.errors.length);
+			}),
+			it('should not parse local DateTime declarations with size if not string', () => {
+				const st = new SymbolTable();
+				const dec = parseWith(
+					"DateTime 10 x\n\nSomeLine:",
+					parse_declarations,
+					st,
+				);
+				assert.equal(1, st.errors.length);
+			}),
+			it('should parse local declarations with arrays', () => {
+				const st = new SymbolTable();
+				const dec = parseWith(
+					"Numeric values[11], data[101], x\n\nSomeLine:",
+					parse_declarations,
+					st,
+				);
+				assert.equal(3, dec.length);
+				assert.equal("values", dec[0].name);
+				assert.equal(11, (dec[0] as VariableDecl).size);
+				assert.equal("data", dec[1].name);
+				assert.equal(101, (dec[1] as VariableDecl).size);
+				assert.equal("x", dec[2].name);
+				assert.equal(0, st.errors.length);
+			});
 		it('should generate errors on array declarations of non local variables', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -256,6 +256,15 @@ describe('Check Tests', () => {
 			assert.equal("SomeVar", exp.name);
 			// assert.equal(TokenKind.IdentifierToken, exp.type);
 		});
+		it('process array variable size', () => {
+			const exp = parseWith(
+				'SomeArr Size\n',
+				expression,
+			) as VariableInst;
+			assert.notEqual(null, exp);
+			assert.equal("SomeArr", exp.name);
+			// assert.equal(TokenKind.IdentifierToken, exp.type);
+		});
 		it('process equations', () => {
 			const exp = parseWith(
 				'X + 1\n',
@@ -343,6 +352,16 @@ describe('Check Tests', () => {
 			assert.equal(1, stmt.assigned.length);
 			assert.equal("x", stmt.assigned[0].name);
 			assert.equal(1, (stmt.expression as LexToken).value);
+		});
+		it('should parse NotSet', () => {
+			const stmt = parseWith(
+				"  x = NotSet",
+				parse_statement,
+			) as AssignStatement;
+			if (!stmt) {
+				assert.fail("expected return value");
+			}
+			assert.equal(TokenKind.NotSetValue, (stmt.expression as LexToken).type);
 		});
 		it('should parse multiple assignments', () => {
 			const lines = [
@@ -477,6 +496,32 @@ describe('Check Tests', () => {
 
 		});
 		describe('For Statements', () => {
+
+			it('should parse for next with array size', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`For x = 1 to lead Size  
+						For y = 1 to lead Size  
+							If lead[x] = y and stat[x] = On then
+								NewLead[y] = x
+							Endif
+						Next y
+					Next x
+					`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!stmt.begin) {
+					assert.fail("expected begin value");
+				}
+				if (!stmt.end) {
+					assert.fail("expected end value");
+				}
+				assert.equal('x', stmt.numeric_name.value);
+			});
+
 			it('should parse simple for next', () => {
 				const stmt = parseWith(
 					`For x = 1 to 10
