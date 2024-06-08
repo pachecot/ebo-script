@@ -718,7 +718,7 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
         assigned: [],
         expression: { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } }
     };
-    if (!cur.matchAny(TokenKind.CloseAction, TokenKind.ShutAction)) {
+    if (!cur.matchAny(TokenKind.CloseAction, TokenKind.ShutAction, TokenKind.DisableAction)) {
         cur.addError({
             id: EboErrors.ParseError,
             severity: Severity.Error,
@@ -741,7 +741,7 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
         assigned: [],
         expression: { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } }
     };
-    if (!cur.matchAny(TokenKind.StartAction, TokenKind.OpenAction)) {
+    if (!cur.matchAny(TokenKind.StartAction, TokenKind.OpenAction, TokenKind.EnableAction)) {
         cur.addError({
             id: EboErrors.ParseError,
             severity: Severity.Error,
@@ -1431,10 +1431,12 @@ const statement_actions: { [id: number]: StatementAction } = {
     [TokenKind.LetAction]: parse_set_assignment,
     [TokenKind.AdjustAction]: parse_set_assignment,
     [TokenKind.ChangeAction]: parse_set_assignment,
+    [TokenKind.EnableAction]: parse_start_assignment,
     [TokenKind.OpenAction]: parse_start_assignment,
     [TokenKind.StartAction]: parse_start_assignment,
     [TokenKind.CloseAction]: parse_stop_assignment,
     [TokenKind.ShutAction]: parse_stop_assignment,
+    [TokenKind.DisableAction]: parse_stop_assignment,
     [TokenKind.TurnAction]: parse_turn_assignment,
     [TokenKind.AndOperator]: parse_assigned,
     [TokenKind.CommaSymbol]: parse_assigned,
