@@ -172,7 +172,7 @@ const TokenMap: TokenDictionary = {
     , YR: TokenKind.YearVariable
 
     // Continuum
-    , NOT_SET: TokenKind.NotSetValue
+    , NOTSET: TokenKind.NotSetValue
 
     , ERRORS: TokenKind.ErrorsVariable
     , FREEMEM: TokenKind.FreememVariable
@@ -320,7 +320,6 @@ const TokenMap: TokenDictionary = {
     , GETOBJECT: TokenKind.GetObjectFunction
     , GETNAME: TokenKind.GetNameFunction
 
-
     /// Declarations
     , FUNCTION: TokenKind.FunctionDeclaration
     , ARG: TokenKind.ArgDeclaration
@@ -450,6 +449,9 @@ const TokenMap: TokenDictionary = {
     , ONEYEARTONOW: TokenKind.OneYearToNowKeyword
     , TODAY: TokenKind.TodayKeyword
 
+    // properties
+    , SIZE: TokenKind.SizeKeyword
+    , STATE: TokenKind.StateKeyword
 
     // Continuum Controller Point Properties
     , ALARM1: TokenKind.AlarmKeyword

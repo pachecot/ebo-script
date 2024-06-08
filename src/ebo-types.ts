@@ -442,6 +442,9 @@ export const enum TokenKind {
     , OneYearToNowKeyword
     , TodayKeyword
 
+    // properties
+    , SizeKeyword
+    , StateKeyword
     // continuum properties
     , AlarmKeyword
     , RefreshKeyword
