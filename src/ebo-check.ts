@@ -1667,12 +1667,13 @@ export function parse_identifier(cursor: FileCursor, symTable: SymbolTable): Var
         name: tk.value,
         token: tk,
     };
-    if (cursor.matchAny(TokenKind.AlarmKeyword, TokenKind.RefreshKeyword)) {
+    if (cursor.matchAny(
+        TokenKind.AlarmKeyword, TokenKind.RefreshKeyword,
+        TokenKind.SizeKeyword, TokenKind.StateKeyword)) {
         // continuum properties
         vi.property = cursor.current();
         cursor.advance();
-    }
-    if (cursor.matchAny(TokenKind.BracketLeftSymbol)) {
+    } else if (cursor.matchAny(TokenKind.BracketLeftSymbol)) {
         vi.index = parse_bracket_expression(cursor, symTable);
     }
     symTable.lookup_variable(tk);
