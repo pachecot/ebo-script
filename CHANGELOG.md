@@ -2,6 +2,18 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.13.1] 2024-06-08
+
+ - added some initial support for infinet controller programming that generated errors on properties: 
+    - `Alarm1` - `Alarm8`
+    - `Refresh`
+    - `State` 
+    - `Size` 
+ - added value `NotSet` 
+ - fixed some missing support for Enable and Disable actions.
+ - misc fixes
+ - additional tests
+
 ## [0.12.1] 2023-08-05
 
  - updates to declaration code actions

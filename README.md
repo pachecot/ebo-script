@@ -63,6 +63,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+### 0.13.1
+
+- added initial support for some infinet programming features.
+- misc fixes
+
 ### 0.12.0
 
 - bug fixes.
