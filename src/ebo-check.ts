@@ -111,6 +111,7 @@ export interface PrintStatement {
     format: string
     variables: VariableInst[]
     assigned?: VariableInst
+    tks: LexToken[]
 }
 
 export interface AssignStatement {
@@ -249,7 +250,7 @@ function consumeEOL(cur: Cursor) {
 }
 
 function consumeUntilEOL(cur: Cursor) {
-    while (!cur.matchAny(TokenKind.EndOfLineToken)) {
+    while (cur.remain() > 0 && !cur.matchAny(TokenKind.EndOfLineToken)) {
         cur.advance();
     }
 }
@@ -658,34 +659,15 @@ function parse_print_statement(cur: FileCursor, st: SymbolTable): PrintStatement
     const stmt: PrintStatement = {
         format: "",
         variables: [],
+        tks: [],
     };
-    consumeUntilEOL(cur);
-
-    return stmt;
-
-    if (!cur.matchAny(TokenKind.StringToken, TokenKind.NumberToken)) {
-        cur.addError({
-            message: "expected assignment",
-            id: EboErrors.ParseError,
-            range: cur.current().range,
-            severity: Severity.Error
-        });
-        return stmt;
+    // TODO: actually parse the statement
+    while (cur.remain() > 0 && !cur.match(TokenKind.EndOfLineToken)) {
+        stmt.tks.push(cur.current());
+        cur.advance();
     }
-    cur.advance();
+    consumeEOL(cur);
 
-    if (!cur.matchAny(TokenKind.ToKeyWord)) {
-        cur.addError({
-            id: EboErrors.ParseError,
-            severity: Severity.Error,
-            message: "expected to",
-            range: cur.current().range
-        });
-        consumeUntilEOL(cur);
-        return stmt;
-    }
-
-    cur.advance();
     return stmt;
 }
 

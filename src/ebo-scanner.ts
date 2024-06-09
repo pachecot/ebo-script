@@ -381,8 +381,9 @@ const TokenMap: TokenDictionary = {
     , DELAY: TokenKind.WaitStatement
 
     // Action Statements 
-    , P: TokenKind.PrintAction        /// print   
-    , PR: TokenKind.PrintAction      /// print
+    , P: TokenKind.PrintAction          /// print   
+    , PR: TokenKind.PrintAction         /// print
+    , PRINT: TokenKind.PrintAction      /// print
 
     , SET: TokenKind.SetAction
     , ADJUST: TokenKind.AdjustAction
@@ -434,7 +435,6 @@ const TokenMap: TokenDictionary = {
     , OTHER: TokenKind.OtherKeyword
     , OVERRANGE: TokenKind.OverrangeKeyword
     , OVERRIDDEN: TokenKind.OverriddenKeyword
-    , PRINT: TokenKind.PrintKeyword
     , RUN: TokenKind.RunKeyword
     , RUNNING: TokenKind.RunningKeyword
     , SINGULAR: TokenKind.SingularKeyword
