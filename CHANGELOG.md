@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.13.2] 2024-06-09
+
+  - updated print statement parsing
+  - fix scanner for strings with escape sequences    
+
 ## [0.13.1] 2024-06-08
 
  - added some initial support for infinet controller programming that generated errors on properties: 
