@@ -511,7 +511,7 @@ const reEndLine = /\r?\n/;
 const reContLine = /~\r?\n/;
 const reWhiteSpace = /[ \t]+/;
 const reComment = /'.*/;
-const reQuotedString = /"(?:\|"|[^"|]*)*"/;
+const reQuotedString = /"(?:\|"|[^"])*"/;
 const reNumber = /(?:\d+\.\d+|\d+|\.\d+)(?:[eE][-+]?[0-9]+)?(?:%?)?/;
 const reTime = /\d{1,2}:\d{2}(?:\s*(?:am|pm))?/;
 const reSymbol = /(?:>=|<=|<>|[-,;!*&%^+<>=:~/\\()[\]])/;

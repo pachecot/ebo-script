@@ -239,13 +239,19 @@ describe('Check Tests', () => {
 			assert.equal(TokenKind.NumberToken, exp.type);
 		});
 		it('process strings', () => {
-			const exp = parseWith(
-				'"test"\n',
-				expression,
-			) as LexToken;
-			assert.notEqual(null, exp);
-			assert.equal('"test"', exp.value);
-			assert.equal(TokenKind.StringToken, exp.type);
+			let tests = [
+				{ input: '"test"\n', expect: '"test"' },
+				{ input: '"|@@"\n', expect: '"|@@"' },
+				{ input: '"|@@|@@"\n', expect: '"|@@|@@"' },
+				{ input: '"-|"-"\n', expect: '"-|"-"' },
+			];
+			tests.forEach(test => {
+				const exp = parseWith(test.input, expression) as LexToken;
+				assert.notEqual(null, exp);
+				assert.equal(TokenKind.StringToken, exp.type);
+				assert.equal(test.expect, exp.value);
+
+			});
 		});
 		it('process variables', () => {
 			const exp = parseWith(
