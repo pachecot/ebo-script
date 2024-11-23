@@ -278,6 +278,7 @@ const TokenMap: TokenDictionary = {
     , RIGHT: TokenKind.RightFunction
     , LAST: TokenKind.RightFunction
     , SEARCH: TokenKind.SearchFunction
+    , FIND: TokenKind.FindFunction
     , STRINGFILL: TokenKind.StringFillFunction
     , TAB: TokenKind.TabFunction
 

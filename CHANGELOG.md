@@ -2,6 +2,10 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.13.3] 2024-11-23
+
+  - add missing Find function
+
 ## [0.13.2] 2024-06-09
 
   - updated print statement parsing

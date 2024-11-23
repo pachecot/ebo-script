@@ -271,6 +271,7 @@ export const enum TokenKind {
     , MidFunction
     , RightFunction
     , SearchFunction
+    , FindFunction
     , StringFillFunction
     , TabFunction
 
@@ -525,6 +526,7 @@ export type FunctionKind =
     | TokenKind.MidFunction
     | TokenKind.RightFunction
     | TokenKind.SearchFunction
+    | TokenKind.FindFunction
     | TokenKind.StringFillFunction
     | TokenKind.TabFunction
     | TokenKind.DiffTimeFunction
