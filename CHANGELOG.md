@@ -2,6 +2,10 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.13.4] 2025-1-20
+
+  - error for declarations of keywords 
+
 ## [0.13.3] 2024-11-23
 
   - add missing Find function

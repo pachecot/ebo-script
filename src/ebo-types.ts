@@ -737,6 +737,9 @@ export type SymbolKind =
     ;
 
 
+export function isKeyword(s: TokenKind): boolean {
+    return TokenKind.ErrorToken < s;
+}
 export function isFunctionKind(s: TokenKind): s is FunctionKind {
     return TokenKind.FirstFunction <= s && s <= TokenKind.LastFunction;
 }

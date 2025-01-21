@@ -63,6 +63,10 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.13.4
+
+- error for declarations of keywords 
+
 ### 0.13.3
 
 - add missing Find function

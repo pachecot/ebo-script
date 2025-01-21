@@ -1,4 +1,4 @@
-import { TokenKind, isFunctionKind, isValueKind, isVariableKind } from './ebo-types';
+import { TokenKind, isFunctionKind, isKeyword, isValueKind, isVariableKind } from './ebo-types';
 import { LexToken, ebo_scan_text, VarToken } from './ebo-scanner';
 import {
     ErrorInfo, FunctionDecl, ParameterDecl, Severity,
@@ -1251,8 +1251,13 @@ export function declaration_list(cur: FileCursor, local: boolean): VariableInst[
 
 export function declaration_list_item(cur: FileCursor, local: boolean): VariableInst | null {
 
-    if (!cur.expect(TokenKind.IdentifierToken, "missing identifier.")) {
-        return null;
+    if (!cur.match(TokenKind.IdentifierToken)) {
+        if (isKeyword(cur.current().type)) {
+            cur.error("keyword used as identifier.");
+        } else {
+            cur.error("missing identifier.");
+            return null;
+        }
     }
     const tk = cur.current();
     let vi: VariableInst = {

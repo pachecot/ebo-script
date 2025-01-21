@@ -24,6 +24,7 @@ function parseWith<T>(text: string, f: (cur: FileCursor, st: SymbolTable) => T, 
 
 describe('Check Tests', () => {
 	describe('Declarations test', () => {
+
 		it('should parse multiple declarations', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -36,6 +37,33 @@ describe('Check Tests', () => {
 			assert.equal("Standby", dec[1].name);
 			assert.equal(0, st.errors.length);
 		});
+
+		it('should parse declarations of keywords with errors', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"Numeric Input Occupied, Failed\n\nSomeLine:",
+				parse_declarations,
+				st
+			);
+			assert.equal(2, dec.length);
+			assert.equal("Occupied", dec[0].name);
+			assert.equal("Failed", dec[1].name);
+			assert.equal(1, st.errors.length);
+			assert.equal("keyword used as identifier.", st.errors[0].message);
+		});
+
+		it('should fail declaration os number with error', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"Numeric Input 123, Occupied\n\nSomeLine:",
+				parse_declarations,
+				st
+			);
+			assert.equal(0, dec.length);
+			assert.equal(1, st.errors.length);
+			assert.equal("missing identifier.", st.errors[0].message);
+		});
+
 		it('should parse multiple lines of declarations', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -49,6 +77,7 @@ describe('Check Tests', () => {
 			assert.equal("OutValue", dec[2].name);
 			assert.equal(0, st.errors.length);
 		});
+
 		it('should end declaration parse on statement', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -63,6 +92,7 @@ describe('Check Tests', () => {
 			// assert.equal("OutValue", cur.current().value);
 			assert.equal(0, st.errors.length);
 		});
+
 		it('should parse local string declarations with size', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -71,40 +101,44 @@ describe('Check Tests', () => {
 				st,
 			);
 			assert.equal(0, st.errors.length);
-		}),
-			it('should not parse local Numeric declarations with size if not string', () => {
-				const st = new SymbolTable();
-				const dec = parseWith(
-					"Numeric 10 x\n\nSomeLine:",
-					parse_declarations,
-					st,
-				);
-				assert.equal(1, st.errors.length);
-			}),
-			it('should not parse local DateTime declarations with size if not string', () => {
-				const st = new SymbolTable();
-				const dec = parseWith(
-					"DateTime 10 x\n\nSomeLine:",
-					parse_declarations,
-					st,
-				);
-				assert.equal(1, st.errors.length);
-			}),
-			it('should parse local declarations with arrays', () => {
-				const st = new SymbolTable();
-				const dec = parseWith(
-					"Numeric values[11], data[101], x\n\nSomeLine:",
-					parse_declarations,
-					st,
-				);
-				assert.equal(3, dec.length);
-				assert.equal("values", dec[0].name);
-				assert.equal(11, (dec[0] as VariableDecl).size);
-				assert.equal("data", dec[1].name);
-				assert.equal(101, (dec[1] as VariableDecl).size);
-				assert.equal("x", dec[2].name);
-				assert.equal(0, st.errors.length);
-			});
+		});
+
+		it('should not parse local Numeric declarations with size if not string', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"Numeric 10 x\n\nSomeLine:",
+				parse_declarations,
+				st,
+			);
+			assert.equal(1, st.errors.length);
+		});
+
+		it('should not parse local DateTime declarations with size if not string', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"DateTime 10 x\n\nSomeLine:",
+				parse_declarations,
+				st,
+			);
+			assert.equal(1, st.errors.length);
+		});
+
+		it('should parse local declarations with arrays', () => {
+			const st = new SymbolTable();
+			const dec = parseWith(
+				"Numeric values[11], data[101], x\n\nSomeLine:",
+				parse_declarations,
+				st,
+			);
+			assert.equal(3, dec.length);
+			assert.equal("values", dec[0].name);
+			assert.equal(11, (dec[0] as VariableDecl).size);
+			assert.equal("data", dec[1].name);
+			assert.equal(101, (dec[1] as VariableDecl).size);
+			assert.equal("x", dec[2].name);
+			assert.equal(0, st.errors.length);
+		});
+
 		it('should generate errors on array declarations of non local variables', () => {
 			const st = new SymbolTable();
 			const dec = parseWith(
@@ -121,6 +155,8 @@ describe('Check Tests', () => {
 			assert.equal(4, st.errors.length);
 		});
 	});
+
+
 	describe('bracket_expression', () => {
 		it('should read numbers array indexing', () => {
 			const exp = parseWith(
