@@ -1540,9 +1540,14 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
             continue;
         }
 
-        if (isValueKind(tk.type) || isVariableKind(tk.type) || tk.value in st.symbols) {
+        if (isValueKind(tk.type) || isVariableKind(tk.type) ) {
             exp = tk;
             cursor.advance();
+            continue;
+        }
+
+        if (tk.value in st.variables) {
+            exp = parse_identifier(cursor, st);
             continue;
         }
 
@@ -1687,13 +1692,11 @@ export function parse_arg_reference(cursor: FileCursor, symTable: SymbolTable): 
     return vi;
 }
 
-
-
 export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Statement {
     const tks: VariableInst[] = [];
     while (!cursor.matchAny(TokenKind.EndOfLineToken)) {
         let tk = cursor.current();
-        if (cursor.match(TokenKind.IdentifierToken) || tk.value in symTable.symbols) {
+        if (cursor.match(TokenKind.IdentifierToken) || tk.value in symTable.variables) {
             if (cursor.item(1).type === TokenKind.ColonSymbol) {
                 break;
             }
