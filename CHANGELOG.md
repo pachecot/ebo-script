@@ -2,6 +2,10 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.13.5] 2025-1-21
+
+  - improve handling variables, including invalid ones   
+
 ## [0.13.4] 2025-1-20
 
   - error for declarations of keywords 

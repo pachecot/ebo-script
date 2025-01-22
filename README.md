@@ -63,6 +63,10 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.13.5
+
+- better handle declarations even if invalid 
+
 ## 0.13.4
 
 - error for declarations of keywords 

@@ -240,27 +240,28 @@ export class SymbolTable {
                 message: `Line '${name}' already exists.`,
                 range: lineTk.range
             });
-        } else {
-            if (name in this.variable_refs) {
-                /// check again here for newly defined lines. 
-                this.variable_refs[name]
-                    .forEach(vr => {
-                        this.add_error({
-                            id: EboErrors.LineUsedAsVariable,
-                            severity: Severity.Error,
-                            message: `Line '${name}' used as variable.`,
-                            range: vr.range
-                        });
-                    });
-            }
-            this.lines[name] = lineTk;
-            this.line_names.push(name);
-            this.symbols[name] = {
-                type: SymbolType.Line,
-                name: name,
-                range: lineTk.range
-            };
         }
+
+        if (name in this.variable_refs) {
+            /// check again here for newly defined lines. 
+            this.variable_refs[name]
+                .forEach(vr => {
+                    this.add_error({
+                        id: EboErrors.LineUsedAsVariable,
+                        severity: Severity.Error,
+                        message: `Line '${name}' used as variable.`,
+                        range: vr.range
+                    });
+                });
+        }
+
+        this.lines[name] = lineTk;
+        this.line_names.push(name);
+        this.symbols[name] = {
+            type: SymbolType.Line,
+            name: name,
+            range: lineTk.range
+        };
     }
 
     declare_variable(variable: VariableDecl) {
@@ -272,25 +273,27 @@ export class SymbolTable {
                 message: `Variable '${name}' is redeclared`,
                 range: variable.range
             });
-        } else {
-            this.symbols[name] = variable;
-            this.variables[name] = variable;
-            if (variable.modifier !== VarModifier.Local && variable.size !== undefined) {
-                this.add_error({
-                    id: EboErrors.ArrayNotAllowed,
-                    severity: Severity.Error,
-                    message: `Variable '${name}' array index not allowed here.`,
-                    range: variable.range
-                });
-            }
-            if (variable.size !== undefined && variable.size <= 0) {
-                this.add_error({
-                    id: EboErrors.ArraySizeInvalid,
-                    severity: Severity.Error,
-                    message: `Variable '${name}' size is not valid.`,
-                    range: variable.range
-                });
-            }
+            return;
+        }
+
+        this.symbols[name] = variable;
+        this.variables[name] = variable;
+        if (variable.modifier !== VarModifier.Local && variable.size !== undefined) {
+            this.add_error({
+                id: EboErrors.ArrayNotAllowed,
+                severity: Severity.Error,
+                message: `Variable '${name}' array index not allowed here.`,
+                range: variable.range
+            });
+        }
+
+        if (variable.size !== undefined && variable.size <= 0) {
+            this.add_error({
+                id: EboErrors.ArraySizeInvalid,
+                severity: Severity.Error,
+                message: `Variable '${name}' size is not valid.`,
+                range: variable.range
+            });
         }
     }
 

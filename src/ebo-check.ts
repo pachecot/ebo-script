@@ -1169,6 +1169,7 @@ const declaration_states: {
 };
 
 export function declare_variable(cur: FileCursor, ast: SymbolTable): VariableDecl[] {
+
     let variable_dec = {
         type: SymbolType.Numeric,
         tag: VarTag.None,
@@ -1539,7 +1540,7 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
             continue;
         }
 
-        if (isValueKind(tk.type) || isVariableKind(tk.type)) {
+        if (isValueKind(tk.type) || isVariableKind(tk.type) || tk.value in st.symbols) {
             exp = tk;
             cursor.advance();
             continue;
@@ -1692,7 +1693,7 @@ export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Stat
     const tks: VariableInst[] = [];
     while (!cursor.matchAny(TokenKind.EndOfLineToken)) {
         let tk = cursor.current();
-        if (cursor.match(TokenKind.IdentifierToken)) {
+        if (cursor.match(TokenKind.IdentifierToken) || tk.value in symTable.symbols) {
             if (cursor.item(1).type === TokenKind.ColonSymbol) {
                 break;
             }
@@ -1716,7 +1717,6 @@ export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Stat
     }
     return null_statement;
 }
-
 
 export function parse_statements(cursor: FileCursor, symTable: SymbolTable): Statements {
     consumeEOL(cursor);
