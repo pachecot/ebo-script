@@ -6,6 +6,7 @@ export const declarations = [
     "Numeric Public",
     "Numeric Triggered Input",
     "Numeric Buffered Input",
+    "Numeric Queued Input",
     "String",
     "String Input",
     "String Output",
@@ -16,4 +17,4 @@ export const declarations = [
     "DateTime Public",
 ];
 
-export const reDeclaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?)\s*$/i;
+export const reDeclaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered|Queued)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?)\s*$/i;

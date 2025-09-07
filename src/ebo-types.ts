@@ -332,6 +332,7 @@ export const enum TokenKind {
     , PublicDeclaration
     , BufferedDeclaration
     , TriggeredDeclaration
+    , QueuedDeclaration
 
     //#endregion
 

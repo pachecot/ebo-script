@@ -29,5 +29,6 @@ export enum EboErrors {
     UnreferencedDeclaration,
     UnreferencedFunction,
     UnreferencedLine,
-    WhileMissingEndWhile
+    WhileMissingEndWhile,
+    InvalidVariableName
 }

@@ -1,4 +1,5 @@
 import { TextRange, LexToken } from './ebo-scanner';
+import { VarType } from './ebo-signatures';
 import { EboErrors } from './EboErrors';
 
 // import { ParseContext, ErrorInfo, SymbolDecl, FunctionDecl, VariableDecl, ParameterDecl, EboErrors, Severity, VarModifier, SymbolType } from './ebo-check';
@@ -67,7 +68,7 @@ export interface SymbolDecl {
     range: TextRange
 }
 
-type VariableType = SymbolType.StringType | SymbolType.Numeric | SymbolType.DateTime;
+type VariableType = SymbolType.StringType | SymbolType.Numeric | SymbolType.DateTime | SymbolType.Trendlog | SymbolType.Webservice | SymbolType.Datafile;
 
 export enum VarModifier {
     Local = 1
@@ -80,6 +81,7 @@ export enum VarTag {
     None = 1
     , Triggered
     , Buffered
+    , Queued
 }
 
 
@@ -140,6 +142,8 @@ export interface FunctionDecl extends SymbolDecl {
     type: SymbolType.Function
 }
 
+const reVariable = /([\w_][\w\d_]*)(?:\.([\w\d_]*))?/; // identifier or identifier.property
+
 export class SymbolTable {
 
     context: ParseContext = new ParseContext();
@@ -178,12 +182,38 @@ export class SymbolTable {
         return this.variables[name];
     }
 
-
     lookup_variable(tk: LexToken) {
-        const r = /([\w][\w\d_]*)(\.[\w\d_]*)?/.exec(tk.value);
-        const name = r ? r[1] : tk.value;
+
+        const mv = reVariable.exec(tk.value);
+        if (!mv) {
+            this.add_error({
+                id: EboErrors.InvalidVariableName,
+                severity: Severity.Error,
+                message: `Variable name '${tk.value}' is not valid.`,
+                range: tk.range
+            });
+            return;
+        }
+
+        const name = mv[1];
+
         const refs = this.variable_refs[name] || (this.variable_refs[name] = []);
         refs.push(tk);
+
+        const variable = this.variables[name];
+        const prop = mv[2] && mv[2].toLowerCase();
+
+        if (variable && prop !== undefined) {
+            if (variable.tag !== VarTag.Triggered || prop !== 'id') {
+                this.add_error({
+                    id: EboErrors.IllegalExpression,
+                    severity: Severity.Error,
+                    message: `Illegal property use '${prop}'.`,
+                    range: tk.range
+                });
+            }
+        }
+
         if (name in this.symbols) {
             if (name in this.functions) {
                 this.add_error({
@@ -209,11 +239,64 @@ export class SymbolTable {
                 range: tk.range
             });
         }
-        return this.variables[name];
+
+        return variable;
     }
 
     lookup_function(tk: LexToken) {
-        const name = tk.value;
+        const mv = reVariable.exec(tk.value);
+        if (!mv) {
+            this.add_error({
+                id: EboErrors.InvalidVariableName,
+                severity: Severity.Error,
+                message: `Variable name '${tk.value}' is not valid.`,
+                range: tk.range
+            });
+            return;
+        }
+        const name = mv[1];
+
+        const method = mv[2] && mv[2].toLowerCase();
+        if (method !== undefined) {
+            // this is a method call on a variable.
+
+            const refs = this.variable_refs[name] || (this.variable_refs[name] = []);
+            refs.push(tk);
+
+            const variable = this.variables[name];
+
+            if (!variable) {
+                this.add_error({
+                    id: EboErrors.UndeclaredVariable,
+                    severity: Severity.Error,
+                    message: `Variable '${name}' is not declared`,
+                    range: tk.range
+                });
+                return;
+            }
+
+            let valid = false;
+            switch (variable.type) {
+                case SymbolType.Datafile:
+                    valid = ['rows', 'write', 'clear', 'close', 'open', 'save', 'read', 'columns'].includes(method);
+                    break;
+                case SymbolType.Trendlog:
+                    valid = method === 'read';
+                    break;
+            }
+
+            if (!valid) {
+                console.log(`invalid method ${method} for variable type ${variable.type}`);
+                this.add_error({
+                    id: EboErrors.IllegalExpression,
+                    severity: Severity.Error,
+                    message: `Illegal method use '${method}'.`,
+                    range: tk.range
+                });
+            }
+            return;
+        }
+
         const arr = this.function_refs[name] || (this.function_refs[name] = []);
         arr.push(tk);
         if (!(name in this.functions)) {
@@ -265,8 +348,31 @@ export class SymbolTable {
         };
     }
 
+
     declare_variable(variable: VariableDecl) {
-        const name = variable.name;
+
+        const mv = reVariable.exec(variable.name);
+        if (!mv) {
+            this.add_error({
+                id: EboErrors.InvalidVariableName,
+                severity: Severity.Error,
+                message: `Variable name '${variable.name}' is not valid.`,
+                range: variable.range
+            });
+            return;
+        }
+
+        const name = mv[1];
+        const prop = mv[2];
+        if (prop !== undefined) {
+            this.add_error({
+                id: EboErrors.InvalidVariableName,
+                severity: Severity.Error,
+                message: `Variable name '${variable.name}' is not valid. Property '${prop}' not allowed.`,
+                range: variable.range
+            });
+        }
+
         if (name in this.symbols) {
             this.add_error({
                 id: EboErrors.DuplicateDeclaration,
@@ -299,7 +405,27 @@ export class SymbolTable {
     }
 
     declare_function(functionDecl: FunctionDecl) {
-        const name = functionDecl.name;
+
+        const mv = reVariable.exec(functionDecl.name);
+        if (!mv) {
+            this.add_error({
+                id: EboErrors.InvalidVariableName,
+                severity: Severity.Error,
+                message: `Function name '${functionDecl.name}' is not valid.`,
+                range: functionDecl.range
+            });
+            return;
+        }
+        const name = mv[1];
+        const method = mv[2];
+        if (method !== undefined) {
+            this.add_error({
+                id: EboErrors.InvalidVariableName,
+                severity: Severity.Error,
+                message: `Function name '${functionDecl.name}' is not valid. Method '${method}' not allowed.`,
+                range: functionDecl.range
+            });
+        }
         if (name in this.symbols) {
             this.add_error({
                 id: EboErrors.DuplicateDeclaration,

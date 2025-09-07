@@ -1158,6 +1158,7 @@ const declaration_states: {
         [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
         [TokenKind.BufferedDeclaration]: [DeclState.InputMod, { tag: VarTag.Buffered }],
         [TokenKind.TriggeredDeclaration]: [DeclState.InputMod, { tag: VarTag.Triggered }],
+        [TokenKind.QueuedDeclaration]: [DeclState.InputMod, { tag: VarTag.Queued }],
     },
     [DeclState.Modifier]: {
         [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],

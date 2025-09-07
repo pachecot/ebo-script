@@ -339,7 +339,7 @@ const TokenMap: TokenDictionary = {
     , PUBLIC: TokenKind.PublicDeclaration
     , BUFFERED: TokenKind.BufferedDeclaration
     , TRIGGERED: TokenKind.TriggeredDeclaration
-
+    , QUEUED: TokenKind.QueuedDeclaration
     // };
 
     // export enum EboControl {
@@ -517,8 +517,10 @@ const reNumber = /(?:\d+\.\d+|\d+|\.\d+)(?:[eE][-+]?[0-9]+)?(?:%?)?/;
 const reTime = /\d{1,2}:\d{2}(?:\s*(?:am|pm))?/;
 const reSymbol = /(?:>=|<=|<>|[-,;!*&%^+<>=:~/\\()[\]])/;
 const reKWords = new RegExp("(?:" + EboKeyWordNames.join('|') + ")\\b");
-const reFnCall = /[\w_][\w\d_]*(?=\s*\()/;
-const reToken = /[\w_][\w\d_]*(\.[\w\d_]*)?\b/;
+const reFnCall = /[\w_][\w\d_]*(?:\.[\w\d_]*)?(?=\s*\()/;
+const reToken = /[\w_][\w\d_]*(?:\.[\w\d_]*)?\b/; // identifier or identifier.property
+const reProp = /\.[\w\d_]*\b/;
+const reDot = /\./;
 const reErr = /./;
 const reLine = /(Line\s+([1-9]|\d\d+|[\w_][\w\d_]*))|([1-9]|\d\d+|[\w_][\w\d_]*):/;
 
