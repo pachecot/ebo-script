@@ -1138,7 +1138,7 @@ const declaration_states: {
 } = {
     [DeclState.Init]: {
         [TokenKind.StringDeclaration]: [DeclState.Type, { type: SymbolType.StringType }],
-        [TokenKind.NumericDeclaration]: [DeclState.Type, { type: SymbolType.Numeric }],
+        [TokenKind.NumericDeclaration]: [DeclState.InputType, { type: SymbolType.Numeric }],
         [TokenKind.DatetimeDeclaration]: [DeclState.Type, { type: SymbolType.DateTime }],
         //
         [TokenKind.DatafileDeclaration]: [DeclState.Complete, { type: SymbolType.Datafile }],
@@ -1152,6 +1152,7 @@ const declaration_states: {
         [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
     },
     [DeclState.InputType]: {
+        [TokenKind.NumberToken]: [DeclState.Complete, {}],
         [TokenKind.InputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Input }],
         [TokenKind.OutputDeclaration]: [DeclState.Complete, { modifier: VarModifier.Output }],
         [TokenKind.PublicDeclaration]: [DeclState.Complete, { modifier: VarModifier.Public }],
@@ -1192,7 +1193,7 @@ export function declare_variable(cur: FileCursor, ast: SymbolTable): VariableDec
             cur.expect(TokenKind.InputDeclaration, "declaration error");
             return [];
         }
-        if (state === DeclState.Type && cur.matchAny(TokenKind.IdentifierToken)) {
+        if ((state === DeclState.Type || state === DeclState.InputType) && cur.matchAny(TokenKind.IdentifierToken)) {
             // local variables
             break;
         }
@@ -1540,7 +1541,7 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
             continue;
         }
 
-        if (isValueKind(tk.type) || isVariableKind(tk.type) ) {
+        if (isValueKind(tk.type) || isVariableKind(tk.type)) {
             exp = tk;
             cursor.advance();
             continue;
