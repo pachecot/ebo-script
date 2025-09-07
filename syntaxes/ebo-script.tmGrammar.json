@@ -82,7 +82,7 @@
             "patterns": [
                 {
                     "name": "keyword.statement.ebo-script",
-                    "match": "\\b(?i:NUMERIC|NUMBER|STRING|DATETIME)(?:(?:\\s+(?i:BUFFERED|TRIGGERED))?\\s+(?i:INPUT|OUTPUT|PUBLIC))?\\b"
+                    "match": "\\b(?i:NUMERIC|NUMBER|STRING|DATETIME|TRENDLOG|DATAFILE)(?:(?:\\s+(?i:BUFFERED|TRIGGERED|QUEUED))?\\s+(?i:INPUT|OUTPUT|PUBLIC))?\\b"
                 },
                 {
                     "name": "keyword.statement.ebo-script",
