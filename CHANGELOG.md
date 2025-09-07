@@ -2,6 +2,23 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.14.0] 2025-9-07
+
+ - added support for property and method testing: 
+    - Numeric Triggered Input
+        - id
+    - TrendLog
+        - Read()
+    - DataFile
+        - Rows()
+        - Write()
+        - Clear()
+        - Close()
+        - Open()
+        - Save()
+        - Read()
+        - Columns()
+
 ## [0.13.8] 2025-9-07
 
  - updated changelog & release notes
