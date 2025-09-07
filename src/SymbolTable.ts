@@ -180,7 +180,8 @@ export class SymbolTable {
 
 
     lookup_variable(tk: LexToken) {
-        const name = tk.value;
+        const r = /([\w][\w\d_]*)(\.[\w\d_]*)?/.exec(tk.value);
+        const name = r ? r[1] : tk.value;
         const refs = this.variable_refs[name] || (this.variable_refs[name] = []);
         refs.push(tk);
         if (name in this.symbols) {
@@ -243,7 +244,7 @@ export class SymbolTable {
         }
 
         if (name in this.variable_refs) {
-            /// check again here for newly defined lines. 
+            /// check again here for newly defined lines.
             this.variable_refs[name]
                 .forEach(vr => {
                     this.add_error({

@@ -518,7 +518,7 @@ const reTime = /\d{1,2}:\d{2}(?:\s*(?:am|pm))?/;
 const reSymbol = /(?:>=|<=|<>|[-,;!*&%^+<>=:~/\\()[\]])/;
 const reKWords = new RegExp("(?:" + EboKeyWordNames.join('|') + ")\\b");
 const reFnCall = /[\w_][\w\d_]*(?=\s*\()/;
-const reToken = /[\w_][\w\d_]*\b/;
+const reToken = /[\w_][\w\d_]*(\.[\w\d_]*)?\b/;
 const reErr = /./;
 const reLine = /(Line\s+([1-9]|\d\d+|[\w_][\w\d_]*))|([1-9]|\d\d+|[\w_][\w\d_]*):/;
 
