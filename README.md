@@ -63,6 +63,20 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.13.8
+ 
+ - updated changelog & release notes
+
+## 0.13.7
+
+- fix triggered and buffered declarations 
+- enable use of properties (like .id)
+  - properties are not checked if valid
+
+## 0.13.6
+
+- fix issue with invalid declarations
+
 ## 0.13.5
 
 - better handle declarations even if invalid 

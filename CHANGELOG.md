@@ -2,6 +2,17 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.13.8] 2025-9-07
+
+ - updated changelog & release notes
+
+## [0.13.7] 2025-9-07
+
+  - fix Triggered and Buffered Numeric declarations were not parsed properly
+  - feat add some support for properties with the `.` operator (like `.id`).
+    - there is no checking on the properties
+    - will currently allow invalid declarations.
+
 ## [0.13.6] 2025-1-21
 
   - bug fix   
