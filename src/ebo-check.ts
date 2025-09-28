@@ -8,6 +8,27 @@ import { EboErrors } from "./EboErrors";
 import { Cursor } from './cursor';
 import { FileCursor } from './file-cursor';
 
+export enum StatementKind {
+    NullStatement,
+    AssignStatement,
+    CaseStatement,
+    ForStatement,
+    PrintStatement,
+    IfStatement,
+    RepeatStatement,
+    SelectStatement,
+    WhileStatement,
+    GotoExpr,
+    BasedonExpr,
+    CommandExpr,
+    FunctionExpression,
+    CommandStatement,
+    LineStatement,
+}
+
+export interface StatementType {
+    type: StatementKind
+}
 
 export type NullStatement = null;
 const null_statement: NullStatement = null;
@@ -29,7 +50,7 @@ export interface ArgInst {
 }
 
 
-export interface FunctionExpression {
+export interface FunctionExpression extends StatementType {
     function: LexToken
     arguments: ExpressionStatement[];
 }
@@ -107,41 +128,41 @@ function BinOpCodeLookup(tk: LexToken): OpCode {
     return OpCode.NOP;
 }
 
-export interface PrintStatement {
+export interface PrintStatement extends StatementType {
     format: string
     variables: VariableInst[]
     assigned?: VariableInst
     tks: LexToken[]
 }
 
-export interface AssignStatement {
+export interface AssignStatement extends StatementType {
     assigned: VariableInst[]
     expression: ExpressionStatement;
 }
 
-export interface IfStatement {
+export interface IfStatement extends StatementType {
     cond_expr: ExpressionStatement
     true_expr?: Statements
     false_expr?: Statements
 }
 
-export interface RepeatStatement {
+export interface RepeatStatement extends StatementType {
     condition: ExpressionStatement
     statements: Statements
 }
 
-export interface CaseStatement {
+export interface CaseStatement extends StatementType {
     cases: ExpressionList
     statements: Statements
 }
 
-export interface SelectStatement {
+export interface SelectStatement extends StatementType {
     test: ExpressionStatement
     cases: CaseStatement[]
     elseStatements: Statements
 }
 
-export interface ForStatement {
+export interface ForStatement extends StatementType {
     numeric_name: VarToken
     begin?: ExpressionStatement
     end?: ExpressionStatement
@@ -149,12 +170,12 @@ export interface ForStatement {
     statements: Statements
 }
 
-export interface WhileStatement {
+export interface WhileStatement extends StatementType {
     condition: ExpressionStatement
     statements: Statements
 }
 
-export interface LineStatement {
+export interface LineStatement extends StatementType {
     name: string
     token?: LexToken
     statements: Statements
@@ -192,18 +213,17 @@ export type Statements = Statement[];
 
 export type CommandExpr = LexToken;
 
-export interface CommandStatement {
+export interface CommandStatement extends StatementType {
     tk: LexToken
     expression: ExpressionStatement;
 }
 
-
-export interface BasedonExpr {
+export interface BasedonExpr extends StatementType {
     variable: ExpressionStatement
     lines: LexToken[]
 }
 
-export interface GotoExpr {
+export interface GotoExpr extends StatementType {
     line: LexToken
 }
 
@@ -286,7 +306,10 @@ export function parse_goto_statement(cur: Cursor, st: SymbolTable): boolean {
 
 export function parse_goto(cur: Cursor, st: SymbolTable): GotoExpr {
     parse_goto_statement(cur, st);
-    const gt: GotoExpr = { line: cur.current() };
+    const gt: GotoExpr = {
+        type: StatementKind.GotoExpr,
+        line: cur.current()
+    };
     cur.advance();
     if (gt.line) {
         st.lookup_line(gt.line);
@@ -305,6 +328,7 @@ export function parse_return_command(cur: FileCursor, st: SymbolTable): CommandS
     const cmd: CommandExpr = cur.current();
     cur.advance();
     return {
+        type: StatementKind.CommandStatement,
         tk: cmd,
         expression: expression(cur, st)
     };
@@ -314,6 +338,7 @@ export function parse_wait_command(cur: FileCursor, st: SymbolTable): CommandSta
     const cmd: CommandExpr = cur.current();
     cur.advance();
     return {
+        type: StatementKind.CommandStatement,
         tk: cmd,
         expression: expression(cur, st)
     };
@@ -353,6 +378,7 @@ export function parse_parentheses_expression(cursor: FileCursor, st: SymbolTable
 export function parse_function_expression(cursor: FileCursor, st: SymbolTable): FunctionExpression {
     const tk = cursor.current();
     const exp: FunctionExpression = {
+        type: StatementKind.FunctionExpression,
         function: tk,
         arguments: []
     };
@@ -577,6 +603,7 @@ export function parse_assigned(cur: FileCursor, st: SymbolTable, tokens: Variabl
 export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: VariableInst[]): AssignStatement {
 
     const stmt: AssignStatement = {
+        type: StatementKind.AssignStatement,
         assigned: tokens,
         expression: null_statement,
     };
@@ -597,6 +624,7 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
 
 function parse_set_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
     const stmt: AssignStatement = {
+        type: StatementKind.AssignStatement,
         assigned: [],
         expression: null_statement
     };
@@ -657,6 +685,7 @@ function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
 
 function parse_print_statement(cur: FileCursor, st: SymbolTable): PrintStatement {
     const stmt: PrintStatement = {
+        type: StatementKind.PrintStatement,
         format: "",
         variables: [],
         tks: [],
@@ -674,6 +703,7 @@ function parse_print_statement(cur: FileCursor, st: SymbolTable): PrintStatement
 
 function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | CommandExpr {
     const stmt: AssignStatement = {
+        type: StatementKind.AssignStatement,
         assigned: [],
         expression: null_statement
     };
@@ -697,6 +727,7 @@ function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | Command
 function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
 
     const stmt: AssignStatement = {
+        type: StatementKind.AssignStatement,
         assigned: [],
         expression: { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } }
     };
@@ -720,6 +751,7 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
 function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
 
     const stmt: AssignStatement = {
+        type: StatementKind.AssignStatement,
         assigned: [],
         expression: { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } }
     };
@@ -740,6 +772,7 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
 
 function parse_turn_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
     const stmt: AssignStatement = {
+        type: StatementKind.AssignStatement,
         assigned: [],
         expression: null_statement,
     };
@@ -778,6 +811,7 @@ export function parse_if_exp(cur: FileCursor, st: SymbolTable): IfStatement {
 
     const data: { [name: number]: LexToken[] } = {};
     const stmt: IfStatement = {
+        type: StatementKind.IfStatement,
         cond_expr: null_statement,
     };
 
@@ -831,6 +865,7 @@ export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForState
     }
     const numeric_name = cur.current() as VarToken;
     const stmt: ForStatement = {
+        type: StatementKind.ForStatement,
         numeric_name: numeric_name
         , statements: []
     };
@@ -916,6 +951,7 @@ export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForState
 
 export function parse_select_statement(cur: FileCursor, st: SymbolTable): SelectStatement {
     const stmt: SelectStatement = {
+        type: StatementKind.SelectStatement,
         test: null_statement,
         cases: [],
         elseStatements: []
@@ -1039,6 +1075,7 @@ export function parse_cases_statement(cur: FileCursor, st: SymbolTable): Express
 
 export function parse_case_statement(cur: FileCursor, st: SymbolTable): CaseStatement {
     const stmt: CaseStatement = {
+        type: StatementKind.CaseStatement,
         cases: [],
         statements: [],
     };
@@ -1051,6 +1088,7 @@ export function parse_case_statement(cur: FileCursor, st: SymbolTable): CaseStat
 export function parse_repeat_statement(cur: FileCursor, st: SymbolTable): RepeatStatement {
 
     const stmt: RepeatStatement = {
+        type: StatementKind.RepeatStatement,
         condition: errorExpr(cur.current()),
         statements: [],
     };
@@ -1085,6 +1123,7 @@ export function parse_repeat_statement(cur: FileCursor, st: SymbolTable): Repeat
 
 export function parse_while_statement(cur: FileCursor, st: SymbolTable): WhileStatement {
     let stmt: WhileStatement = {
+        type: StatementKind.WhileStatement,
         condition: null_statement,
         statements: [],
     };
@@ -1336,6 +1375,7 @@ export function declare_argument(cur: FileCursor, ast: SymbolTable): ParameterDe
 
 export function parse_basedon_statement(cur: FileCursor, st: SymbolTable): BasedonExpr {
     const res: BasedonExpr = {
+        type: StatementKind.BasedonExpr,
         variable: null,
         lines: [],
     };
@@ -1792,6 +1832,7 @@ export function parse_program(cursor: FileCursor, symTable: SymbolTable): Progra
         pgm.type = ProgramType.Function;
     }
     const initial_line: LineStatement = {
+        type: StatementKind.LineStatement,
         name: "",
         statements: parse_statements(cursor, symTable)
     };
@@ -1815,6 +1856,7 @@ export function parse_program(cursor: FileCursor, symTable: SymbolTable): Progra
             break;
         }
         const line: LineStatement = {
+            type: StatementKind.LineStatement,
             name: "",
             statements: []
         };
