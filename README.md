@@ -63,6 +63,10 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.14.1
+ 
+ - added error checking for goto statements in loops
+
 ## 0.14.0
  
  - added support and checking for properties and methods

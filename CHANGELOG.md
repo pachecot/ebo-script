@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.14.1] 2025-9-28
+
+ - added error checking for goto statements in loops
+ - added types to statements to help checking code 
+
 ## [0.14.0] 2025-9-07
 
  - added support for property and method testing: 
