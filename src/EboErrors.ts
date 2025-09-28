@@ -30,5 +30,6 @@ export enum EboErrors {
     UnreferencedFunction,
     UnreferencedLine,
     WhileMissingEndWhile,
-    InvalidVariableName
+    InvalidVariableName,
+    GotoInLoop
 }

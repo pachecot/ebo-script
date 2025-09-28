@@ -14,6 +14,7 @@ import {
 	parse_statement, removeWhiteSpace, VariableInst, ProgramType, parse_basedon_statement
 } from '../ebo-check';
 import { TokenKind } from '../ebo-types';
+import { EboErrors } from '../EboErrors';
 
 function parseWith<T>(text: string, f: (cur: FileCursor, st: SymbolTable) => T, st: SymbolTable = new SymbolTable()): T {
 	const tkn_lists = ebo_scan_text(text);
@@ -816,6 +817,75 @@ Extra:
 				assert.equal(stmt.line, st.line_refs['SomeLine'][0]);
 			});
 		});
+		it('should generate error for goto statements in loops', () => {
+			it('for loop with conditional goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`For x = 1 to 10
+						If x = 5 then Goto SomeLine
+					Next x
+					`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+			it('for loop with goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`For x = 1 to 10
+						Goto SomeLine
+					Next x
+					`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+			it('While loop with  goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`While x < 10
+						Goto SomeLine
+						x = x + 1
+					EndWhile x
+					`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+			it('Repeat loop with conditional goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`Repeat
+						If a[x] Then Goto SomeLine
+						x = x + 1
+					Until x > 10
+`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+
+		});
 	});
 	describe('Basedon Parsing', () => {
 		it('should parse named line statements', () => {
@@ -844,6 +914,75 @@ Extra:
 				assert.equal(1, st.line_refs['SomeLine3'].length);
 				assert.equal(1, st.variable_refs['x'].length);
 			});
+		});
+		it('should generate error for basedon goto statements in loops', () => {
+			it('for loop with conditional basedon goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`For x = 1 to 10
+						If x = 5 then BaseOn x Goto SomeLine, SomeLine, SomeLine, SomeLine, SomeLine
+					Next x
+					`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+			it('for loop with  goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`For x = 1 to 10
+						BaseOn x Goto SomeLine, SomeLine, SomeLine, SomeLine, SomeLine
+					Next x
+					`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+			it('While loop with basedon goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`While x < 10
+						BaseOn x Goto SomeLine, SomeLine, SomeLine, SomeLine, SomeLine
+						x = x + 1
+					EndWhile x
+`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+			it('Repeat loop with conditional basedon goto should generate an error', () => {
+				const st = new SymbolTable();
+				const stmt = parseWith(`Repeat
+						If a[x] Then BaseOn x Goto SomeLine, SomeLine, SomeLine, SomeLine, SomeLine
+						x = x + 1
+					Until x > 10
+`,
+					parse_for_statement,
+					st
+				);
+				if (!stmt) {
+					assert.fail("expected return value");
+				}
+				if (!st.errors || st.errors[0].id !== EboErrors.GotoInLoop) {
+					assert.fail("expected error: EboErrors.GotoInLoop");
+				}
+			});
+
 		});
 	});
 	describe('Is Expression Parsing', () => {

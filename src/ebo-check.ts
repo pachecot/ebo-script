@@ -855,6 +855,35 @@ export function parse_if_exp(cur: FileCursor, st: SymbolTable): IfStatement {
     return stmt;
 }
 
+function has_goto_statement(stmts: Statement[] | undefined): boolean {
+    if (!stmts) { return false; }
+    return stmts.reduce((a, s) => a || is_goto_statement(s), false);
+}
+
+function is_goto_statement(stmt: Statement): boolean {
+    if (!stmt) {
+        return false;
+    }
+    switch (stmt.type) {
+        case StatementKind.GotoExpr:
+        case StatementKind.BasedonExpr:
+            return true;
+        case StatementKind.IfStatement:
+            const if_stmt = stmt as IfStatement;
+            return has_goto_statement(if_stmt.true_expr)
+                || has_goto_statement(if_stmt.false_expr)
+                || false;
+        case StatementKind.SelectStatement:
+            const sel_stmt = stmt as SelectStatement;
+            return sel_stmt.cases?.reduce(
+                (a, c) => a || has_goto_statement(c.statements), false)
+                || has_goto_statement(sel_stmt.elseStatements)
+                || false;
+        default:
+            return false;
+    }
+}
+
 export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForStatement | null {
 
     const for_tk = cur.current();
@@ -945,6 +974,16 @@ export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForState
             range: stmt.numeric_name.range
         });
     }
+
+    if (has_goto_statement(stmt.statements)) {
+        ast.errors.push({
+            severity: Severity.Error,
+            id: EboErrors.GotoInLoop,
+            message: "Goto is not allowed in loops.",
+            range: for_tk.range
+        });
+    }
+
     return stmt;
 }
 
@@ -1104,6 +1143,14 @@ export function parse_repeat_statement(cur: FileCursor, st: SymbolTable): Repeat
     cur.advance();
 
     stmt.statements = parse_statements(cur, st);
+    if (has_goto_statement(stmt.statements)) {
+        st.errors.push({
+            severity: Severity.Error,
+            id: EboErrors.GotoInLoop,
+            message: "Goto is not allowed in loops.",
+            range: repeat_tk.range,
+        });
+    }
 
     if (!cur.match(TokenKind.UntilStatement)) {
         st.add_error({
@@ -1148,6 +1195,16 @@ export function parse_while_statement(cur: FileCursor, st: SymbolTable): WhileSt
         return stmt;
     }
     cur.advance();
+
+    if (has_goto_statement(stmt.statements)) {
+        st.errors.push({
+            severity: Severity.Error,
+            id: EboErrors.GotoInLoop,
+            message: "Goto is not allowed in loops.",
+            range: while_tk.range,
+        });
+    }
+
     return stmt;
 }
 
