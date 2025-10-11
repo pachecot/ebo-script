@@ -49,10 +49,14 @@ export interface ArgInst {
     token: LexToken
 }
 
+export class FunctionExpression implements StatementType {
+    readonly type: StatementKind = StatementKind.FunctionExpression;
+    function: LexToken;
+    arguments: ExpressionStatement[] = [];
 
-export interface FunctionExpression extends StatementType {
-    function: LexToken
-    arguments: ExpressionStatement[];
+    constructor(fn: LexToken) {
+        this.function = fn;
+    }
 }
 
 export enum OpCode {
@@ -128,57 +132,74 @@ function BinOpCodeLookup(tk: LexToken): OpCode {
     return OpCode.NOP;
 }
 
-export interface PrintStatement extends StatementType {
-    format: string
-    variables: VariableInst[]
-    assigned?: VariableInst
-    tks: LexToken[]
+export class PrintStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.PrintStatement;
+    format: string = "";
+    variables: VariableInst[] = [];
+    assigned?: VariableInst;
+    tks: LexToken[] = [];
 }
 
-export interface AssignStatement extends StatementType {
-    assigned: VariableInst[]
-    expression: ExpressionStatement;
+export class AssignStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.AssignStatement;
+    assigned: VariableInst[] = [];
+    expression: ExpressionStatement = null_statement;
 }
 
-export interface IfStatement extends StatementType {
-    cond_expr: ExpressionStatement
-    true_expr?: Statements
-    false_expr?: Statements
+export interface AssignBlock extends StatementType {
+    assignments: AssignStatement[]
 }
 
-export interface RepeatStatement extends StatementType {
-    condition: ExpressionStatement
-    statements: Statements
+export class IfStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.IfStatement;
+    cond_expr: ExpressionStatement = null_statement;
+    true_expr?: Statements;
+    false_expr?: Statements;
 }
 
-export interface CaseStatement extends StatementType {
-    cases: ExpressionList
-    statements: Statements
+export class RepeatStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.RepeatStatement;
+    condition: ExpressionStatement = null_statement;
+    statements: Statements = [];
 }
 
-export interface SelectStatement extends StatementType {
-    test: ExpressionStatement
-    cases: CaseStatement[]
-    elseStatements: Statements
+export class CaseStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.CaseStatement;
+    cases: ExpressionList = [];
+    statements: Statements = [];
 }
 
-export interface ForStatement extends StatementType {
-    numeric_name: VarToken
-    begin?: ExpressionStatement
-    end?: ExpressionStatement
-    step?: ExpressionStatement
-    statements: Statements
+export class SelectStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.SelectStatement;
+    test: ExpressionStatement = null_statement;
+    cases: CaseStatement[] = [];
+    elseStatements: Statements = [];
 }
 
-export interface WhileStatement extends StatementType {
-    condition: ExpressionStatement
-    statements: Statements
+export class ForStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.ForStatement;
+    numeric_name: VarToken;
+    begin?: ExpressionStatement;
+    end?: ExpressionStatement;
+    step?: ExpressionStatement;
+    statements: Statements = [];
+
+    constructor(numeric_name: VarToken) {
+        this.numeric_name = numeric_name;
+    }
 }
 
-export interface LineStatement extends StatementType {
-    name: string
-    token?: LexToken
-    statements: Statements
+export class WhileStatement implements StatementType {
+    readonly type: StatementKind = StatementKind.WhileStatement;
+    condition: ExpressionStatement = null_statement;
+    statements: Statements = [];
+}
+
+export class LineStatement implements StatementType {
+    type: StatementKind = StatementKind.LineStatement;
+    name: string = "";
+    token?: LexToken = undefined;
+    statements: Statements = [];
 }
 
 export enum ProgramType {
@@ -213,18 +234,27 @@ export type Statements = Statement[];
 
 export type CommandExpr = LexToken;
 
-export interface CommandStatement extends StatementType {
-    tk: LexToken
-    expression: ExpressionStatement;
+export class CommandStatement implements StatementType {
+    type: StatementKind = StatementKind.CommandStatement;
+    tk: LexToken;
+    expression: ExpressionStatement = null_statement;
+    constructor(tk: LexToken) {
+        this.tk = tk;
+    }
 }
 
-export interface BasedonExpr extends StatementType {
-    variable: ExpressionStatement
-    lines: LexToken[]
+export class BasedonExpr implements StatementType {
+    type: StatementKind = StatementKind.BasedonExpr;
+    variable: ExpressionStatement = null_statement;
+    lines: LexToken[] = [];
 }
 
-export interface GotoExpr extends StatementType {
-    line: LexToken
+export class GotoExpr implements StatementType {
+    type: StatementKind = StatementKind.GotoExpr;
+    line: LexToken;
+    constructor(line: LexToken) {
+        this.line = line;
+    }
 }
 
 export type UnaryOp = {
@@ -257,7 +287,6 @@ export type ExpressionList = ExpressionStatement[];
 type ErrorExpression = {
     loc: LexToken
 };
-
 
 function isEOL(cur: Cursor): boolean {
     return cur.matchAny(TokenKind.EndOfLineToken);
@@ -602,11 +631,8 @@ export function parse_assigned(cur: FileCursor, st: SymbolTable, tokens: Variabl
 
 export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: VariableInst[]): AssignStatement {
 
-    const stmt: AssignStatement = {
-        type: StatementKind.AssignStatement,
-        assigned: tokens,
-        expression: null_statement,
-    };
+    const stmt = new AssignStatement();
+    stmt.assigned = tokens;
     let tk = cur.current();
     while (tk.type !== TokenKind.EqualsSymbol) {
         if (tk.type === TokenKind.IdentifierToken) {
@@ -623,11 +649,7 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
 }
 
 function parse_set_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
-    const stmt: AssignStatement = {
-        type: StatementKind.AssignStatement,
-        assigned: [],
-        expression: null_statement
-    };
+    const stmt = new AssignStatement();
     if (!cur.matchAny(TokenKind.SetAction, TokenKind.ChangeAction, TokenKind.AdjustAction, TokenKind.LetAction)) {
         cur.addError({
             message: "expected assignment",
@@ -684,12 +706,7 @@ function parse_assigned_vars(cur: FileCursor, st: SymbolTable): VariableInst[] {
 
 
 function parse_print_statement(cur: FileCursor, st: SymbolTable): PrintStatement {
-    const stmt: PrintStatement = {
-        type: StatementKind.PrintStatement,
-        format: "",
-        variables: [],
-        tks: [],
-    };
+    const stmt = new PrintStatement();
     // TODO: actually parse the statement
     while (cur.remain() > 0 && !cur.match(TokenKind.EndOfLineToken)) {
         stmt.tks.push(cur.current());
@@ -702,11 +719,7 @@ function parse_print_statement(cur: FileCursor, st: SymbolTable): PrintStatement
 
 
 function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | CommandExpr {
-    const stmt: AssignStatement = {
-        type: StatementKind.AssignStatement,
-        assigned: [],
-        expression: null_statement
-    };
+    const stmt = new AssignStatement();
     const tk = cur.current();
     if (!cur.expect(TokenKind.StopStatement, "expected stop")) {
         return stmt;
@@ -726,11 +739,13 @@ function parse_stop(cur: FileCursor, st: SymbolTable): AssignStatement | Command
 
 function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
 
-    const stmt: AssignStatement = {
-        type: StatementKind.AssignStatement,
-        assigned: [],
-        expression: { type: TokenKind.OnValue, value: "Off", range: { begin: 0, end: 0, line: 0 } }
+    const stmt = new AssignStatement();
+    stmt.expression = {
+        type: TokenKind.OnValue,
+        value: "Off",
+        range: { begin: 0, end: 0, line: 0 }
     };
+
     if (!cur.matchAny(TokenKind.CloseAction, TokenKind.ShutAction, TokenKind.DisableAction)) {
         cur.addError({
             id: EboErrors.ParseError,
@@ -750,11 +765,13 @@ function parse_stop_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
 
 function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
 
-    const stmt: AssignStatement = {
-        type: StatementKind.AssignStatement,
-        assigned: [],
-        expression: { type: TokenKind.OnValue, value: "On", range: { begin: 0, end: 0, line: 0 } }
+    const stmt = new AssignStatement();
+    stmt.expression = {
+        type: TokenKind.OnValue,
+        value: "On",
+        range: { begin: 0, end: 0, line: 0 }
     };
+
     if (!cur.matchAny(TokenKind.StartAction, TokenKind.OpenAction, TokenKind.EnableAction)) {
         cur.addError({
             id: EboErrors.ParseError,
@@ -771,11 +788,7 @@ function parse_start_assignment(cur: FileCursor, st: SymbolTable): AssignStateme
 }
 
 function parse_turn_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
-    const stmt: AssignStatement = {
-        type: StatementKind.AssignStatement,
-        assigned: [],
-        expression: null_statement,
-    };
+    const stmt = new AssignStatement();
     if (!cur.expect(TokenKind.TurnAction, "expected turn statement")) {
         return stmt;
     }
@@ -810,10 +823,7 @@ function parse_turn_assignment(cur: FileCursor, st: SymbolTable): AssignStatemen
 export function parse_if_exp(cur: FileCursor, st: SymbolTable): IfStatement {
 
     const data: { [name: number]: LexToken[] } = {};
-    const stmt: IfStatement = {
-        type: StatementKind.IfStatement,
-        cond_expr: null_statement,
-    };
+    const stmt = new IfStatement();
 
     if (!cur.expect(TokenKind.IfStatement, "")) {
         return stmt;
@@ -893,11 +903,7 @@ export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForState
         return null;
     }
     const numeric_name = cur.current() as VarToken;
-    const stmt: ForStatement = {
-        type: StatementKind.ForStatement,
-        numeric_name: numeric_name
-        , statements: []
-    };
+    const stmt = new ForStatement(numeric_name);
     cur.advance();
     if (!cur.expect(TokenKind.EqualsSymbol, "for statement missing range assignment", EboErrors.ForStatementInvalidRange)) {
         return null;
@@ -989,12 +995,7 @@ export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForState
 
 
 export function parse_select_statement(cur: FileCursor, st: SymbolTable): SelectStatement {
-    const stmt: SelectStatement = {
-        type: StatementKind.SelectStatement,
-        test: null_statement,
-        cases: [],
-        elseStatements: []
-    };
+    const stmt = new SelectStatement();
     if (!cur.expect(TokenKind.SelectStatement, "")) {
         return stmt;
     }
@@ -1113,11 +1114,7 @@ export function parse_cases_statement(cur: FileCursor, st: SymbolTable): Express
 
 
 export function parse_case_statement(cur: FileCursor, st: SymbolTable): CaseStatement {
-    const stmt: CaseStatement = {
-        type: StatementKind.CaseStatement,
-        cases: [],
-        statements: [],
-    };
+    const stmt = new CaseStatement();
     stmt.cases = parse_cases_statement(cur, st);
     stmt.statements = parse_statements(cur, st);
     return stmt;
@@ -1126,11 +1123,8 @@ export function parse_case_statement(cur: FileCursor, st: SymbolTable): CaseStat
 
 export function parse_repeat_statement(cur: FileCursor, st: SymbolTable): RepeatStatement {
 
-    const stmt: RepeatStatement = {
-        type: StatementKind.RepeatStatement,
-        condition: errorExpr(cur.current()),
-        statements: [],
-    };
+    const stmt = new RepeatStatement();
+    stmt.condition = errorExpr(cur.current());
 
     if (!cur.expect(TokenKind.RepeatStatement, "expected repeat statement")) {
         return stmt;
@@ -1169,11 +1163,7 @@ export function parse_repeat_statement(cur: FileCursor, st: SymbolTable): Repeat
 
 
 export function parse_while_statement(cur: FileCursor, st: SymbolTable): WhileStatement {
-    let stmt: WhileStatement = {
-        type: StatementKind.WhileStatement,
-        condition: null_statement,
-        statements: [],
-    };
+    let stmt = new WhileStatement();
     if (!cur.expect(TokenKind.WhileStatement, "expected While statement")) {
         return stmt;
     }
@@ -1888,11 +1878,8 @@ export function parse_program(cursor: FileCursor, symTable: SymbolTable): Progra
     if (symTable.parameter_ids.length) {
         pgm.type = ProgramType.Function;
     }
-    const initial_line: LineStatement = {
-        type: StatementKind.LineStatement,
-        name: "",
-        statements: parse_statements(cursor, symTable)
-    };
+    const initial_line: LineStatement = new LineStatement();
+    initial_line.statements = parse_statements(cursor, symTable);
     if (initial_line.statements.length) {
         pgm.lines.push(initial_line);
     }
@@ -1912,11 +1899,7 @@ export function parse_program(cursor: FileCursor, symTable: SymbolTable): Progra
         if (cursor.match(TokenKind.EndOfFileToken)) {
             break;
         }
-        const line: LineStatement = {
-            type: StatementKind.LineStatement,
-            name: "",
-            statements: []
-        };
+        const line: LineStatement = new LineStatement();
         const tk = parse_line(cursor, symTable);
         if (tk) {
             line.token = tk;
