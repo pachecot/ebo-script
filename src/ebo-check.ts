@@ -24,6 +24,7 @@ export enum StatementKind {
     FunctionExpression,
     CommandStatement,
     LineStatement,
+    AssignBlock,
 }
 
 export interface StatementType {
@@ -35,18 +36,26 @@ const null_statement: NullStatement = null;
 
 export type Declarations = VariableDecl[] | FunctionDecl[] | ParameterDecl[];
 
-export interface VariableInst {
-    name: string
-    index?: number | ExpressionStatement
-    token: LexToken
-    property?: LexToken
+export class VariableInst {
+    name: string = "";
+    token: LexToken;
+    index?: number | ExpressionStatement;
+    property?: LexToken;
+    constructor(name: string, token: LexToken) {
+        this.name = name;
+        this.token = token;
+    }
 }
 
-export interface ArgInst {
-    name: string
-    id: number | ExpressionStatement
-    index?: number | ExpressionStatement
-    token: LexToken
+export class ArgInst {
+    name: string;
+    token: LexToken;
+    id: number | ExpressionStatement = -1;
+    index?: number | ExpressionStatement;
+    constructor(name: string, token: LexToken) {
+        this.name = name;
+        this.token = token;
+    }
 }
 
 export class FunctionExpression implements StatementType {
@@ -146,8 +155,9 @@ export class AssignStatement implements StatementType {
     expression: ExpressionStatement = null_statement;
 }
 
-export interface AssignBlock extends StatementType {
-    assignments: AssignStatement[]
+export class AssignBlock implements StatementType {
+    readonly type: StatementKind = StatementKind.AssignBlock;
+    assignments: AssignStatement[] = []
 }
 
 export class IfStatement implements StatementType {
@@ -207,10 +217,10 @@ export enum ProgramType {
     Function
 }
 
-export interface Program {
-    type: ProgramType
-    declarations: Declarations
-    lines: LineStatement[]
+export class Program {
+    type: ProgramType = ProgramType.Program;
+    declarations: Declarations = [];
+    lines: LineStatement[] = [];
 }
 
 export type Statement =
@@ -1349,10 +1359,7 @@ export function declaration_list_item(cur: FileCursor, local: boolean): Variable
         }
     }
     const tk = cur.current();
-    let vi: VariableInst = {
-        name: tk.value,
-        token: tk
-    };
+    let vi = new VariableInst(tk.value, tk);
     cur.advance();
 
     if (cur.matchAny(TokenKind.BracketLeftSymbol)) {
@@ -1745,10 +1752,7 @@ export function expression(cursor: FileCursor, st: SymbolTable, op: OpCode = OpC
 export function parse_identifier(cursor: FileCursor, symTable: SymbolTable): VariableInst {
     const tk = cursor.current();
     cursor.advance();
-    const vi: VariableInst = {
-        name: tk.value,
-        token: tk,
-    };
+    const vi = new VariableInst(tk.value, tk);
     if (cursor.matchAny(
         TokenKind.AlarmKeyword, TokenKind.RefreshKeyword,
         TokenKind.SizeKeyword, TokenKind.StateKeyword)) {
@@ -1765,11 +1769,7 @@ export function parse_identifier(cursor: FileCursor, symTable: SymbolTable): Var
 export function parse_arg_reference(cursor: FileCursor, symTable: SymbolTable): ArgInst {
     const tk = cursor.current();
     cursor.advance();
-    const vi: ArgInst = {
-        name: tk.value,
-        token: tk,
-        id: -1,
-    };
+    const vi = new ArgInst(tk.value, tk);
     if (!cursor.expect(TokenKind.BracketLeftSymbol, "Argument references require indexes")) {
         return vi;
     }
@@ -1869,11 +1869,7 @@ export function parse_line(cursor: FileCursor, symTable: SymbolTable) {
 }
 
 export function parse_program(cursor: FileCursor, symTable: SymbolTable): Program {
-    const pgm: Program = {
-        type: ProgramType.Program,
-        declarations: [],
-        lines: []
-    };
+    const pgm = new Program();
     pgm.declarations = parse_declarations(cursor, symTable);
     if (symTable.parameter_ids.length) {
         pgm.type = ProgramType.Function;
