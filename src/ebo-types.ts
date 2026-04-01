@@ -492,6 +492,8 @@ export const enum TokenKind {
     //#endregion
 };
 
+//#region types
+
 export type FunctionKind =
     TokenKind.GetBufferedValueFunction
     | TokenKind.GetBufferSizeFunction

@@ -347,10 +347,7 @@ export function parse_goto_statement(cur: Cursor, st: SymbolTable): boolean {
 
 export function parse_goto(cur: Cursor, st: SymbolTable): GotoExpr {
     parse_goto_statement(cur, st);
-    const gt: GotoExpr = {
-        type: StatementKind.GotoExpr,
-        line: cur.current()
-    };
+    const gt = new GotoExpr(cur.current());
     cur.advance();
     if (gt.line) {
         st.lookup_line(gt.line);
@@ -368,21 +365,17 @@ export function parse_command(cur: Cursor, st: SymbolTable): CommandExpr {
 export function parse_return_command(cur: FileCursor, st: SymbolTable): CommandStatement {
     const cmd: CommandExpr = cur.current();
     cur.advance();
-    return {
-        type: StatementKind.CommandStatement,
-        tk: cmd,
-        expression: expression(cur, st)
-    };
+    const commandStatement = new CommandStatement(cmd);
+    commandStatement.expression = expression(cur, st);
+    return commandStatement;
 }
 
 export function parse_wait_command(cur: FileCursor, st: SymbolTable): CommandStatement {
     const cmd: CommandExpr = cur.current();
     cur.advance();
-    return {
-        type: StatementKind.CommandStatement,
-        tk: cmd,
-        expression: expression(cur, st)
-    };
+    const commandStatement = new CommandStatement(cmd);
+    commandStatement.expression = expression(cur, st);
+    return commandStatement;
 }
 
 
@@ -418,11 +411,7 @@ export function parse_parentheses_expression(cursor: FileCursor, st: SymbolTable
 
 export function parse_function_expression(cursor: FileCursor, st: SymbolTable): FunctionExpression {
     const tk = cursor.current();
-    const exp: FunctionExpression = {
-        type: StatementKind.FunctionExpression,
-        function: tk,
-        arguments: []
-    };
+    const exp = new FunctionExpression(tk);
     if (!isFunctionKind(tk.type)) {
         if (!cursor.expect(TokenKind.FunctionCallToken, "expected function call")) {
             return exp;
@@ -1548,12 +1537,7 @@ export function declare_argument(cur: FileCursor, ast: SymbolTable): ParameterDe
 
 
 export function parse_basedon_statement(cur: FileCursor, st: SymbolTable): BasedonExpr {
-    const res: BasedonExpr = {
-        type: StatementKind.BasedonExpr,
-        variable: null,
-        lines: [],
-    };
-
+    const res = new BasedonExpr();
     if (!cur.expect(TokenKind.BasedonStatement, "expected BasedOn")) {
         return res;
     }
