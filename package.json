@@ -101,6 +101,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Specifies to compact declarataions when cleaning."
+				},
+				"ebo-script.alignAssignments": {
+					"type": "boolean",
+					"default": true,
+					"description": "Align consecutive assignment '=' signs to the same column (Go-style). Set to false to use single-space normalization instead."
 				}
 			}
 		}
