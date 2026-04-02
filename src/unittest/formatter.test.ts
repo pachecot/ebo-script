@@ -2,9 +2,20 @@ import * as assert from 'assert';
 import { ebo_scan_text, LexToken } from '../ebo-scanner';
 import { detect_assign_line, compute_lhs_end } from '../ebo-formatter-utils';
 import { TokenKind } from '../ebo-types';
+import { FileCursor } from '../file-cursor';
+import { SymbolTable } from '../SymbolTable';
+import { AssignBlock, AssignStatement, parse_statements, removeWhiteSpace } from '../ebo-check';
 
 function scanLine(text: string): LexToken[] {
     return ebo_scan_text(text + '\n');
+}
+
+function parseStatements(text: string) {
+    const tkn_lists = ebo_scan_text(text);
+    const tks = removeWhiteSpace(tkn_lists);
+    const st = new SymbolTable();
+    const cur = new FileCursor(tks, st);
+    return parse_statements(cur, st);
 }
 
 describe('Formatter Tests', () => {
@@ -38,8 +49,22 @@ describe('Formatter Tests', () => {
             assert.strictEqual(tks[idx!].type, TokenKind.EqualsSymbol);
         });
 
-        it('multiple targets assignment returns = index', () => {
+        it('multiple targets with comma returns = index', () => {
             const tks = scanLine('x, y = 1');
+            const idx = detect_assign_line(tks);
+            assert.notStrictEqual(idx, undefined);
+            assert.strictEqual(tks[idx!].type, TokenKind.EqualsSymbol);
+        });
+
+        it('assignment with expression RHS returns = index', () => {
+            const tks = scanLine('result = a + b * 2');
+            const idx = detect_assign_line(tks);
+            assert.notStrictEqual(idx, undefined);
+            assert.strictEqual(tks[idx!].type, TokenKind.EqualsSymbol);
+        });
+
+        it('assignment with string literal RHS returns = index', () => {
+            const tks = scanLine('msg = "hello"');
             const idx = detect_assign_line(tks);
             assert.notStrictEqual(idx, undefined);
             assert.strictEqual(tks[idx!].type, TokenKind.EqualsSymbol);
@@ -52,6 +77,11 @@ describe('Formatter Tests', () => {
 
         it('IF statement returns undefined', () => {
             const tks = scanLine('IF x = 1 THEN');
+            assert.strictEqual(detect_assign_line(tks), undefined);
+        });
+
+        it('WHILE statement returns undefined', () => {
+            const tks = scanLine('WHILE x = 1');
             assert.strictEqual(detect_assign_line(tks), undefined);
         });
 
@@ -69,65 +99,171 @@ describe('Formatter Tests', () => {
             const tks = scanLine('SET x = 1');
             assert.strictEqual(detect_assign_line(tks), undefined);
         });
+
+        it('CHANGE action keyword returns undefined', () => {
+            const tks = scanLine('CHANGE x = 1');
+            assert.strictEqual(detect_assign_line(tks), undefined);
+        });
+
+        it('LET action keyword returns undefined', () => {
+            const tks = scanLine('LET x = 1');
+            assert.strictEqual(detect_assign_line(tks), undefined);
+        });
+
+        it('continuation line returns undefined', () => {
+            const tks = ebo_scan_text('x = 1 ~\n  + 2\n');
+            // second physical line starts with whitespace then '+' — not an assignment
+            const lines: LexToken[][] = [];
+            let current: LexToken[] = [];
+            for (const tk of tks) {
+                current.push(tk);
+                if (tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.ContinueLineToken) {
+                    lines.push(current);
+                    current = [];
+                }
+            }
+            if (current.length) { lines.push(current); }
+            // the continuation follow-up line should not be detected as an assignment
+            assert.strictEqual(detect_assign_line(lines[1]), undefined);
+        });
+
+        it('= inside brackets is not the assignment =', () => {
+            // x[a = 1] — the only = is inside brackets
+            const tks = scanLine('x[a = 1] = 2');
+            const idx = detect_assign_line(tks);
+            assert.notStrictEqual(idx, undefined);
+            // make sure it found the outer =, not the inner one
+            assert.ok(idx! > tks.findIndex(t => t.type === TokenKind.BracketRightSymbol));
+        });
     });
 
     describe('compute_lhs_end', () => {
 
         it('simple variable: lhs_end is end of identifier', () => {
-            // 'x = 1'  -> tokens: [x, ws, =, ws, 1, EOL]
             const tks = scanLine('x = 1');
             const eq_idx = detect_assign_line(tks)!;
-            const lhs_end = compute_lhs_end(tks, eq_idx);
-            // 'x' ends at column 1
-            assert.strictEqual(lhs_end, 1);
+            assert.strictEqual(compute_lhs_end(tks, eq_idx), 1);
         });
 
         it('long variable: lhs_end is end of identifier', () => {
             const tks = scanLine('longVariableName = 2');
             const eq_idx = detect_assign_line(tks)!;
-            const lhs_end = compute_lhs_end(tks, eq_idx);
-            assert.strictEqual(lhs_end, 'longVariableName'.length);
+            assert.strictEqual(compute_lhs_end(tks, eq_idx), 'longVariableName'.length);
         });
 
         it('array subscript: lhs_end is end of ]', () => {
             const tks = scanLine('x[3] = 4');
             const eq_idx = detect_assign_line(tks)!;
-            const lhs_end = compute_lhs_end(tks, eq_idx);
             // 'x[3]' ends at column 4
-            assert.strictEqual(lhs_end, 4);
+            assert.strictEqual(compute_lhs_end(tks, eq_idx), 4);
         });
 
         it('indented variable: lhs_end includes indent', () => {
             const tks = scanLine('  x = 1');
             const eq_idx = detect_assign_line(tks)!;
-            const lhs_end = compute_lhs_end(tks, eq_idx);
             // '  x' ends at column 3
-            assert.strictEqual(lhs_end, 3);
+            assert.strictEqual(compute_lhs_end(tks, eq_idx), 3);
+        });
+
+        it('multiple targets: lhs_end is end of last target', () => {
+            const tks = scanLine('abc, xy = 1');
+            const eq_idx = detect_assign_line(tks)!;
+            // 'xy' ends at column 7 (after 'abc, ')
+            assert.strictEqual(compute_lhs_end(tks, eq_idx), 'abc, xy'.length);
+        });
+
+        it('target with extra spaces before =: lhs_end skips whitespace', () => {
+            const tks = scanLine('x   = 1');
+            const eq_idx = detect_assign_line(tks)!;
+            assert.strictEqual(compute_lhs_end(tks, eq_idx), 1);
         });
     });
 
-    describe('alignment block detection', () => {
+    describe('group_assign_blocks (via parse_statements)', () => {
 
-        it('single assignment: no block detected (eq_idx returned)', () => {
-            const tks = scanLine('x = 1');
-            const idx = detect_assign_line(tks);
-            assert.notStrictEqual(idx, undefined, 'should detect single assignment');
+        it('single assignment stays as AssignStatement', () => {
+            const stmts = parseStatements('x = 1\n');
+            assert.strictEqual(stmts.length, 1);
+            assert.ok(stmts[0] instanceof AssignStatement);
         });
 
-        it('non-assignment between assignments breaks block', () => {
-            const line1 = scanLine('x = 1');
-            const line2 = scanLine('GOTO SomeLine');
-            const line3 = scanLine('longName = 2');
-            assert.notStrictEqual(detect_assign_line(line1), undefined);
-            assert.strictEqual(detect_assign_line(line2), undefined);
-            assert.notStrictEqual(detect_assign_line(line3), undefined);
+        it('two consecutive assignments become one AssignBlock', () => {
+            const stmts = parseStatements('x = 1\ny = 2\n');
+            assert.strictEqual(stmts.length, 1);
+            assert.ok(stmts[0] instanceof AssignBlock);
+            assert.strictEqual((stmts[0] as AssignBlock).assignments.length, 2);
         });
 
-        it('assignment inside parentheses is not detected as top-level', () => {
-            // This line has = inside parens — should not detect as an assignment line
-            // because the only = is at depth > 0 in the expression
-            const tks = scanLine('IF (x = 1) THEN');
-            assert.strictEqual(detect_assign_line(tks), undefined);
+        it('three consecutive assignments become one AssignBlock', () => {
+            const stmts = parseStatements('x = 1\ny = 2\nz = 3\n');
+            assert.strictEqual(stmts.length, 1);
+            assert.ok(stmts[0] instanceof AssignBlock);
+            assert.strictEqual((stmts[0] as AssignBlock).assignments.length, 3);
+        });
+
+        it('AssignBlock preserves variable names and values', () => {
+            const stmts = parseStatements('x = 1\nlongName = 2\n');
+            const block = stmts[0] as AssignBlock;
+            assert.strictEqual(block.assignments[0].assigned[0].name, 'x');
+            assert.strictEqual(block.assignments[1].assigned[0].name, 'longName');
+        });
+
+        it('non-assignment between two assignments keeps them separate', () => {
+            const stmts = parseStatements('x = 1\nGOTO done\ny = 2\ndone:\n');
+            // x=1 alone, GOTO, y=2 alone — 3 statements
+            assert.strictEqual(stmts.length, 3);
+            assert.ok(stmts[0] instanceof AssignStatement);
+            assert.ok(stmts[2] instanceof AssignStatement);
+        });
+
+        it('block followed by non-assignment then block', () => {
+            const stmts = parseStatements('a = 1\nb = 2\nGOTO done\nc = 3\nd = 4\ndone:\n');
+            // [AssignBlock(a,b), GOTO, AssignBlock(c,d)]
+            assert.strictEqual(stmts.length, 3);
+            assert.ok(stmts[0] instanceof AssignBlock);
+            assert.strictEqual((stmts[0] as AssignBlock).assignments.length, 2);
+            assert.ok(stmts[2] instanceof AssignBlock);
+            assert.strictEqual((stmts[2] as AssignBlock).assignments.length, 2);
+        });
+
+        it('AssignBlock has correct StatementKind type', () => {
+            const stmts = parseStatements('x = 1\ny = 2\n');
+            const block = stmts[0] as AssignBlock;
+            assert.ok(block instanceof AssignBlock);
+        });
+    });
+
+    describe('detect_assign_line: block boundary helpers', () => {
+
+        it('all assignment lines in a run are detected', () => {
+            const lines = [
+                'x = 1',
+                'longVariableName = 2',
+                'y = 3',
+            ];
+            for (const line of lines) {
+                assert.notStrictEqual(
+                    detect_assign_line(scanLine(line)),
+                    undefined,
+                    `expected assignment detection for: ${line}`
+                );
+            }
+        });
+
+        it('non-assignment lines in a run all return undefined', () => {
+            const lines = [
+                'GOTO done',
+                'IF x THEN',
+                'done:',
+                'SET x = 1',
+            ];
+            for (const line of lines) {
+                assert.strictEqual(
+                    detect_assign_line(scanLine(line)),
+                    undefined,
+                    `expected undefined for: ${line}`
+                );
+            }
         });
     });
 });
