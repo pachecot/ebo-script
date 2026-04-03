@@ -226,6 +226,7 @@ export class Program {
 export type Statement =
     | NullStatement
     | AssignStatement
+    | AssignBlock
     | CaseStatement
     | ForStatement
     | PrintStatement
@@ -1794,6 +1795,29 @@ export function parse_statement(cursor: FileCursor, symTable: SymbolTable): Stat
     return null_statement;
 }
 
+function group_assign_blocks(stmts: Statements): Statements {
+    const result: Statements = [];
+    let i = 0;
+    while (i < stmts.length) {
+        if (stmts[i] instanceof AssignStatement) {
+            const block = new AssignBlock();
+            while (i < stmts.length && stmts[i] instanceof AssignStatement) {
+                block.assignments.push(stmts[i] as AssignStatement);
+                i++;
+            }
+            if (block.assignments.length === 1) {
+                result.push(block.assignments[0]);
+            } else {
+                result.push(block);
+            }
+        } else {
+            result.push(stmts[i]);
+            i++;
+        }
+    }
+    return result;
+}
+
 export function parse_statements(cursor: FileCursor, symTable: SymbolTable): Statements {
     consumeEOL(cursor);
     let stmts: Statements = [];
@@ -1805,7 +1829,7 @@ export function parse_statements(cursor: FileCursor, symTable: SymbolTable): Sta
         stmts.push(stmt);
         consumeEOL(cursor);
     }
-    return stmts;
+    return group_assign_blocks(stmts);
 }
 
 const reFallthru = /\bfallthru\b/i;

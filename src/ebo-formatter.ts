@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import { ebo_scan_text, LexToken, TextRange } from './ebo-scanner';
 import { TokenKind, isFunctionKind, isOperatorKind, isVariableKind, isValueKind, isSymbolKind } from './ebo-types';
+import { detect_assign_line, compute_lhs_end, is_eof_skip_line } from './ebo-formatter-utils';
+
+export { detect_assign_line, compute_lhs_end, is_eof_skip_line };
 
 function test_if_then_open(line: LexToken[]) {
 
@@ -126,13 +129,87 @@ function range_size(rng: TextRange) {
 
 const reTrailingSpaces = /\s+$/;
 
+/**
+ * Generate alignment edits for consecutive assignment blocks.
+ * Groups runs of consecutive assignment lines (same adjusted indent, no
+ * blank line between them) and emits edits that pad the whitespace before
+ * each '=' so all signs in the block land on the same column.
+ */
+function get_alignment_edits(
+    tokensByLine: LexToken[][],
+    assign_eq_map: Map<number, number>,
+    indent_delta: Map<number, number>
+): vscode.TextEdit[] {
+    const edits: vscode.TextEdit[] = [];
+    let i = 0;
+
+    while (i < tokensByLine.length) {
+        if (!assign_eq_map.has(i)) {
+            i++;
+            continue;
+        }
+
+        const start_tks = tokensByLine[i];
+        const start_first = start_tks[0].type === TokenKind.WhitespaceToken ? start_tks[1] : start_tks[0];
+        const start_indent = start_first.range.begin + (indent_delta.get(i) ?? 0);
+
+        type BlockEntry = { line_tks: LexToken[]; eq_idx: number; adj_lhs_end: number; };
+        const block: BlockEntry[] = [];
+        let j = i;
+
+        while (j < tokensByLine.length) {
+            const ei = assign_eq_map.get(j);
+            if (ei === undefined) { break; }
+
+            const ltks = tokensByLine[j];
+            const ws = ltks[0].type === TokenKind.WhitespaceToken;
+            const ft = ws ? ltks[1] : ltks[0];
+            const adj_indent = ft.range.begin + (indent_delta.get(j) ?? 0);
+            if (block.length > 0 && adj_indent !== start_indent) { break; }
+
+            block.push({
+                line_tks: ltks,
+                eq_idx: ei,
+                adj_lhs_end: compute_lhs_end(ltks, ei) + (indent_delta.get(j) ?? 0),
+            });
+            j++;
+        }
+
+        if (block.length >= 2) {
+            const target_col = Math.max(...block.map(b => b.adj_lhs_end)) + 1;
+
+            for (const { line_tks: ltks, eq_idx: ei, adj_lhs_end } of block) {
+                const eq_tk = ltks[ei];
+                const spaces_needed = target_col - adj_lhs_end;
+                const prev_tk = ltks[ei - 1];
+
+                if (prev_tk && prev_tk.type === TokenKind.WhitespaceToken) {
+                    const current_spaces = prev_tk.range.end - prev_tk.range.begin;
+                    if (current_spaces !== spaces_needed) {
+                        edits.push(vscode.TextEdit.replace(toRange(prev_tk.range), ' '.repeat(spaces_needed)));
+                    }
+                } else {
+                    edits.push(vscode.TextEdit.insert(pos_start(eq_tk.range), ' '.repeat(spaces_needed)));
+                }
+            }
+        }
+
+        i = j > i ? j : i + 1;
+    }
+
+    return edits;
+}
+
 export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit[] {
 
+    const alignAssignments = vscode.workspace.getConfiguration('ebo-script').get<boolean>('alignAssignments', true);
     let tokens = ebo_scan_text(document.getText());
-    let assignment_blocks: number[] = [];
+    const assign_eq_map = new Map<number, number>();
+    const indent_delta = new Map<number, number>();
     let edits: vscode.TextEdit[] = [];
     let depth = 0;
     let line_continue = false;
+    let line_idx = 0;
 
     const editor = vscode.window.activeTextEditor;
     const tabSize = Number(editor?.options.tabSize || 2);
@@ -152,12 +229,19 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
 
     for (let line_tks of tokensByLine) {
 
-        if (line_tks.length === 1) {
-            // trim trailing whitespace at EOF if no EOF token
+        if (alignAssignments && !line_continue && line_tks.length > 1) {
+            const eq_i = detect_assign_line(line_tks);
+            if (eq_i !== undefined) {
+                assign_eq_map.set(line_idx, eq_i);
+            }
+        }
+
+        if (is_eof_skip_line(line_tks)) {
+            // blank line (EOL only) or trailing whitespace at EOF with no newline
             if (line_tks[0].type === TokenKind.WhitespaceToken && line_tks[0].value.length > 0) {
                 edits.push(vscode.TextEdit.delete(toRange(line_tks[0].range)));
             }
-            /* EOL */
+            line_idx++;
             continue;
         }
 
@@ -196,7 +280,8 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         } else {
             const x_depth = line_continue ? depth + tabSize * 2 : depth;
             const cnt = x_depth - first.range.begin;
-            if (line_tks.length > 2 && x_depth && ws && /\t/.test(ws.value)) { // remove tabs 
+            indent_delta.set(line_idx, cnt);
+            if (line_tks.length > 2 && x_depth && ws && /\t/.test(ws.value)) { // remove tabs
                 edits.push(vscode.TextEdit.replace(toRange(ws.range), ' '.repeat(Math.abs(x_depth))));
             } else {
                 if (cnt > 0) {
@@ -433,6 +518,27 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                         break;
                     }
 
+                case TokenKind.EqualsSymbol: {  //  '='
+                    const p = line_tks[i - 1];
+                    const n = line_tks[i + 1];
+                    // Skip before-space normalization for alignment '=' — second pass handles it
+                    if (!assign_eq_map.has(line_idx) || assign_eq_map.get(line_idx) !== i) {
+                        if (p.type !== TokenKind.WhitespaceToken) {
+                            edits.push(insertSpace(tk.range));
+                        } else if (range_size(p.range) > 1 || p.value === '\t') {
+                            edits.push(singleSpace(p.range));
+                            p.range.end = p.range.begin + 1;
+                        }
+                    }
+                    if (n.type !== TokenKind.WhitespaceToken) {
+                        edits.push(insertSpace(n.range));
+                    } else if (range_size(n.range) > 1 || n.value === '\t') {
+                        edits.push(singleSpace(n.range));
+                        n.range.end = n.range.begin + 1;
+                    }
+                    break;
+                }
+
                 case TokenKind.GreaterThanEqualSymbol:  //  '>='
                 case TokenKind.LessThanEqualSymbol:     //  '<='
                 case TokenKind.NotEqualSymbol:          //  '<>'
@@ -440,7 +546,6 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.AngleRightSymbol:        //  '>'
                 case TokenKind.AsteriskSymbol:          //  '*'
                 case TokenKind.CaretSymbol:             //  '^'
-                case TokenKind.EqualsSymbol:            //  '='
                 case TokenKind.AngleRightSymbol:        //  '>'
                 case TokenKind.AngleLeftSymbol:         //  '<'
                 case TokenKind.PlusSymbol:              //  '+'
@@ -505,6 +610,11 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
         }
 
         line_continue = lastTk.type === TokenKind.ContinueLineToken;
+        line_idx++;
+    }
+
+    if (alignAssignments) {
+        edits.push(...get_alignment_edits(tokensByLine, assign_eq_map, indent_delta));
     }
 
     return edits;

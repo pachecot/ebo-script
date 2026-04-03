@@ -7,7 +7,7 @@ import { FileCursor } from '../file-cursor';
 import { SymbolTable, VariableDecl } from '../SymbolTable';
 import { ebo_scan_text, LexToken } from '../ebo-scanner';
 import {
-	AssignStatement, BinaryOp, parse_bracket_expression, expression,
+	AssignBlock, AssignStatement, BinaryOp, parse_bracket_expression, expression,
 	ExpressionList, parse_for_statement, parse_goto,
 	parse_function_expression, IfStatement, IsOp, OpCode, parse_declarations,
 	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_statement,
@@ -649,10 +649,15 @@ describe('Check Tests', () => {
 				if (!stmt.false_expr) {
 					assert.fail("expected false condition statement");
 				}
-				assert.equal(2, stmt.true_expr.length);
-				assert.equal(2, stmt.false_expr.length);
-				assert.equal('y', (stmt.true_expr[0] as AssignStatement).assigned[0].name);
-				assert.equal('y', (stmt.false_expr[0] as AssignStatement).assigned[0].name);
+				// consecutive assignments are grouped into AssignBlock
+				assert.equal(1, stmt.true_expr.length);
+				assert.equal(1, stmt.false_expr.length);
+				assert.ok(stmt.true_expr[0] instanceof AssignBlock);
+				assert.ok(stmt.false_expr[0] instanceof AssignBlock);
+				assert.equal(2, (stmt.true_expr[0] as AssignBlock).assignments.length);
+				assert.equal(2, (stmt.false_expr[0] as AssignBlock).assignments.length);
+				assert.equal('y', (stmt.true_expr[0] as AssignBlock).assignments[0].assigned[0].name);
+				assert.equal('y', (stmt.false_expr[0] as AssignBlock).assignments[0].assigned[0].name);
 			});
 			it('should parse nested if then else statements', () => {
 				const stmt = parseWith(
