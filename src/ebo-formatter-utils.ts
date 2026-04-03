@@ -58,6 +58,21 @@ export function detect_assign_line(line_tks: LexToken[]): number | undefined {
 }
 
 /**
+ * Returns true for single-token lines that the formatter should skip:
+ * - EOL-only lines (blank lines)
+ * - Whitespace-only lines (trailing whitespace at EOF with no newline)
+ *
+ * Single meaningful tokens at EOF without a trailing newline (e.g. EndIf,
+ * EndWhile, EndSelect) return false so the formatter still processes them
+ * for indentation and depth tracking.
+ */
+export function is_eof_skip_line(line_tks: LexToken[]): boolean {
+    if (line_tks.length !== 1) { return false; }
+    const tk = line_tks[0];
+    return tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.WhitespaceToken;
+}
+
+/**
  * Returns the column end of the last LHS token before the '=' at eq_idx.
  */
 export function compute_lhs_end(line_tks: LexToken[], eq_idx: number): number {

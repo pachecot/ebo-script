@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { ebo_scan_text, LexToken } from '../ebo-scanner';
-import { detect_assign_line, compute_lhs_end } from '../ebo-formatter-utils';
+import { detect_assign_line, compute_lhs_end, is_eof_skip_line } from '../ebo-formatter-utils';
 import { TokenKind } from '../ebo-types';
 import { FileCursor } from '../file-cursor';
 import { SymbolTable } from '../SymbolTable';
@@ -264,6 +264,124 @@ describe('Formatter Tests', () => {
                     `expected undefined for: ${line}`
                 );
             }
+        });
+    });
+
+    // ─── is_eof_skip_line ─────────────────────────────────────────────────────
+    describe('is_eof_skip_line', () => {
+
+        function lastLine(text: string): LexToken[] {
+            const tokens = ebo_scan_text(text);
+            const lines: LexToken[][] = [];
+            let cur: LexToken[] = [];
+            for (const tk of tokens) {
+                cur.push(tk);
+                if (tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.ContinueLineToken) {
+                    lines.push(cur);
+                    cur = [];
+                }
+            }
+            if (cur.length) { lines.push(cur); }
+            return lines[lines.length - 1];
+        }
+
+        // cases that SHOULD be skipped
+        it('blank line (EOL only) is skipped', () => {
+            // "x = 1\n\n" — the second \n produces a [\n] line
+            const tks = lastLine('x = 1\n\n');
+            assert.strictEqual(tks.length, 1);
+            assert.strictEqual(is_eof_skip_line(tks), true);
+        });
+
+        it('trailing whitespace at EOF (no newline) is skipped', () => {
+            const tks = lastLine('x = 1\n   ');
+            assert.strictEqual(tks.length, 1);
+            assert.strictEqual(is_eof_skip_line(tks), true);
+        });
+
+        // cases that should NOT be skipped (single meaningful token at EOF)
+        it('EndIf at EOF without newline is NOT skipped', () => {
+            const tks = lastLine('If x Then\n  y = 1\nEndIf');
+            assert.strictEqual(tks.length, 1);
+            assert.strictEqual(is_eof_skip_line(tks), false);
+        });
+
+        it('EndWhile at EOF without newline is NOT skipped', () => {
+            const tks = lastLine('While x\n  y = 1\nEndWhile');
+            assert.strictEqual(tks.length, 1);
+            assert.strictEqual(is_eof_skip_line(tks), false);
+        });
+
+        it('EndSelect at EOF without newline is NOT skipped', () => {
+            const tks = lastLine('Select Case x\nCase 1\n  y = 1\nEndSelect');
+            assert.strictEqual(tks.length, 1);
+            assert.strictEqual(is_eof_skip_line(tks), false);
+        });
+
+        // multi-token lines always return false regardless of content
+        it('EndIf with trailing newline is NOT a skip line (length > 1)', () => {
+            const tks = lastLine('If x Then\n  y = 1\nEndIf\n');
+            assert.strictEqual(is_eof_skip_line(tks), false);
+        });
+
+        it('normal statement line is NOT a skip line', () => {
+            const tks = lastLine('x = 1\n');
+            assert.strictEqual(is_eof_skip_line(tks), false);
+        });
+    });
+
+    // ─── scanner tokenization at EOF ─────────────────────────────────────────
+    describe('scanner EOF tokenization', () => {
+
+        function tokensByLine(text: string): LexToken[][] {
+            const tokens = ebo_scan_text(text);
+            const lines = tokens.reduce((ar: LexToken[][], tk: LexToken) => {
+                ar[ar.length - 1].push(tk);
+                if (tk.type === TokenKind.EndOfLineToken || tk.type === TokenKind.ContinueLineToken) {
+                    ar.push([]);
+                }
+                return ar;
+            }, [[]] as LexToken[][]);
+            if (lines[lines.length - 1].length === 0) { lines.pop(); }
+            return lines;
+        }
+
+        it('EndIf without trailing newline produces 1-token last line', () => {
+            const lines = tokensByLine('If x Then\n  y = 1\nEndIf');
+            const last = lines[lines.length - 1];
+            assert.strictEqual(last.length, 1);
+            assert.strictEqual(last[0].type, TokenKind.EndIfStatement);
+        });
+
+        it('EndIf with trailing newline produces 2-token last line', () => {
+            const lines = tokensByLine('If x Then\n  y = 1\nEndIf\n');
+            const last = lines[lines.length - 1];
+            assert.strictEqual(last.length, 2);
+            assert.strictEqual(last[0].type, TokenKind.EndIfStatement);
+            assert.strictEqual(last[1].type, TokenKind.EndOfLineToken);
+        });
+
+        it('Next x without trailing newline produces multi-token last line', () => {
+            const lines = tokensByLine('For x = 1 to 5\n  y = 1\nNext x');
+            const last = lines[lines.length - 1];
+            assert.ok(last.length > 1, 'Next x should produce multiple tokens');
+            assert.strictEqual(last[0].type, TokenKind.NextStatement);
+        });
+
+        it('EndWhile without trailing newline produces 1-token last line', () => {
+            const lines = tokensByLine('While x\n  y = 1\nEndWhile');
+            const last = lines[lines.length - 1];
+            assert.strictEqual(last.length, 1);
+            assert.strictEqual(last[0].type, TokenKind.EndWhileStatement);
+        });
+
+        it('indented EndIf without trailing newline produces 2-token last line', () => {
+            // Leading whitespace is a separate token
+            const lines = tokensByLine('If x Then\n    y = 1\n  EndIf');
+            const last = lines[lines.length - 1];
+            assert.strictEqual(last.length, 2);
+            assert.strictEqual(last[0].type, TokenKind.WhitespaceToken);
+            assert.strictEqual(last[1].type, TokenKind.EndIfStatement);
         });
     });
 });

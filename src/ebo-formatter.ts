@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import { ebo_scan_text, LexToken, TextRange } from './ebo-scanner';
 import { TokenKind, isFunctionKind, isOperatorKind, isVariableKind, isValueKind, isSymbolKind } from './ebo-types';
-import { detect_assign_line, compute_lhs_end } from './ebo-formatter-utils';
+import { detect_assign_line, compute_lhs_end, is_eof_skip_line } from './ebo-formatter-utils';
 
-export { detect_assign_line, compute_lhs_end };
+export { detect_assign_line, compute_lhs_end, is_eof_skip_line };
 
 function test_if_then_open(line: LexToken[]) {
 
@@ -236,12 +236,11 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
             }
         }
 
-        if (line_tks.length === 1) {
-            // trim trailing whitespace at EOF if no EOF token
+        if (is_eof_skip_line(line_tks)) {
+            // blank line (EOL only) or trailing whitespace at EOF with no newline
             if (line_tks[0].type === TokenKind.WhitespaceToken && line_tks[0].value.length > 0) {
                 edits.push(vscode.TextEdit.delete(toRange(line_tks[0].range)));
             }
-            /* EOL */
             line_idx++;
             continue;
         }
