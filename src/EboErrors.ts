@@ -31,5 +31,7 @@ export enum EboErrors {
     UnreferencedLine,
     WhileMissingEndWhile,
     InvalidVariableName,
-    GotoInLoop
+    GotoInLoop,
+    DateTimeArithmeticInvalid,
+    TypeMismatch,
 }

@@ -7,6 +7,7 @@ import {
 import { EboErrors } from "./EboErrors";
 import { Cursor } from './cursor';
 import { FileCursor } from './file-cursor';
+import { Signatures, VarType } from './ebo-signatures';
 
 export enum StatementKind {
     NullStatement,
@@ -599,16 +600,104 @@ export function parse_is_statement(cur: FileCursor, st: SymbolTable, leftExp: Ex
     return exp;
 }
 
+// DateTime token types that represent a datetime value in the token stream
+const dateTimeTokenTypes = new Set<TokenKind>([
+    TokenKind.TimeToken,
+    TokenKind.DateVariable,
+]);
+
+/**
+ * Resolves the result SymbolType of an expression, or undefined when unknown.
+ * Used for DateTime / Numeric type-compatibility checks.
+ */
+export function expr_type(exp: ExpressionStatement, st: SymbolTable): SymbolType | undefined {
+    if (!exp) { return undefined; }
+
+    if (exp instanceof VariableInst) {
+        return st.variables[exp.name]?.type;
+    }
+
+    // Plain token — DateTime literals, system date/time variables, numbers, strings
+    const tk = exp as LexToken;
+    if (tk.type !== undefined && tk.value !== undefined) {
+        if (dateTimeTokenTypes.has(tk.type)) { return SymbolType.DateTime; }
+        if (tk.type === TokenKind.NumberToken) { return SymbolType.Numeric; }
+        if (tk.type === TokenKind.StringToken) { return SymbolType.StringType; }
+        // isVariableKind system variables: look up in symbol table first
+        if (isVariableKind(tk.type)) {
+            const vd = st.variables[tk.value];
+            if (vd) { return vd.type; }
+        }
+    }
+
+    // FunctionExpression — map return type from Signatures
+    const fe = exp as FunctionExpression;
+    if (fe.function !== undefined && fe.arguments !== undefined) {
+        const sig = Signatures[fe.function.value.toUpperCase()];
+        if (sig?.returns === VarType.DateTime) { return SymbolType.DateTime; }
+        if (sig?.returns === VarType.Numeric) { return SymbolType.Numeric; }
+        if (sig?.returns === VarType.String) { return SymbolType.StringType; }
+        return undefined;
+    }
+
+    // BinaryOp — derive result type from operator and operand types
+    const bo = exp as BinaryOp;
+    if (bo.code !== undefined && bo.exp1 !== undefined && bo.exp2 !== undefined) {
+        const t1 = expr_type(bo.exp1, st);
+        const t2 = expr_type(bo.exp2, st);
+        if (bo.code === OpCode.ADD || bo.code === OpCode.SUB) {
+            const dt = SymbolType.DateTime;
+            const num = SymbolType.Numeric;
+            if (t1 === dt && t2 === dt) {
+                // dt - dt → Numeric; dt + dt → invalid (undefined signals error)
+                return bo.code === OpCode.SUB ? num : undefined;
+            }
+            if (t1 === dt && t2 === num) { return dt; }  // dt ± num → DateTime
+            if (t1 === num && t2 === dt) {
+                // num + dt → DateTime; num - dt → invalid
+                return bo.code === OpCode.ADD ? dt : undefined;
+            }
+        }
+        return t1;  // conservative: result type follows left operand for other ops
+    }
+
+    return undefined;
+}
+
 export function parse_binary_operation(cur: FileCursor, st: SymbolTable, leftExp: ExpressionStatement): BinaryOp {
     const op = cur.current();
     const code = BinOpCodeLookup(op);
     cur.advance();
-    return {
+    const result: BinaryOp = {
         code: code,
         op: op,
         exp1: leftExp,
         exp2: expression(cur, st, code)
     };
+
+    if (code === OpCode.ADD || code === OpCode.SUB) {
+        const t1 = expr_type(result.exp1, st);
+        const t2 = expr_type(result.exp2, st);
+        const dt = SymbolType.DateTime;
+        const num = SymbolType.Numeric;
+        if (t1 === dt && t2 === dt && code === OpCode.ADD) {
+            cur.addError({
+                id: EboErrors.DateTimeArithmeticInvalid,
+                severity: Severity.Error,
+                message: "DateTime + DateTime is not valid; use DateTime - DateTime to get a Numeric duration.",
+                range: op.range
+            });
+        } else if (t1 === num && t2 === dt && code === OpCode.SUB) {
+            cur.addError({
+                id: EboErrors.DateTimeArithmeticInvalid,
+                severity: Severity.Error,
+                message: "Cannot subtract a DateTime from a Numeric; valid forms are: DateTime - DateTime, DateTime +/- Numeric.",
+                range: op.range
+            });
+        }
+    }
+
+    return result;
 }
 
 export function parse_expression_list(cur: FileCursor, st: SymbolTable): ExpressionList {
@@ -656,7 +745,36 @@ export function parse_assignment(cur: FileCursor, st: SymbolTable, tokens: Varia
     cur.advance();
     stmt.expression = expression(cur, st, OpCode.NOP);
     stmt.assigned.forEach(vi => { st.assigned_variable(vi.token); });
+    check_assignment_types(stmt, st);
     return stmt;
+}
+
+function check_assignment_types(stmt: AssignStatement, st: SymbolTable) {
+    const rhs_type = expr_type(stmt.expression, st);
+    if (rhs_type === undefined) { return; }
+    for (const vi of stmt.assigned) {
+        const vd = st.variables[vi.name];
+        if (!vd) { continue; }
+        const lhs_type = vd.type;
+        if (lhs_type === rhs_type) { continue; }
+        const dt = SymbolType.DateTime;
+        const num = SymbolType.Numeric;
+        if (lhs_type === dt && rhs_type === num) {
+            st.add_error({
+                id: EboErrors.TypeMismatch,
+                severity: Severity.Warning,
+                message: `Assigning Numeric expression to DateTime variable '${vi.name}'; did you mean to add/subtract from a DateTime?`,
+                range: vi.token.range
+            });
+        } else if (lhs_type === num && rhs_type === dt) {
+            st.add_error({
+                id: EboErrors.TypeMismatch,
+                severity: Severity.Warning,
+                message: `Assigning DateTime expression to Numeric variable '${vi.name}'; consider declaring as DateTime.`,
+                range: vi.token.range
+            });
+        }
+    }
 }
 
 function parse_set_assignment(cur: FileCursor, st: SymbolTable): AssignStatement {
@@ -983,6 +1101,7 @@ export function parse_for_statement(cur: FileCursor, ast: SymbolTable): ForState
         || stmt.numeric_name.type !== TokenKind.IdentifierToken
         || !vn
         || (vn.modifier !== VarModifier.Local && vn.modifier !== VarModifier.Public)
+        || vn.type !== SymbolType.Numeric
     ) {
         ast.errors.push({
             severity: Severity.Error,

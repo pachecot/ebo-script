@@ -4,14 +4,15 @@ import * as assert from 'assert';
 // as well as import your extension to test it
 // import * as vscode from 'vscode';
 import { FileCursor } from '../file-cursor';
-import { SymbolTable, VariableDecl } from '../SymbolTable';
+import { SymbolTable, SymbolType, VariableDecl, VarModifier, VarTag } from '../SymbolTable';
 import { ebo_scan_text, LexToken } from '../ebo-scanner';
 import {
 	AssignBlock, AssignStatement, BinaryOp, parse_bracket_expression, expression,
 	ExpressionList, parse_for_statement, parse_goto,
 	parse_function_expression, IfStatement, IsOp, OpCode, parse_declarations,
 	parse_identifier, parse_if_exp, parse_line, parse_program, parse_select_statement,
-	parse_statement, removeWhiteSpace, VariableInst, ProgramType, parse_basedon_statement
+	parse_statement, removeWhiteSpace, VariableInst, ProgramType, parse_basedon_statement,
+	expr_type, ebo_parse_file
 } from '../ebo-check';
 import { TokenKind } from '../ebo-types';
 import { EboErrors } from '../EboErrors';
@@ -1156,5 +1157,216 @@ EndWhile
 			assert.equal(0, st.errors.length, "error: " + st.errors);
 		});
 	});
+});
+
+describe('Type Inference Tests', () => {
+
+	describe('expr_type', () => {
+
+		it('resolves Numeric literal', () => {
+			const st = new SymbolTable();
+			const exp = parseWith('42\n', expression, st);
+			assert.equal(SymbolType.Numeric, expr_type(exp, st));
+		});
+
+		it('resolves Numeric variable', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'n', type: SymbolType.Numeric, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('n\n', expression, st) as VariableInst;
+			assert.equal(SymbolType.Numeric, expr_type(exp, st));
+		});
+
+		it('resolves DateTime variable', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'dt', type: SymbolType.DateTime, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('dt\n', expression, st) as VariableInst;
+			assert.equal(SymbolType.DateTime, expr_type(exp, st));
+		});
+
+		it('resolves string literal', () => {
+			const st = new SymbolTable();
+			const exp = parseWith('"hello"\n', expression, st);
+			assert.equal(SymbolType.StringType, expr_type(exp, st));
+		});
+
+		it('Numeric + Numeric → Numeric', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'a', type: SymbolType.Numeric, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			st.declare_variable({ name: 'b', type: SymbolType.Numeric, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('a + b\n', expression, st) as BinaryOp;
+			assert.equal(SymbolType.Numeric, expr_type(exp, st));
+		});
+
+		it('DateTime - DateTime → Numeric', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'd1', type: SymbolType.DateTime, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			st.declare_variable({ name: 'd2', type: SymbolType.DateTime, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('d1 - d2\n', expression, st) as BinaryOp;
+			assert.equal(SymbolType.Numeric, expr_type(exp, st));
+		});
+
+		it('DateTime + Numeric → DateTime', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'dt', type: SymbolType.DateTime, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			st.declare_variable({ name: 'n', type: SymbolType.Numeric, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('dt + n\n', expression, st) as BinaryOp;
+			assert.equal(SymbolType.DateTime, expr_type(exp, st));
+		});
+
+		it('DateTime - Numeric → DateTime', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'dt', type: SymbolType.DateTime, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			st.declare_variable({ name: 'n', type: SymbolType.Numeric, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('dt - n\n', expression, st) as BinaryOp;
+			assert.equal(SymbolType.DateTime, expr_type(exp, st));
+		});
+
+		it('Numeric + DateTime → DateTime', () => {
+			const st = new SymbolTable();
+			st.declare_variable({ name: 'dt', type: SymbolType.DateTime, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			st.declare_variable({ name: 'n', type: SymbolType.Numeric, modifier: VarModifier.Local, tag: VarTag.None } as VariableDecl);
+			const exp = parseWith('n + dt\n', expression, st) as BinaryOp;
+			assert.equal(SymbolType.DateTime, expr_type(exp, st));
+		});
+
+		it('returns undefined for unknown variable', () => {
+			const st = new SymbolTable();
+			const exp = parseWith('unknownVar\n', expression, st) as VariableInst;
+			assert.equal(undefined, expr_type(exp, st));
+		});
+
+	});
+
+	describe('DateTimeArithmeticInvalid errors', () => {
+
+		it('DateTime + DateTime emits DateTimeArithmeticInvalid error', () => {
+			const result = ebo_parse_file(`
+DateTime d1, d2
+Numeric n
+n = d1 + d2
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.DateTimeArithmeticInvalid);
+			assert.equal(1, errors.length, "expected DateTimeArithmeticInvalid error");
+		});
+
+		it('Numeric - DateTime emits DateTimeArithmeticInvalid error', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+Numeric n, diff
+diff = n - dtime
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.DateTimeArithmeticInvalid);
+			assert.equal(1, errors.length, "expected DateTimeArithmeticInvalid error");
+		});
+
+		it('DateTime - DateTime is valid (no error)', () => {
+			const result = ebo_parse_file(`
+DateTime d1, d2
+Numeric n
+n = d1 - d2
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.DateTimeArithmeticInvalid);
+			assert.equal(0, errors.length, "expected no DateTimeArithmeticInvalid errors");
+		});
+
+		it('DateTime + Numeric is valid (no error)', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+Numeric n
+dtime = dtime + n
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.DateTimeArithmeticInvalid);
+			assert.equal(0, errors.length, "expected no DateTimeArithmeticInvalid errors");
+		});
+
+		it('Numeric + DateTime is valid (no error)', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+Numeric n
+dtime = n + dtime
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.DateTimeArithmeticInvalid);
+			assert.equal(0, errors.length, "expected no DateTimeArithmeticInvalid errors");
+		});
+
+	});
+
+	describe('TypeMismatch warnings', () => {
+
+		it('assigning Numeric to DateTime variable emits TypeMismatch warning', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+Numeric n
+dtime = n
+`);
+			const warnings = result.errors.filter(e => e.id === EboErrors.TypeMismatch);
+			assert.equal(1, warnings.length, "expected TypeMismatch warning");
+		});
+
+		it('assigning DateTime to Numeric variable emits TypeMismatch warning', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+Numeric n
+n = dtime
+`);
+			const warnings = result.errors.filter(e => e.id === EboErrors.TypeMismatch);
+			assert.equal(1, warnings.length, "expected TypeMismatch warning");
+		});
+
+		it('assigning Numeric expression to Numeric variable is valid', () => {
+			const result = ebo_parse_file(`
+Numeric a, b
+a = b + 1
+`);
+			const warnings = result.errors.filter(e => e.id === EboErrors.TypeMismatch);
+			assert.equal(0, warnings.length, "expected no TypeMismatch warnings");
+		});
+
+		it('assigning DateTime - DateTime (Numeric result) to Numeric variable is valid', () => {
+			const result = ebo_parse_file(`
+DateTime d1, d2
+Numeric n
+n = d1 - d2
+`);
+			const warnings = result.errors.filter(e => e.id === EboErrors.TypeMismatch);
+			assert.equal(0, warnings.length, "expected no TypeMismatch warnings");
+		});
+
+		it('assigning DateTime + Numeric (DateTime result) to DateTime variable is valid', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+Numeric n
+dtime = dtime + n
+`);
+			const warnings = result.errors.filter(e => e.id === EboErrors.TypeMismatch);
+			assert.equal(0, warnings.length, "expected no TypeMismatch warnings");
+		});
+
+	});
+
+	describe('For-loop type check', () => {
+
+		it('DateTime variable as for-loop counter emits ForIdentifierInvalid', () => {
+			const result = ebo_parse_file(`
+DateTime dtime
+For dtime = 1 To 10
+Next dtime
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.ForIdentifierInvalid);
+			assert.equal(1, errors.length, "expected ForIdentifierInvalid for DateTime loop variable");
+		});
+
+		it('Numeric variable as for-loop counter is valid', () => {
+			const result = ebo_parse_file(`
+Numeric n
+For n = 1 To 10
+Next n
+`);
+			const errors = result.errors.filter(e => e.id === EboErrors.ForIdentifierInvalid);
+			assert.equal(0, errors.length, "expected no ForIdentifierInvalid for Numeric loop variable");
+		});
+
+	});
+
 });
 
