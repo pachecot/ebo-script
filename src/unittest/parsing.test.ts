@@ -305,4 +305,51 @@ describe('Parsing Tests', () => {
         });
     });
 
+    // ─── keyword used as line name ────────────────────────────────────────────
+    describe('keyword used as line name', () => {
+
+        it('Goto with a keyword target emits KeywordUsedAsLineName warning', () => {
+            const result = ebo_parse_file('Goto DST\n');
+            const warns = result.errors.filter(e => e.id === EboErrors.KeywordUsedAsLineName);
+            assert.equal(1, warns.length, 'expected KeywordUsedAsLineName warning');
+        });
+
+        it('Goto with a keyword target does NOT emit UndefinedLine', () => {
+            const result = ebo_parse_file('Goto DST\n');
+            const undef = result.errors.filter(e => e.id === EboErrors.UndefinedLine);
+            assert.equal(0, undef.length, 'should not emit UndefinedLine for keyword goto target');
+        });
+
+        it('keyword line label emits KeywordUsedAsLineName warning', () => {
+            const result = ebo_parse_file('DST:\n');
+            const warns = result.errors.filter(e => e.id === EboErrors.KeywordUsedAsLineName);
+            assert.equal(1, warns.length, 'expected KeywordUsedAsLineName warning for keyword label');
+        });
+
+        it('keyword line label is still registered so a matching Goto does not error', () => {
+            const result = ebo_parse_file('Goto DST\nDST:\n');
+            const undef = result.errors.filter(e => e.id === EboErrors.UndefinedLine);
+            assert.equal(0, undef.length, 'keyword label should be declared so Goto resolves it');
+        });
+
+        it('keyword label and Goto each emit exactly one KeywordUsedAsLineName warning', () => {
+            const result = ebo_parse_file('Goto DST\nDST:\n');
+            const warns = result.errors.filter(e => e.id === EboErrors.KeywordUsedAsLineName);
+            assert.equal(2, warns.length, 'expected one warning at Goto and one at the label');
+        });
+
+        it('a normal identifier label emits no KeywordUsedAsLineName warning', () => {
+            const result = ebo_parse_file('Goto myLine\nmyLine:\n');
+            const warns = result.errors.filter(e => e.id === EboErrors.KeywordUsedAsLineName);
+            assert.equal(0, warns.length, 'normal identifier label should not warn');
+        });
+
+        it('another keyword (ON) used as goto target also warns', () => {
+            const result = ebo_parse_file('Goto ON\n');
+            const warns = result.errors.filter(e => e.id === EboErrors.KeywordUsedAsLineName);
+            assert.equal(1, warns.length, 'expected KeywordUsedAsLineName for Goto ON');
+        });
+
+    });
+
 });

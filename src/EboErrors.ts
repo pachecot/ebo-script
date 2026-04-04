@@ -34,4 +34,5 @@ export enum EboErrors {
     GotoInLoop,
     DateTimeArithmeticInvalid,
     TypeMismatch,
+    KeywordUsedAsLineName,
 }

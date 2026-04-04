@@ -350,7 +350,16 @@ export function parse_goto(cur: Cursor, st: SymbolTable): GotoExpr {
     const gt = new GotoExpr(cur.current());
     cur.advance();
     if (gt.line) {
-        st.lookup_line(gt.line);
+        if (isKeyword(gt.line.type)) {
+            st.add_error({
+                id: EboErrors.KeywordUsedAsLineName,
+                severity: Severity.Warning,
+                message: `Keyword '${gt.line.value}' used as line name; consider renaming the line.`,
+                range: gt.line.range
+            });
+        } else {
+            st.lookup_line(gt.line);
+        }
     }
     return gt;
 }
@@ -1991,6 +2000,20 @@ export function parse_line(cursor: FileCursor, symTable: SymbolTable) {
                 }
                 break;
             }
+    }
+    // Handle keyword used as a bare line label: e.g. DST:
+    if (isKeyword(tk.type) && cursor.item(1).type === TokenKind.ColonSymbol) {
+        if (cursor.remain() < 3 || cursor.item(2).type === TokenKind.EndOfLineToken) {
+            cursor.advance(3);
+            symTable.add_error({
+                id: EboErrors.KeywordUsedAsLineName,
+                severity: Severity.Warning,
+                message: `Keyword '${tk.value}' used as line name; consider renaming the line.`,
+                range: tk.range
+            });
+            symTable.declare_line(tk);
+            return tk;
+        }
     }
     return undefined;
 }
