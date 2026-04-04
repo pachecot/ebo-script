@@ -223,14 +223,6 @@ export class SymbolTable {
                     range: tk.range
                 });
             }
-            if (name in this.lines) {
-                this.add_error({
-                    id: EboErrors.LineUsedAsVariable,
-                    severity: Severity.Error,
-                    message: `Line '${name}' used as a variable.`,
-                    range: tk.range
-                });
-            }
         } else {
             this.add_error({
                 id: EboErrors.UndeclaredVariable,
@@ -317,12 +309,19 @@ export class SymbolTable {
 
     declare_line(lineTk: LexToken) {
         const name = lineTk.value;
-        if (name in this.symbols) {
+        if (name in this.lines) {
+            this.add_error({
+                id: EboErrors.DuplicateLine,
+                severity: Severity.Error,
+                message: `Line '${name}' already declared.`,
+                range: lineTk.range
+            });
+        } else if (name in this.symbols) {
             if (name in this.variables) {
                 this.add_error({
                     id: EboErrors.VariableUsedAsLineName,
-                    severity: Severity.Error,
-                    message: `'${name}' is declared as a variable and cannot also be used as a line name.`,
+                    severity: Severity.Information,
+                    message: `'${name}' is declared as a variable and is also used as a line name.`,
                     range: lineTk.range
                 });
             } else if (name in this.functions) {
@@ -332,18 +331,10 @@ export class SymbolTable {
                     message: `'${name}' is declared as a function and cannot also be used as a line name.`,
                     range: lineTk.range
                 });
-            } else {
-                this.add_error({
-                    id: EboErrors.DuplicateLine,
-                    severity: Severity.Error,
-                    message: `Line '${name}' already declared.`,
-                    range: lineTk.range
-                });
             }
         }
 
-        if (name in this.variable_refs) {
-            /// check again here for newly defined lines.
+        if (name in this.variable_refs && !(name in this.variables)) {
             this.variable_refs[name]
                 .forEach(vr => {
                     this.add_error({
@@ -357,11 +348,6 @@ export class SymbolTable {
 
         this.lines[name] = lineTk;
         this.line_names.push(name);
-        this.symbols[name] = {
-            type: SymbolType.Line,
-            name: name,
-            range: lineTk.range
-        };
     }
 
 

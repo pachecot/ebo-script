@@ -12,6 +12,7 @@ import {
 } from '../ebo-check';
 import { TokenKind } from '../ebo-types';
 import { EboErrors } from '../EboErrors';
+import { Severity } from '../SymbolTable';
 
 function parseWith<T>(
     text: string,
@@ -393,6 +394,22 @@ describe('Parsing Tests', () => {
                 e.id === EboErrors.DuplicateLine
             );
             assert.equal(0, errs.length, 'no name-clash errors for properly separate names');
+        });
+
+        it('variable and line sharing a name emits no DuplicateDeclaration and no UndeclaredVariable', () => {
+            const result = ebo_parse_file('Numeric myVar\nmyVar:\nmyVar = 1\n');
+            const dups = result.errors.filter(e => e.id === EboErrors.DuplicateDeclaration);
+            assert.equal(0, dups.length, 'no DuplicateDeclaration when variable and line share a name');
+            const undef = result.errors.filter(e => e.id === EboErrors.UndeclaredVariable);
+            assert.equal(0, undef.length, 'no UndeclaredVariable when variable and line share a name');
+        });
+
+        it('variable and line sharing a name emits VariableUsedAsLineName as Information', () => {
+            const result = ebo_parse_file('Numeric myVar\nmyVar:\n');
+            const info = result.errors.filter(e =>
+                e.id === EboErrors.VariableUsedAsLineName && e.severity === Severity.Information
+            );
+            assert.equal(1, info.length, 'VariableUsedAsLineName should be Information severity');
         });
 
     });

@@ -2,6 +2,14 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.15.0] 2026-04-04
+
+ - Go-style aligned assignment formatting (new `alignAssignments` setting)
+ - DateTime arithmetic type checking with TypeMismatch warnings
+ - fix: keyword used as line name now emits VariableUsedAsLineName instead of misleading DuplicateLine/UndefinedLine errors
+ - fix: keyword line labels recognized in formatter to prevent wrong indentation
+ - fix: handle single closing keywords at EOF without trailing newline
+
 ## [0.14.1] 2025-9-28
 
  - added error checking for goto statements in loops
