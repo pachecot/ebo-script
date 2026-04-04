@@ -1675,12 +1675,21 @@ function check_lines_valid_and_used(st: SymbolTable) {
     Object.keys(st.line_refs).forEach(name => {
         if (name in st.lines) { return; }
         st.line_refs[name].forEach(tk => {
-            issues.push({
-                id: EboErrors.UndefinedLine,
-                severity: Severity.Error,
-                message: `Line '${name}' not defined.`,
-                range: tk.range
-            });
+            if (name in st.variables) {
+                issues.push({
+                    id: EboErrors.VariableUsedAsLineName,
+                    severity: Severity.Error,
+                    message: `'${name}' is a variable, not a line label; Goto requires a line label.`,
+                    range: tk.range
+                });
+            } else {
+                issues.push({
+                    id: EboErrors.UndefinedLine,
+                    severity: Severity.Error,
+                    message: `Line '${name}' not defined.`,
+                    range: tk.range
+                });
+            }
         });
     });
 }

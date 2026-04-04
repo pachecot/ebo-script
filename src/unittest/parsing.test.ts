@@ -352,4 +352,49 @@ describe('Parsing Tests', () => {
 
     });
 
+    // ─── variable name used as line label / goto target ───────────────────────
+    describe('variable name used as line name', () => {
+
+        it('declaring a line with a variable name emits VariableUsedAsLineName', () => {
+            const result = ebo_parse_file('Numeric myVar\nmyVar:\n');
+            const errs = result.errors.filter(e => e.id === EboErrors.VariableUsedAsLineName);
+            assert.equal(1, errs.length, 'expected VariableUsedAsLineName error');
+        });
+
+        it('declaring a line with a variable name does NOT emit DuplicateLine', () => {
+            const result = ebo_parse_file('Numeric myVar\nmyVar:\n');
+            const dups = result.errors.filter(e => e.id === EboErrors.DuplicateLine);
+            assert.equal(0, dups.length, 'should not emit DuplicateLine when name is a variable');
+        });
+
+        it('Goto targeting a declared variable emits VariableUsedAsLineName', () => {
+            const result = ebo_parse_file('Numeric myVar\nGoto myVar\n');
+            const errs = result.errors.filter(e => e.id === EboErrors.VariableUsedAsLineName);
+            assert.equal(1, errs.length, 'expected VariableUsedAsLineName for Goto to variable');
+        });
+
+        it('Goto targeting a declared variable does NOT emit UndefinedLine', () => {
+            const result = ebo_parse_file('Numeric myVar\nGoto myVar\n');
+            const undef = result.errors.filter(e => e.id === EboErrors.UndefinedLine);
+            assert.equal(0, undef.length, 'should not emit UndefinedLine when name is a variable');
+        });
+
+        it('true duplicate line label still emits DuplicateLine', () => {
+            const result = ebo_parse_file('myLine:\nmyLine:\n');
+            const dups = result.errors.filter(e => e.id === EboErrors.DuplicateLine);
+            assert.equal(1, dups.length, 'expected DuplicateLine for genuinely duplicate line label');
+        });
+
+        it('normal variable usage alongside a different line label has no errors', () => {
+            const result = ebo_parse_file('Numeric myVar\nmyLine:\nmyVar = 1\nGoto myLine\n');
+            const errs = result.errors.filter(e =>
+                e.id === EboErrors.VariableUsedAsLineName ||
+                e.id === EboErrors.UndefinedLine ||
+                e.id === EboErrors.DuplicateLine
+            );
+            assert.equal(0, errs.length, 'no name-clash errors for properly separate names');
+        });
+
+    });
+
 });

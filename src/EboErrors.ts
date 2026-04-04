@@ -35,4 +35,5 @@ export enum EboErrors {
     DateTimeArithmeticInvalid,
     TypeMismatch,
     KeywordUsedAsLineName,
+    VariableUsedAsLineName,
 }

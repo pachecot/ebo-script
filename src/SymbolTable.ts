@@ -318,12 +318,28 @@ export class SymbolTable {
     declare_line(lineTk: LexToken) {
         const name = lineTk.value;
         if (name in this.symbols) {
-            this.add_error({
-                id: EboErrors.DuplicateLine,
-                severity: Severity.Error,
-                message: `Line '${name}' already exists.`,
-                range: lineTk.range
-            });
+            if (name in this.variables) {
+                this.add_error({
+                    id: EboErrors.VariableUsedAsLineName,
+                    severity: Severity.Error,
+                    message: `'${name}' is declared as a variable and cannot also be used as a line name.`,
+                    range: lineTk.range
+                });
+            } else if (name in this.functions) {
+                this.add_error({
+                    id: EboErrors.VariableUsedAsLineName,
+                    severity: Severity.Error,
+                    message: `'${name}' is declared as a function and cannot also be used as a line name.`,
+                    range: lineTk.range
+                });
+            } else {
+                this.add_error({
+                    id: EboErrors.DuplicateLine,
+                    severity: Severity.Error,
+                    message: `Line '${name}' already declared.`,
+                    range: lineTk.range
+                });
+            }
         }
 
         if (name in this.variable_refs) {
