@@ -123,14 +123,14 @@
 	},
 	"devDependencies": {
 		"@types/glob": "^8.1.0",
-		"@types/mocha": "^10.0.1",
-		"@types/node": "^20.3.1",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^25.5.2",
 		"@types/vscode": "^1.64.0",
-		"@typescript-eslint/eslint-plugin": "^5.12.0",
-		"@typescript-eslint/parser": "^5.12.0",
-		"eslint": "^8.9.0",
-		"glob": "^10.2.7",
-		"mocha": "^10.2.0",
+		"@typescript-eslint/eslint-plugin": "^8.58.0",
+		"@typescript-eslint/parser": "^8.58.0",
+		"eslint": "^10.2.0",
+		"glob": "^13.0.6",
+		"mocha": "^11.7.5",
 		"vscode-test": "^1.6.1"
 	}
 }
