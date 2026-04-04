@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { ebo_scan_text, LexToken } from '../ebo-scanner';
-import { detect_assign_line, compute_lhs_end, is_eof_skip_line } from '../ebo-formatter-utils';
+import { detect_assign_line, compute_lhs_end, is_eof_skip_line, is_line_label } from '../ebo-formatter-utils';
 import { TokenKind } from '../ebo-types';
 import { FileCursor } from '../file-cursor';
 import { SymbolTable } from '../SymbolTable';
@@ -383,5 +383,43 @@ describe('Formatter Tests', () => {
             assert.strictEqual(last[0].type, TokenKind.WhitespaceToken);
             assert.strictEqual(last[1].type, TokenKind.EndIfStatement);
         });
+    });
+
+    describe('is_line_label', () => {
+
+        it('identifier followed by colon is a line label', () => {
+            assert.strictEqual(true, is_line_label(scanLine('myLabel:')));
+        });
+
+        it('Line keyword followed by identifier is a line label', () => {
+            assert.strictEqual(true, is_line_label(scanLine('Line myLabel')));
+        });
+
+        it('keyword followed by colon is a line label (e.g. DST:)', () => {
+            // DST is a system variable keyword — must be recognised as a label
+            assert.strictEqual(true, is_line_label(scanLine('DST:')));
+        });
+
+        it('ON followed by colon is a line label', () => {
+            assert.strictEqual(true, is_line_label(scanLine('ON:')));
+        });
+
+        it('a plain assignment line is not a line label', () => {
+            assert.strictEqual(false, is_line_label(scanLine('myVar = 1')));
+        });
+
+        it('a keyword on its own (no colon) is not a line label', () => {
+            assert.strictEqual(false, is_line_label(scanLine('DST')));
+        });
+
+        it('an expression is not a line label', () => {
+            assert.strictEqual(false, is_line_label(scanLine('x + y')));
+        });
+
+        it('keyword label does not affect detect_assign_line (returns undefined)', () => {
+            // DST: should not be mistaken for an assignment
+            assert.strictEqual(undefined, detect_assign_line(scanLine('DST:')));
+        });
+
     });
 });

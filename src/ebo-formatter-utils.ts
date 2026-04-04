@@ -1,7 +1,13 @@
 import { LexToken } from './ebo-scanner';
-import { TokenKind, isVariableKind } from './ebo-types';
+import { TokenKind, isKeyword, isVariableKind } from './ebo-types';
 
-function test_is_line_util(line: LexToken[]): boolean {
+/**
+ * Returns true when the token line is a line-label declaration, e.g.:
+ *   myLabel:        (IdentifierToken + Colon)
+ *   Line myLabel    (LineStatement + Identifier/Number)
+ *   DST:            (keyword token + Colon — warned by parser but still valid syntax)
+ */
+export function is_line_label(line: LexToken[]): boolean {
     if (line.length > 2) {
         const tk = line[0];
         switch (tk.type) {
@@ -9,10 +15,16 @@ function test_is_line_util(line: LexToken[]): boolean {
             case TokenKind.IdentifierToken:
                 if (line[1].type === TokenKind.ColonSymbol) { return true; }
                 break;
-            case TokenKind.LineStatement:
-                if (line[1].type === TokenKind.IdentifierToken || line[1].type === TokenKind.NumberToken) {
+            case TokenKind.LineStatement: {
+                // skip optional whitespace between 'Line' and the label name
+                const nameTk = line[1].type === TokenKind.WhitespaceToken ? line[2] : line[1];
+                if (nameTk && (nameTk.type === TokenKind.IdentifierToken || nameTk.type === TokenKind.NumberToken)) {
                     return true;
                 }
+                break;
+            }
+            default:
+                if (isKeyword(tk.type) && line[1].type === TokenKind.ColonSymbol) { return true; }
                 break;
         }
     }
@@ -33,7 +45,7 @@ export function detect_assign_line(line_tks: LexToken[]): number | undefined {
     if (first.type !== TokenKind.IdentifierToken && !isVariableKind(first.type)) {
         return undefined;
     }
-    if (test_is_line_util(line_tks)) { return undefined; }
+    if (is_line_label(line_tks)) { return undefined; }
 
     let depth = 0;
     for (let i = s + 1; i < line_tks.length; i++) {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ebo_scan_text, LexToken, TextRange } from './ebo-scanner';
 import { TokenKind, isFunctionKind, isOperatorKind, isVariableKind, isValueKind, isSymbolKind } from './ebo-types';
-import { detect_assign_line, compute_lhs_end, is_eof_skip_line } from './ebo-formatter-utils';
+import { detect_assign_line, compute_lhs_end, is_eof_skip_line, is_line_label } from './ebo-formatter-utils';
 
 export { detect_assign_line, compute_lhs_end, is_eof_skip_line };
 
@@ -26,25 +26,7 @@ function test_if_then_open(line: LexToken[]) {
 }
 
 function test_is_line(line: LexToken[]) {
-
-    if (line.length > 2) {
-        let tk = line[0];
-        switch (tk.type) {
-            case TokenKind.ErrorLine:
-            case TokenKind.IdentifierToken:
-                if (line[1].type === TokenKind.ColonSymbol) {
-                    return tk;
-                }
-                break;
-            case TokenKind.LineStatement:
-                tk = line[1];
-                if (tk.type === TokenKind.IdentifierToken || tk.type === TokenKind.NumberToken) {
-                    return tk;
-                }
-                break;
-        }
-    }
-    return undefined;
+    return is_line_label(line) ? line[0] : undefined;
 }
 
 const close_tags: TokenKind[] = [
