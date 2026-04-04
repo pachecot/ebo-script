@@ -49,6 +49,7 @@ function get_comment(line: vscode.TextLine): string {
 }
 
 function is_line_declaration(line: vscode.TextLine) {
+    if (/^\s*'/.test(line.text)) { return false; }
     return re_line_declaration.test(line.text);
 }
 
