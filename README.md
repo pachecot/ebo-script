@@ -63,6 +63,14 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.15.0
+
+ - Go-style aligned assignment formatting (new `alignAssignments` setting)
+ - DateTime arithmetic type checking with TypeMismatch warnings
+ - fix: keyword used as line name now emits correct VariableUsedAsLineName error
+ - fix: keyword line labels recognized in formatter to prevent wrong indentation
+ - fix: handle single closing keywords at EOF without trailing newline
+
 ## 0.14.1
  
  - added error checking for goto statements in loops
