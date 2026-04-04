@@ -9,7 +9,7 @@ const re_comment = /\s*'.*$/;
 const re_comma = /\s*,\s*/g;
 const re_declaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?|Function|Datafile|Trendlog|Webservice)(?:\s+|$)/i;
 const re_line_continuation = /~$/;
-const re_line_declaration = /(\w+:)|^line\s+(\w|\d)+/i;
+const re_line_declaration = /^\s*(\w+:)|^line\s+(\w|\d)+/i;
 
 const declarations = [
     "Trendlog",
