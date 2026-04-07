@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [Unreleased]
+
+ - fix: single-line assignments with extra spaces before `=` are now normalized
+ - fix: spaces before inline comments are preserved (no longer collapsed to one space)
+
 ## [0.15.0] 2026-04-04
 
  - Go-style aligned assignment formatting (new `alignAssignments` setting)
