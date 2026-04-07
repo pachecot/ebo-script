@@ -157,7 +157,7 @@ function get_alignment_edits(
             j++;
         }
 
-        if (block.length >= 2) {
+        if (block.length >= 1) {
             const target_col = Math.max(...block.map(b => b.adj_lhs_end)) + 1;
 
             for (const { line_tks: ltks, eq_idx: ei, adj_lhs_end } of block) {
@@ -308,7 +308,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                                     edits.push(vscode.TextEdit.delete(toRange(n.range)));
                                     n.range.end = n.range.begin;
                                 }
-                            } else {
+                            } else if (line_tks[i + 2]?.type !== TokenKind.CommentToken) {
                                 if (range_size(n.range) > 1 || n.value === '\t') {
                                     edits.push(singleSpace(n.range));
                                     n.range.end = n.range.begin + 1;
