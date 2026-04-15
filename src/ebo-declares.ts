@@ -7,7 +7,7 @@ import { EBO_SCRIPT } from './extension-types';
 
 const re_comment = /\s*'.*$/;
 const re_comma = /\s*,\s*/g;
-const re_declaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?|Function|Datafile|Trendlog|Webservice)(?:\s+|$)/i;
+const re_declaration = /^\s*((?:Numeric)(\s+(?:Output|Public|(?:(?:Buffered|Triggered)\s+)?Input))?|(?:String|DateTime)(?:\s+(?:Input|Output|Public))?|Function|Datafile|Trendlog|Webservice|Arg\s+\d+)(?:\s+|$)/i;
 const re_line_continuation = /~$/;
 const re_line_declaration = /^\s*(\w+:)|^line\s+(\w|\d)+/i;
 
@@ -220,6 +220,7 @@ export function clean_declarations(eboExt: EboExt) {
 
     const decLines: vscode.TextLine[] = [];
     const dec: { [name: string]: string[] } = {};
+    const argLines: { num: number; name: string; comment: string }[] = [];
 
     const sym = eboExt.symbols.get(document.uri);
 
@@ -243,6 +244,15 @@ export function clean_declarations(eboExt: EboExt) {
 
     for (let i = dec_range.start.line; i <= dec_range.end.line; ++i) {
         let line = document.lineAt(i);
+        const argMatch = /^\s*Arg\s+(\d+)\s+(\w+)/i.exec(line.text);
+        if (argMatch) {
+            if (compact && line_has_comment(line)) {
+                continue;
+            }
+            argLines.push({ num: parseInt(argMatch[1]), name: argMatch[2], comment: get_comment(line) });
+            decLines.push(line);
+            continue;
+        }
         const dec_id = get_declaration_id(line.text);
         if (dec_id !== -1) {
             const decl_type = declarations[dec_id];
@@ -310,6 +320,11 @@ export function clean_declarations(eboExt: EboExt) {
 
     if (compact) {
         let text = "";
+        argLines.sort((a, b) => a.num - b.num);
+        for (const a of argLines) {
+            text += `Arg ${a.num} ${a.name}${a.comment}\n`;
+        }
+        if (argLines.length > 0) { text += "\n"; }
         let insert_newline = false;
         for (let name of declarations) {
             if (name === "DateTime") {
@@ -391,7 +406,9 @@ export function clean_declarations(eboExt: EboExt) {
             texts[order] += `${nt[1]} ${nt[0]}${declarationComment}\n`;
         }
 
-        let text = texts.filter(t => t.length > 0).join("\n");
+        argLines.sort((a, b) => a.num - b.num);
+        const argText = argLines.map(a => `Arg ${a.num} ${a.name}${a.comment}\n`).join('');
+        let text = [argText, ...texts.filter(t => t.length > 0)].filter(t => t.length > 0).join("\n");
 
         editor.edit(editBuilder => {
             for (let line of decLines) {

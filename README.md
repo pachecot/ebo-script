@@ -63,6 +63,10 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.15.2
+
+ - fix: clean declarations now sorts `Arg` declarations first, ordered by argument number
+
 ## 0.15.0
 
  - Go-style aligned assignment formatting (new `alignAssignments` setting)

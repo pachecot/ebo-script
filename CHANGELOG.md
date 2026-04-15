@@ -2,7 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
-## [Unreleased]
+## [0.15.2] 2026-04-15
+
+ - fix: clean declarations now sorts `Arg` declarations first, ordered by argument number
+
+## [0.15.1] 2026-04-07
 
  - fix: single-line assignments with extra spaces before `=` are now normalized
  - fix: spaces before inline comments are preserved (no longer collapsed to one space)
