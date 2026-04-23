@@ -39,9 +39,9 @@ export const enum TokenKind {
     , NotEqualSymbol          //   '<>'
     , ParenthesesRightSymbol  //   ')'
     , ParenthesesLeftSymbol   //   '('
-    , PercentSymbol           //   '%'
     , PlusSymbol              //   '+'
     , SemicolonSymbol         //   ';'
+    , PercentSymbol           //   '%'
     , SlashSymbol             //   '/'
     , TildeSymbol             //   '~'
 
@@ -166,9 +166,14 @@ export const enum TokenKind {
     , WeekdayVariable
     , YearVariable
 
+    // Script internal variables -- undocumented
+    , FlowTypeKeyword     // 0 = Looping, 1 = FallThrough
+    , CurrentLineKeyword  // string of current line being executed, updated on each line execution
+    
     , ErrorsVariable
     , FreememVariable
     , IsBoundVariable
+
 
     // Variable Range Markers
     // ----------------------
@@ -459,13 +464,13 @@ export const enum TokenKind {
     , AppendKeyword
     , AskKeyword
     , BreakpointKeyword
-    , CKeyword
     , CDKeyword
+    , CKeyword
     , CurvefitKeyword
     , DelKeyword
     , DTKeyword
-    , EncryptKeyword
     , EncryptedKeyword
+    , EncryptKeyword
     , EraseKeyword
     , ExecuteKeyword
     , ExistsKeyword
@@ -481,10 +486,10 @@ export const enum TokenKind {
     , TraceKeyword
     , UnadviseKeyword
     , UniquePinKeyword
-    , UpdateKeyword
     , UpdateAlarmsKeyword
     , UpdateEventsKeyword
     , UpdateExitLogKeyword
+    , UpdateKeyword
     , VersionKeyword
     , WhereKeyword
     , WithKeyword
