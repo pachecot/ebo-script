@@ -2,6 +2,10 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.15.3] 2026-04-23
+
+ - fix: added additional keyword variables CurrentLine and FlowType
+
 ## [0.15.2] 2026-04-15
 
  - fix: clean declarations now sorts `Arg` declarations first, ordered by argument number
