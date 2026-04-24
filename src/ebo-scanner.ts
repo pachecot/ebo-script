@@ -174,6 +174,10 @@ const TokenMap: TokenDictionary = {
     // Continuum
     , NOTSET: TokenKind.NotSetValue
 
+    // Script Properties
+    , CURRENTLINE: TokenKind.CurrentLineKeyword
+    , FLOWTYPE: TokenKind.FlowTypeKeyword
+
     , ERRORS: TokenKind.ErrorsVariable
     , FREEMEM: TokenKind.FreememVariable
     , ISBOUND: TokenKind.IsBoundVariable
