@@ -63,6 +63,11 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
+## 0.15.4
+
+- fix: updated formatting basedon and some whitespace were not formatting correctly
+- fix: some syntax names were not supported
+
 ## 0.15.3
 
  - fix: added Variables FlowType and CurrentLine

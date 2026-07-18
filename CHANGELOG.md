@@ -2,6 +2,11 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
+## [0.15.4] 2026-07-18
+
+- fix: updated formatting basedon and some whitespace were not formatting correctly
+- fix: some syntax names were not supported
+
 ## [0.15.3] 2026-04-23
 
  - fix: added additional keyword variables CurrentLine and FlowType
