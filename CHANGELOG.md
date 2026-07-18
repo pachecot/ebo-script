@@ -2,10 +2,19 @@
 
 All notable changes to the "ebo-script" extension will be documented in this file.
 
-## [0.15.4] 2026-07-18
+## [0.15.6] 2026-07-18
+
+- chore: migrated ESLint configuration from `.eslintrc.json` to `eslint.config.mjs`
+- chore: updated ESLint and TypeScript-ESLint dependencies
+
+## [0.15.5] 2026-07-18
 
 - fix: updated formatting basedon and some whitespace were not formatting correctly
 - fix: some syntax names were not supported
+
+## [0.15.4] 2026-04-24
+
+- fix: CURRENTLINE and FLOWTYPE keywords were not recognized by the scanner
 
 ## [0.15.3] 2026-04-23
 

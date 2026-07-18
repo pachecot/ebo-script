@@ -63,10 +63,19 @@ Formatting is for the whole document. Trims trailing spaces. Does indentations, 
 
 ## Release Notes
 
-## 0.15.4
+## 0.15.6
+
+- chore: migrated ESLint configuration to flat config (`eslint.config.mjs`)
+- chore: updated ESLint and TypeScript-ESLint dependencies
+
+## 0.15.5
 
 - fix: updated formatting basedon and some whitespace were not formatting correctly
 - fix: some syntax names were not supported
+
+## 0.15.4
+
+- fix: CURRENTLINE and FLOWTYPE keywords were not recognized by the scanner
 
 ## 0.15.3
 
