@@ -592,6 +592,9 @@ function ebo_scan_line(line: string): LexToken[] {
     const tks: LexToken[] = [];
     let m: RegExpExecArray | null;
 
+    // fix for scanner not handling hyphens in identifiers; grammar uses NOVTSESSIONS-AVAILABLE (with hyphen)
+    line = line.replace(/(NOVTSESSIONS)-(AVAILABLE)/gi, '$1_$2');
+
     while ((m = scannerRe.exec(line))) {
         let i = 1;
         while (!m[i] && i < m.length) { ++i; }
