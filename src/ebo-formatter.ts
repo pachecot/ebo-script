@@ -330,6 +330,7 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                 case TokenKind.UntilStatement:
                 case TokenKind.StepStatement:
                 case TokenKind.IfStatement:
+                case TokenKind.BasedonStatement:
                 case TokenKind.GotoStatement:
                     {
                         const n = line_tks[i + 1];
@@ -583,6 +584,13 @@ export function getReformatEdits(document: vscode.TextDocument): vscode.TextEdit
                     break;
                 }
                 default:
+                    const n = line_tks[i];
+                    if (i >= 2 && n && n.type === TokenKind.WhitespaceToken) {
+                        if (range_size(n.range) || n.value === '\t') {
+                            edits.push(singleSpace(n.range));
+                            n.range.end = n.range.begin + 1;
+                        }
+                    }
                     break;
             }
 
